@@ -5,11 +5,14 @@ qualquer camada) ou uma tupla com as bandas em que pode aparecer:
 `"jardim_externo"` (camadas 1-2), `"jardim_profundo"` (camadas 3-4) ou
 `"nucleo_selvagem"` (camada 5+).
 
-`DENIZENS` tem um terceiro campo, `classe`: `None` para encontros sem
-estatísticas (a maioria — animais, objetos, fenômenos), ou a chave de uma
-classe de `lotfp-rules` (`"fighter"`, `"specialist"`, `"magic_user"`,
-`"cleric"`) para os poucos denizens humanoides que viram um NPC jogável
-completo.
+`DENIZENS` tem um terceiro campo, `classe` (chave de `lotfp-rules` —
+`"fighter"`, `"specialist"`, `"magic_user"`, `"cleric"` — para denizens
+humanoides, `None` senão) e um quarto campo, `criatura` (chave de
+`ynn.creatures.CREATURES` para denizens não-humanoides com ficha de
+monstro, `None` senão). No máximo um dos dois é preenchido por entrada;
+um punhado (a criança que não é encontrada, a voz sem corpo, o som sem
+origem) não tem nenhum dos dois — são deliberadamente só atmosfera, sem
+nada para enfrentar.
 
 `VEGETATION` também tem um terceiro campo, `especie`: `None` para
 vegetação de cobertura (gramado, musgo, líquens — sem uma "planta" única
@@ -134,62 +137,97 @@ FEATURES = [
 ]
 
 DENIZENS = [
-    # (texto, bandas, classe LotFP se for um NPC humanoide jogável — ver lotfp-rules)
+    # (texto, bandas, classe LotFP se NPC humanoide, criatura de ynn.creatures se monstro)
     (
         "um jardineiro curvado sobre um canteiro, que não ergue os olhos quando questionado, "
         "apenas continua podando algo que já não tem folhas",
         "all",
         "specialist",
+        None,
     ),
-    ("um bando de pássaros brancos, silenciosos, que pousam todos ao mesmo tempo e observam", "all", None),
-    ("uma estátua que os personagens têm certeza de já ter visto em outra pose", "all", None),
-    ("um enxame de mariposas do tamanho de mãos, pousando em qualquer luz disponível", "all", None),
+    (
+        "um bando de pássaros brancos, silenciosos, que pousam todos ao mesmo tempo e observam",
+        "all",
+        None,
+        "passaros_brancos",
+    ),
+    (
+        "uma estátua que os personagens têm certeza de já ter visto em outra pose",
+        "all",
+        None,
+        "estatua_errante",
+    ),
+    (
+        "um enxame de mariposas do tamanho de mãos, pousando em qualquer luz disponível",
+        "all",
+        None,
+        "mariposas_gigantes",
+    ),
     (
         "um par de luvas de jardinagem, sozinhas sobre um banco, ainda com o formato de mãos dentro delas",
         "all",
         None,
+        "luvas_animadas",
     ),
     (
         "um cervo de galhada excessiva, mais galhos do que deveria ser fisicamente possível, parado imóvel",
         ("jardim_profundo", "nucleo_selvagem"),
         None,
+        "cervo_de_galhos",
     ),
     (
         "uma criança rindo em algum lugar próximo, embora nenhuma criança seja encontrada",
         ("jardim_profundo", "nucleo_selvagem"),
+        None,
         None,
     ),
     (
         "algo grande se movendo logo abaixo da superfície de um gramado bem cuidado demais",
         ("jardim_profundo", "nucleo_selvagem"),
         None,
+        "algo_sob_a_grama",
     ),
     (
         "uma voz educada vinda de trás de uma cerca-viva, convidando para chá em algum lugar que não existe no mapa",
         ("jardim_externo", "jardim_profundo"),
         None,
+        None,
     ),
-    ("um gato preto sem rosto que anda em círculos perfeitos ao redor de um ponto fixo", ("nucleo_selvagem",), None),
+    (
+        "um gato preto sem rosto que anda em círculos perfeitos ao redor de um ponto fixo",
+        ("nucleo_selvagem",),
+        None,
+        "gato_sem_rosto",
+    ),
     (
         "um grupo de estátuas de jardim reorganizadas em uma formação que parece deliberada",
         ("jardim_profundo", "nucleo_selvagem"),
         None,
+        "estatua_errante",
     ),
-    ("um som de tesoura de poda, rítmico, vindo de todas as direções ao mesmo tempo", ("nucleo_selvagem",), None),
+    (
+        "um som de tesoura de poda, rítmico, vindo de todas as direções ao mesmo tempo",
+        ("nucleo_selvagem",),
+        None,
+        None,
+    ),
     (
         "um viajante exausto, sentado à sombra de uma cerca-viva, que jura estar aqui há poucos minutos",
         ("jardim_externo", "jardim_profundo"),
         "fighter",
+        None,
     ),
     (
         "uma clériga solitária de véu rasgado, murmurando orações para uma estátua que não é de nenhum deus conhecido",
         ("jardim_profundo", "nucleo_selvagem"),
         "cleric",
+        None,
     ),
     (
         "um estudioso de olhos vidrados, anotando compulsivamente em um caderno encharcado que nunca seca",
         ("jardim_profundo", "nucleo_selvagem"),
         "magic_user",
+        None,
     ),
 ]
 

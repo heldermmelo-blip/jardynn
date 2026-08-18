@@ -60,6 +60,24 @@ def test_area_without_stated_denizen_has_no_npc():
         assert area["npc"] is None
 
 
+def test_denizen_with_creature_produces_creature_stats():
+    found_creature = False
+    for seed in range(200):
+        area = generate_area(random.Random(seed), layer=3, index=1)
+        if area["criatura"] is not None:
+            found_creature = True
+            assert area["criatura"]["pontos_de_vida"] >= 1
+            assert area["has_denizen"] is True
+            assert area["npc"] is None  # nunca os dois ao mesmo tempo
+    assert found_creature
+
+
+def test_npc_and_creature_are_mutually_exclusive():
+    for seed in range(200):
+        area = generate_area(random.Random(seed), layer=3, index=1)
+        assert not (area["npc"] is not None and area["criatura"] is not None)
+
+
 def test_vegetation_with_species_produces_plant_mesh():
     found_plant = False
     for seed in range(50):

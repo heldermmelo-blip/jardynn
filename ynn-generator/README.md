@@ -25,13 +25,25 @@ têm uma classe de LotFP associada (`fighter`, `specialist`, `magic_user`
 ou `cleric`). Quando uma dessas é sorteada, o gerador chama
 [`lotfp-rules`](../lotfp-rules) (`lotfp.character.create_character`) e
 anexa uma ficha de nível 1 completa logo abaixo da área no Markdown
-gerado — veja `camada3_com_npc_exemplo.md` para um exemplo. Os demais
-denizens (a maioria — animais, objetos, fenômenos) continuam só texto,
-sem ficha.
+gerado — veja `camada3_com_npc_exemplo.md` para um exemplo.
 
-Ambas as ligações dependem de `lotfp-rules` e `gielis-equations` estarem
-nas pastas irmãs (`../lotfp-rules`, `../gielis-equations`);
-`ynn/generator.py` ajusta o `sys.path` automaticamente para achá-las.
+Ambas as ligações (esta e a de plantas) dependem de `lotfp-rules` e
+`gielis-equations` estarem nas pastas irmãs (`../lotfp-rules`,
+`../gielis-equations`); `ynn/generator.py` ajusta o `sys.path`
+automaticamente para achá-las.
+
+## Criaturas de Ynn (bestiário próprio)
+
+Os demais denizens não-humanoides (animais, objetos animados, fenômenos)
+podem ter uma ficha de monstro em [`ynn/creatures.py`](ynn/creatures.py)
+— um bestiário **original** (CA, Dados de Vida, ataques, Moral, uma
+habilidade especial), não uma transcrição de nenhum bestiário
+específico. Quando sorteado, `ynn.creatures.instantiate_creature` rola os
+pontos de vida e a ficha aparece junto da área — nunca ao mesmo tempo que
+um NPC humanoide. Um punhado (a criança que não é encontrada, a voz sem
+corpo, o som de tesoura sem origem) não tem ficha nenhuma — são
+deliberadamente só atmosfera. Veja `camada5_com_criaturas_exemplo.md`
+para um exemplo.
 
 ## Camadas
 

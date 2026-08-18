@@ -13,6 +13,18 @@ from .tables import BAND_LABELS
 from lotfp.cli import render_character
 
 
+def render_creature(creature):
+    lines = [f"**{creature['nome']}**"]
+    lines.append(
+        f"CA {creature['ca']} · DV {creature['dv']} · PV {creature['pontos_de_vida']} · Moral {creature['moral']}"
+    )
+    lines.append(f"Movimento: {creature['movimento']}")
+    lines.append("Ataques: " + "; ".join(f"{nome} ({dano})" for nome, dano in creature["ataques"]))
+    lines.append(f"Resistência: {creature['resistencia']}+ (rola 1d20)")
+    lines.append(f"Especial: {creature['especial']}")
+    return "\n".join(lines)
+
+
 def render_layer_markdown(layer, areas):
     band_label = BAND_LABELS[areas[0]["band"]] if areas else ""
     lines = [f"## Camada {layer} — {band_label}", ""]
@@ -24,6 +36,9 @@ def render_layer_markdown(layer, areas):
         if area["npc"] is not None:
             lines.append("")
             lines.append(render_character(area["npc"]))
+        if area["criatura"] is not None:
+            lines.append("")
+            lines.append(render_creature(area["criatura"]))
         lines.append("")
     return "\n".join(lines)
 

@@ -16,6 +16,8 @@ for _sibling in ("lotfp-rules", "gielis-equations"):
 from lotfp.character import create_character  # noqa: E402
 from gielis.plants import generate_plant as _generate_plant_mesh  # noqa: E402
 
+from .creatures import instantiate_creature
+
 PLANT_OUTPUT_DIR = os.path.join(_YNN_ROOT, "output", "plantas")
 
 WYRD_CHANCE = {"jardim_externo": 0.10, "jardim_profundo": 0.35, "nucleo_selvagem": 0.65}
@@ -41,7 +43,11 @@ def _pick(rng, entries, band):
 
 
 def _denizens_for_band(band):
-    return [(text, class_key) for text, bands, class_key in tables.DENIZENS if bands == "all" or band in bands]
+    return [
+        (text, class_key, creature_key)
+        for text, bands, class_key, creature_key in tables.DENIZENS
+        if bands == "all" or band in bands
+    ]
 
 
 def _pick_denizen(rng, band):
@@ -71,12 +77,14 @@ def generate_area(rng, layer, index):
 
     parts.append(f"Aqui há {_pick(rng, tables.FEATURES, band)}.")
 
-    denizen, denizen_class, npc = None, None, None
+    denizen, denizen_class, denizen_creature, npc, creature = None, None, None, None, None
     if rng.random() < DENIZEN_CHANCE[band]:
-        denizen, denizen_class = _pick_denizen(rng, band)
+        denizen, denizen_class, denizen_creature = _pick_denizen(rng, band)
         parts.append(f"Você nota {denizen}.")
         if denizen_class is not None:
             npc = create_character(rng, denizen_class)
+        elif denizen_creature is not None:
+            creature = instantiate_creature(rng, denizen_creature)
 
     wyrd = _pick(rng, tables.WYRD, band) if rng.random() < WYRD_CHANCE[band] else None
     if wyrd is not None:
@@ -95,6 +103,7 @@ def generate_area(rng, layer, index):
         "has_wyrd": wyrd is not None,
         "has_treasure": treasure is not None,
         "npc": npc,
+        "criatura": creature,
         "planta_obj": plant_obj_path,
     }
 
