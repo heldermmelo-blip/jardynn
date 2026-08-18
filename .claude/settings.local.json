@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"/c/Users/User/Desktop/Helder/\" 2>/dev/null | grep -i gielis)"
+    ]
+  }
+}
