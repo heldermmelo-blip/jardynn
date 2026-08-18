@@ -59,9 +59,33 @@ As figuras são salvas em `examples/output/`.
 | `gielis.curvature` | Frenet-Serret, curvaturas de Casorati/Willmore, curvatura de Lamé/Gielis, métricas de curvatura constante | 7.12-7.15, 9.1-9.19, 11.1 |
 | `gielis.chebyshev` | Superfórmula via polinômios de Chebyshev | 7.16-7.18, 7.22 |
 | `gielis.models` | Modelo de folhas de bambu e de anéis de crescimento | 10.1-10.2 |
+| `gielis.plants` | Geração procedural de malhas 3D de plantas (RPG) — não são equações do livro, ver abaixo | — |
 
 Ver [`EQUATIONS.md`](EQUATIONS.md) para a tabela completa e o texto de cada
 equação.
+
+## `gielis.plants` — plantas em malha 3D
+
+Aplicação construída em cima da biblioteca (não são equações do livro):
+gera malhas 3D (`.obj`) de plantas para uso em jogos, combinando um
+esqueleto de galhos procedural com seção transversal em curva de Lamé
+(Eq. 4.1/5.1 — "bambu quadrado" quando `n<2`) e, na flor, uma silhueta
+pela Superfórmula (Eq. 5.8).
+
+```python
+import random
+from gielis.plants import SPECIES, generate_plant
+
+print(SPECIES)  # ['arbusto', 'arvore', 'bambu', 'cogumelo', 'espinheiro', 'flor', 'samambaia', 'videira']
+path, skeleton = generate_plant(random.Random(42), "arvore")
+```
+
+```bash
+python examples/rpg_plant.py                # árvore única (exemplo original)
+python examples/plant_species_gallery.py     # um .obj de cada espécie
+```
+
+As malhas são salvas em `examples/output/`.
 
 ## Testes
 

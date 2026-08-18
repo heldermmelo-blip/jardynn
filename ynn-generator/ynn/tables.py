@@ -11,6 +11,13 @@ classe de `lotfp-rules` (`"fighter"`, `"specialist"`, `"magic_user"`,
 `"cleric"`) para os poucos denizens humanoides que viram um NPC jogável
 completo.
 
+`VEGETATION` também tem um terceiro campo, `especie`: `None` para
+vegetação de cobertura (gramado, musgo, líquens — sem uma "planta" única
+para gerar) ou a chave de uma espécie de `gielis.plants` (`"arvore"`,
+`"arbusto"`, `"espinheiro"`, `"bambu"`, `"videira"`, `"flor"`,
+`"cogumelo"`, `"samambaia"`), que vira uma malha 3D (.obj) real da planta
+dominante daquela área.
+
 Conteúdo original, inspirado apenas na estrutura de geração por tabelas de
 The Gardens of Ynn — nenhum texto do livro é reproduzido aqui.
 """
@@ -22,42 +29,65 @@ BAND_LABELS = {
 }
 
 VEGETATION = [
-    ("Um gramado alto e escuro, pesado de orvalho, que abafa o som dos passos.", "all"),
-    ("Roseiras selvagens avançam sobre o caminho, os espinhos do tamanho de adagas.", "all"),
-    ("Um caniçal denso sussurra mesmo sem vento.", "all"),
-    ("Trepadeiras com flores que se fecham lentamente quando alguém se aproxima.", "all"),
-    ("Bambus finíssimos, retos como agulhas, batendo uns nos outros com um som de sinos quebrados.", "all"),
-    ("Um campo de tulipas em cores que não deveriam existir juntas.", "all"),
+    # (texto, bandas, espécie de gielis.plants se representável como planta única, senão None)
+    ("Um gramado alto e escuro, pesado de orvalho, que abafa o som dos passos.", "all", None),
+    ("Roseiras selvagens avançam sobre o caminho, os espinhos do tamanho de adagas.", "all", "espinheiro"),
+    ("Um caniçal denso sussurra mesmo sem vento.", "all", "bambu"),
+    ("Trepadeiras com flores que se fecham lentamente quando alguém se aproxima.", "all", "videira"),
+    (
+        "Bambus finíssimos, retos como agulhas, batendo uns nos outros com um som de sinos quebrados.",
+        "all",
+        "bambu",
+    ),
+    ("Um campo de tulipas em cores que não deveriam existir juntas.", "all", "flor"),
     (
         "Cercas-vivas aparadas em formas que quase lembram animais, e que parecem ter se movido "
         "desde a última vez que alguém olhou.",
         ("jardim_profundo", "nucleo_selvagem"),
+        "arbusto",
     ),
-    ("Fileiras de girassóis voltados para um sol que não está no céu.", ("jardim_profundo", "nucleo_selvagem")),
-    ("Musgo espesso cobre tudo, macio demais, como se quisesse ser tocado.", ("jardim_profundo", "nucleo_selvagem")),
-    ("Cogumelos do tamanho de guarda-chuvas formam um dossel roxo sobre o caminho.", ("nucleo_selvagem",)),
+    (
+        "Fileiras de girassóis voltados para um sol que não está no céu.",
+        ("jardim_profundo", "nucleo_selvagem"),
+        "flor",
+    ),
+    (
+        "Musgo espesso cobre tudo, macio demais, como se quisesse ser tocado.",
+        ("jardim_profundo", "nucleo_selvagem"),
+        None,
+    ),
+    (
+        "Cogumelos do tamanho de guarda-chuvas formam um dossel roxo sobre o caminho.",
+        ("nucleo_selvagem",),
+        "cogumelo",
+    ),
     (
         "Samambaias gigantes, as frondes pingando uma seiva clara e adocicada.",
         ("jardim_profundo", "nucleo_selvagem"),
+        "samambaia",
     ),
-    ("Líquens luminescentes cobrem as pedras, pulsando devagar como uma respiração.", ("nucleo_selvagem",)),
+    ("Líquens luminescentes cobrem as pedras, pulsando devagar como uma respiração.", ("nucleo_selvagem",), None),
     (
         "Um pomar de árvores frutíferas cujos frutos caem já podres, mas ainda perfumados.",
         ("jardim_externo", "jardim_profundo"),
+        "arvore",
     ),
     (
         "Um labirinto de buxo, as paredes verdes altas o suficiente para esconder um cavaleiro montado.",
         ("jardim_externo", "jardim_profundo"),
+        "arbusto",
     ),
     (
         "Videiras carregadas de uvas negras, brilhantes, nenhuma ave por perto para bicá-las.",
         ("jardim_externo", "jardim_profundo"),
+        "videira",
     ),
-    ("Grama que range levemente sob os pés, como vidro moído fino.", ("nucleo_selvagem",)),
-    ("Um gramado formal, cortado em padrões geométricos que se perdem na neblina.", ("jardim_externo",)),
+    ("Grama que range levemente sob os pés, como vidro moído fino.", ("nucleo_selvagem",), None),
+    ("Um gramado formal, cortado em padrões geométricos que se perdem na neblina.", ("jardim_externo",), None),
     (
         "Espinheiros entrelaçados formando um arco sobre o caminho, secos por dentro, vivos por fora.",
         ("jardim_profundo", "nucleo_selvagem"),
+        "espinheiro",
     ),
 ]
 

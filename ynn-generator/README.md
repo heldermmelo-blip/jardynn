@@ -6,10 +6,17 @@ crawl" dividido em camadas que ficam mais estranhas e perigosas conforme se
 avança. As tabelas e o texto aqui são inteiramente originais; nenhum
 conteúdo do livro é reproduzido.
 
-A ideia é, depois de estabilizar as tabelas, ligar cada área a uma planta
-gerada de verdade (malha 3D) usando a biblioteca
-[`gielis-equations`](../gielis-equations), generalizando o que já existe em
-`examples/rpg_plant.py` para outros tipos de vegetação além de árvores.
+## Ligação com gielis-equations (plantas em malha 3D)
+
+Um punhado de entradas em `VEGETATION` (`ynn/tables.py`) têm uma espécie
+de [`gielis.plants`](../gielis-equations/gielis/plants) associada
+(`arvore`, `arbusto`, `espinheiro`, `bambu`, `videira`, `flor`, `cogumelo`
+ou `samambaia`). Quando uma dessas é sorteada, o gerador chama
+`gielis.plants.generate_plant` e salva a malha em
+`output/plantas/camada{N}_area{i}_{especie}.obj` — o caminho aparece
+junto do texto da área. Vegetação de cobertura (gramado, musgo, líquens)
+não tem espécie e continua só texto, sem malha. Veja
+`camada2_com_plantas_exemplo.md` para um exemplo.
 
 ## Ligação com lotfp-rules
 
@@ -22,8 +29,9 @@ gerado — veja `camada3_com_npc_exemplo.md` para um exemplo. Os demais
 denizens (a maioria — animais, objetos, fenômenos) continuam só texto,
 sem ficha.
 
-Isso depende de `lotfp-rules` estar na pasta irmã (`../lotfp-rules`);
-`ynn/generator.py` ajusta o `sys.path` automaticamente para achá-la.
+Ambas as ligações dependem de `lotfp-rules` e `gielis-equations` estarem
+nas pastas irmãs (`../lotfp-rules`, `../gielis-equations`);
+`ynn/generator.py` ajusta o `sys.path` automaticamente para achá-las.
 
 ## Camadas
 

@@ -19,6 +19,8 @@ def render_layer_markdown(layer, areas):
     for area in areas:
         lines.append(f"### Área {area['index']}")
         lines.append(area["text"])
+        if area["planta_obj"] is not None:
+            lines.append(f"*(planta gerada: `{area['planta_obj']}`)*")
         if area["npc"] is not None:
             lines.append("")
             lines.append(render_character(area["npc"]))

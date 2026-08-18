@@ -1,3 +1,4 @@
+import os
 import random
 
 from ynn.generator import band_for_layer, generate_area, generate_layer
@@ -57,3 +58,24 @@ def test_area_without_stated_denizen_has_no_npc():
     area = generate_area(rng, layer=1, index=1)
     if not area["has_denizen"]:
         assert area["npc"] is None
+
+
+def test_vegetation_with_species_produces_plant_mesh():
+    found_plant = False
+    for seed in range(50):
+        area = generate_area(random.Random(seed), layer=1, index=1)
+        if area["planta_obj"] is not None:
+            found_plant = True
+            assert os.path.exists(area["planta_obj"])
+            assert os.path.getsize(area["planta_obj"]) > 0
+    assert found_plant
+
+
+def test_ground_cover_vegetation_has_no_species():
+    from ynn import tables
+
+    ground_cover_entries = [
+        (text, species) for text, bands, species in tables.VEGETATION if "gramado" in text.lower() or "musgo" in text.lower()
+    ]
+    assert ground_cover_entries
+    assert all(species is None for _, species in ground_cover_entries)

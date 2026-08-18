@@ -5,12 +5,18 @@ import sys
 
 from . import tables
 
-_WORKSPACE_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-_LOTFP_PATH = os.path.join(_WORKSPACE_ROOT, "lotfp-rules")
-if _LOTFP_PATH not in sys.path:
-    sys.path.insert(0, _LOTFP_PATH)
+_YNN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_WORKSPACE_ROOT = os.path.dirname(_YNN_ROOT)
+
+for _sibling in ("lotfp-rules", "gielis-equations"):
+    _path = os.path.join(_WORKSPACE_ROOT, _sibling)
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 from lotfp.character import create_character  # noqa: E402
+from gielis.plants import generate_plant as _generate_plant_mesh  # noqa: E402
+
+PLANT_OUTPUT_DIR = os.path.join(_YNN_ROOT, "output", "plantas")
 
 WYRD_CHANCE = {"jardim_externo": 0.10, "jardim_profundo": 0.35, "nucleo_selvagem": 0.65}
 DENIZEN_CHANCE = {"jardim_externo": 0.45, "jardim_profundo": 0.55, "nucleo_selvagem": 0.60}
@@ -42,9 +48,23 @@ def _pick_denizen(rng, band):
     return rng.choice(_denizens_for_band(band))
 
 
+def _vegetation_for_band(band):
+    return [(text, species) for text, bands, species in tables.VEGETATION if bands == "all" or band in bands]
+
+
+def _pick_vegetation(rng, band):
+    return rng.choice(_vegetation_for_band(band))
+
+
 def generate_area(rng, layer, index):
     band = band_for_layer(layer)
-    parts = [_pick(rng, tables.VEGETATION, band)]
+    vegetation_text, vegetation_species = _pick_vegetation(rng, band)
+    parts = [vegetation_text]
+
+    plant_obj_path = None
+    if vegetation_species is not None:
+        out_path = os.path.join(PLANT_OUTPUT_DIR, f"camada{layer}_area{index}_{vegetation_species}.obj")
+        plant_obj_path, _ = _generate_plant_mesh(rng, vegetation_species, out_path=out_path)
 
     if rng.random() < ATMOSPHERE_CHANCE:
         parts.append(_pick(rng, tables.ATMOSPHERE, band))
@@ -75,6 +95,7 @@ def generate_area(rng, layer, index):
         "has_wyrd": wyrd is not None,
         "has_treasure": treasure is not None,
         "npc": npc,
+        "planta_obj": plant_obj_path,
     }
 
 
