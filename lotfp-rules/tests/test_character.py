@@ -31,3 +31,25 @@ def test_specialist_skill_points_are_spent():
     specialist = create_character(random.Random(3), "specialist")
     points_spent = sum(r - SPECIALIST_BASE_RATING for r in specialist["pericias"].values())
     assert points_spent == CLASSES["specialist"]["pontos_pericia_nivel_1"]
+
+
+def test_casters_have_spells_others_dont():
+    from lotfp.spells import SPELL_SLOTS_LEVEL_1
+
+    for class_key in ("magic_user", "cleric"):
+        character = create_character(random.Random(5), class_key)
+        assert len(character["magias_preparadas"]) == SPELL_SLOTS_LEVEL_1[class_key]
+
+    for class_key in ("fighter", "specialist"):
+        character = create_character(random.Random(5), class_key)
+        assert "magias_preparadas" not in character
+
+
+def test_magic_user_grimoire_matches_prepared_spells():
+    magic_user = create_character(random.Random(9), "magic_user")
+    assert magic_user["grimorio"] == magic_user["magias_preparadas"]
+
+
+def test_cleric_has_no_grimoire():
+    cleric = create_character(random.Random(9), "cleric")
+    assert "grimorio" not in cleric

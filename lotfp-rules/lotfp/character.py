@@ -1,6 +1,6 @@
 """Monta um personagem completo de nível 1."""
 
-from . import abilities, classes, equipment, skills
+from . import abilities, classes, equipment, skills, spells
 
 
 def create_character(rng, class_key):
@@ -20,5 +20,11 @@ def create_character(rng, class_key):
 
     if class_key == "specialist":
         character["pericias"] = skills.allocate_skill_points(rng, class_data["pontos_pericia_nivel_1"])
+
+    prepared = spells.prepare_spells(rng, class_key)
+    if prepared:
+        character["magias_preparadas"] = prepared
+        if class_key == "magic_user":
+            character["grimorio"] = list(prepared)
 
     return character

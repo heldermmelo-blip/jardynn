@@ -26,6 +26,14 @@ def render_character(character):
         lines.append("**Perícias**")
         for skill, rating in character["pericias"].items():
             lines.append(f"- {skill}: {rating}-em-6")
+    if "magias_preparadas" in character:
+        lines.append("")
+        lines.append("**Magias preparadas**")
+        for spell in character["magias_preparadas"]:
+            lines.append(f"- {spell['nome']}: {spell['descricao']}")
+        if "grimorio" in character:
+            lines.append("")
+            lines.append("**Grimório:** " + ", ".join(spell["nome"] for spell in character["grimorio"]))
     lines.append("")
     lines.append("**Equipamento inicial**")
     for item, slots in character["equipamento"]:

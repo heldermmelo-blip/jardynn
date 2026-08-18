@@ -17,6 +17,13 @@ de LotFP e ajuste os arquivos indicados antes de usar em mesa.
 | Valor-base das perícias | `lotfp/skills.py` | 1-em-6 geral, 2-em-6 para o Specialist |
 | Equipamento inicial | `lotfp/equipment.py` | lista genérica de itens de aventureiro |
 | Fórmula de limite de carga (slots) | `lotfp/equipment.py` | `10 + max(0, Força - 10)` |
+| Vagas de magia de nível 1 (Magic-User e Cleric) no nível 1 de personagem | `lotfp/spells.py` | 1 vaga para cada |
+
+Os feitiços em `lotfp/spells.py` (nomes e descrições) são **conteúdo
+original**, não uma transcrição da lista de magias do livro — só a
+mecânica (preparar/rezar de véspera, gastar a vaga ao lançar) é a mesma.
+Se quiser fidelidade à lista real de LotFP, substitua as entradas de
+`SPELLS` pelas do livro.
 
 Testes de Resistência (saving throws) e classes/valores de nível >1 ainda
 não foram implementados — ficam para quando decidirmos expandir o módulo
