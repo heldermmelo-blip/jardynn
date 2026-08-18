@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gielis-equations"
+version = "0.1.0"
+description = "Biblioteca das equações de The Geometrical Beauty of Plants (Johan Gielis, 2017)"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.23",
+    "scipy>=1.9",
+]
+
+[project.optional-dependencies]
+examples = ["matplotlib>=3.6"]
+
+[tool.setuptools]
+packages = ["gielis"]
