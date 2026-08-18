@@ -21,6 +21,10 @@ def render_character(character):
     lines.append("")
     lines.append(f"**Pontos de vida:** {character['pontos_de_vida']}")
     lines.append(f"**Bônus de ataque:** +{character['bonus_ataque']}")
+    lines.append("")
+    lines.append("**Testes de Resistência** (rola 1d20, sucesso se >= alvo)")
+    for category, target in character["testes_de_resistencia"].items():
+        lines.append(f"- {category}: {target}+")
     if "pericias" in character:
         lines.append("")
         lines.append("**Perícias**")

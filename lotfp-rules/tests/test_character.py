@@ -53,3 +53,23 @@ def test_magic_user_grimoire_matches_prepared_spells():
 def test_cleric_has_no_grimoire():
     cleric = create_character(random.Random(9), "cleric")
     assert "grimorio" not in cleric
+
+
+def test_all_classes_have_all_save_categories():
+    from lotfp.saves import SAVE_CATEGORIES
+
+    for class_key in CLASSES:
+        character = create_character(random.Random(2), class_key)
+        assert set(character["testes_de_resistencia"].keys()) == set(SAVE_CATEGORIES)
+
+
+def test_roll_save_respects_target():
+    from lotfp.saves import roll_save
+
+    class FixedRng:
+        def randint(self, a, b):
+            return a  # sempre o mínimo possível
+
+    roll, target, success = roll_save(FixedRng(), "fighter", "Paralisia")
+    assert roll == 1
+    assert success is (roll >= target)

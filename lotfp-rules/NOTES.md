@@ -18,13 +18,17 @@ de LotFP e ajuste os arquivos indicados antes de usar em mesa.
 | Equipamento inicial | `lotfp/equipment.py` | lista genérica de itens de aventureiro |
 | Fórmula de limite de carga (slots) | `lotfp/equipment.py` | `10 + max(0, Força - 10)` |
 | Vagas de magia de nível 1 (Magic-User e Cleric) no nível 1 de personagem | `lotfp/spells.py` | 1 vaga para cada |
+| Categorias de Teste de Resistência | `lotfp/saves.py` | Paralisia, Veneno, Sopro, Dispositivos Mágicos, Magia |
+| Valores-alvo de Teste de Resistência no nível 1, por classe | `lotfp/saves.py` | ver `SAVES_LEVEL_1` — cada classe é melhor em 1-2 categorias temáticas (ex. Cleric em Veneno, Magic-User em Magia) |
 
 Os feitiços em `lotfp/spells.py` (nomes e descrições) são **conteúdo
 original**, não uma transcrição da lista de magias do livro — só a
 mecânica (preparar/rezar de véspera, gastar a vaga ao lançar) é a mesma.
 Se quiser fidelidade à lista real de LotFP, substitua as entradas de
-`SPELLS` pelas do livro.
+`SPELLS` pelas do livro. O mesmo vale para `saves.py`: as categorias e os
+valores-alvo são minha melhor estimativa da estrutura do sistema (5
+categorias, cada classe com pontos fortes diferentes), não uma
+transcrição da tabela real do livro.
 
-Testes de Resistência (saving throws) e classes/valores de nível >1 ainda
-não foram implementados — ficam para quando decidirmos expandir o módulo
-além da criação de personagem.
+Classes/valores de nível >1 ainda não foram implementados — ficam para
+quando decidirmos expandir o módulo além do nível 1.

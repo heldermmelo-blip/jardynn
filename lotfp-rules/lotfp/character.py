@@ -1,6 +1,6 @@
 """Monta um personagem completo de nível 1."""
 
-from . import abilities, classes, equipment, skills, spells
+from . import abilities, classes, equipment, saves, skills, spells
 
 
 def create_character(rng, class_key):
@@ -16,6 +16,7 @@ def create_character(rng, class_key):
         "pontos_de_vida": hp,
         "bonus_ataque": class_data["bonus_ataque_nivel_1"],
         "equipamento": list(equipment.STARTING_EQUIPMENT),
+        "testes_de_resistencia": dict(saves.SAVES_LEVEL_1[class_key]),
     }
 
     if class_key == "specialist":
