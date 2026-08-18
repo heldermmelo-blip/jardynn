@@ -39,3 +39,21 @@ def test_generate_area_text_is_nonempty():
     area = generate_area(rng, layer=1, index=1)
     assert isinstance(area["text"], str)
     assert len(area["text"]) > 0
+
+
+def test_denizen_with_class_produces_npc_stats():
+    found_npc = False
+    for seed in range(200):
+        area = generate_area(random.Random(seed), layer=3, index=1)
+        if area["npc"] is not None:
+            found_npc = True
+            assert area["npc"]["pontos_de_vida"] >= 1
+            assert area["has_denizen"] is True
+    assert found_npc
+
+
+def test_area_without_stated_denizen_has_no_npc():
+    rng = random.Random(2)
+    area = generate_area(rng, layer=1, index=1)
+    if not area["has_denizen"]:
+        assert area["npc"] is None

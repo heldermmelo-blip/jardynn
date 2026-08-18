@@ -5,6 +5,12 @@ qualquer camada) ou uma tupla com as bandas em que pode aparecer:
 `"jardim_externo"` (camadas 1-2), `"jardim_profundo"` (camadas 3-4) ou
 `"nucleo_selvagem"` (camada 5+).
 
+`DENIZENS` tem um terceiro campo, `classe`: `None` para encontros sem
+estatísticas (a maioria — animais, objetos, fenômenos), ou a chave de uma
+classe de `lotfp-rules` (`"fighter"`, `"specialist"`, `"magic_user"`,
+`"cleric"`) para os poucos denizens humanoides que viram um NPC jogável
+completo.
+
 Conteúdo original, inspirado apenas na estrutura de geração por tabelas de
 The Gardens of Ynn — nenhum texto do livro é reproduzido aqui.
 """
@@ -98,37 +104,63 @@ FEATURES = [
 ]
 
 DENIZENS = [
+    # (texto, bandas, classe LotFP se for um NPC humanoide jogável — ver lotfp-rules)
     (
         "um jardineiro curvado sobre um canteiro, que não ergue os olhos quando questionado, "
         "apenas continua podando algo que já não tem folhas",
         "all",
+        "specialist",
     ),
-    ("um bando de pássaros brancos, silenciosos, que pousam todos ao mesmo tempo e observam", "all"),
-    ("uma estátua que os personagens têm certeza de já ter visto em outra pose", "all"),
-    ("um enxame de mariposas do tamanho de mãos, pousando em qualquer luz disponível", "all"),
-    ("um par de luvas de jardinagem, sozinhas sobre um banco, ainda com o formato de mãos dentro delas", "all"),
+    ("um bando de pássaros brancos, silenciosos, que pousam todos ao mesmo tempo e observam", "all", None),
+    ("uma estátua que os personagens têm certeza de já ter visto em outra pose", "all", None),
+    ("um enxame de mariposas do tamanho de mãos, pousando em qualquer luz disponível", "all", None),
+    (
+        "um par de luvas de jardinagem, sozinhas sobre um banco, ainda com o formato de mãos dentro delas",
+        "all",
+        None,
+    ),
     (
         "um cervo de galhada excessiva, mais galhos do que deveria ser fisicamente possível, parado imóvel",
         ("jardim_profundo", "nucleo_selvagem"),
+        None,
     ),
     (
         "uma criança rindo em algum lugar próximo, embora nenhuma criança seja encontrada",
         ("jardim_profundo", "nucleo_selvagem"),
+        None,
     ),
     (
         "algo grande se movendo logo abaixo da superfície de um gramado bem cuidado demais",
         ("jardim_profundo", "nucleo_selvagem"),
+        None,
     ),
     (
         "uma voz educada vinda de trás de uma cerca-viva, convidando para chá em algum lugar que não existe no mapa",
         ("jardim_externo", "jardim_profundo"),
+        None,
     ),
-    ("um gato preto sem rosto que anda em círculos perfeitos ao redor de um ponto fixo", ("nucleo_selvagem",)),
+    ("um gato preto sem rosto que anda em círculos perfeitos ao redor de um ponto fixo", ("nucleo_selvagem",), None),
     (
         "um grupo de estátuas de jardim reorganizadas em uma formação que parece deliberada",
         ("jardim_profundo", "nucleo_selvagem"),
+        None,
     ),
-    ("um som de tesoura de poda, rítmico, vindo de todas as direções ao mesmo tempo", ("nucleo_selvagem",)),
+    ("um som de tesoura de poda, rítmico, vindo de todas as direções ao mesmo tempo", ("nucleo_selvagem",), None),
+    (
+        "um viajante exausto, sentado à sombra de uma cerca-viva, que jura estar aqui há poucos minutos",
+        ("jardim_externo", "jardim_profundo"),
+        "fighter",
+    ),
+    (
+        "uma clériga solitária de véu rasgado, murmurando orações para uma estátua que não é de nenhum deus conhecido",
+        ("jardim_profundo", "nucleo_selvagem"),
+        "cleric",
+    ),
+    (
+        "um estudioso de olhos vidrados, anotando compulsivamente em um caderno encharcado que nunca seca",
+        ("jardim_profundo", "nucleo_selvagem"),
+        "magic_user",
+    ),
 ]
 
 WYRD = [

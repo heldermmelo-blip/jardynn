@@ -6,10 +6,24 @@ crawl" dividido em camadas que ficam mais estranhas e perigosas conforme se
 avança. As tabelas e o texto aqui são inteiramente originais; nenhum
 conteúdo do livro é reproduzido.
 
-Por ora só gera texto. A ideia é, depois de estabilizar as tabelas, ligar
-cada área a uma planta gerada de verdade (malha 3D) usando a biblioteca
+A ideia é, depois de estabilizar as tabelas, ligar cada área a uma planta
+gerada de verdade (malha 3D) usando a biblioteca
 [`gielis-equations`](../gielis-equations), generalizando o que já existe em
 `examples/rpg_plant.py` para outros tipos de vegetação além de árvores.
+
+## Ligação com lotfp-rules
+
+Um punhado de entradas em `DENIZENS` (`ynn/tables.py`) são humanoides e
+têm uma classe de LotFP associada (`fighter`, `specialist`, `magic_user`
+ou `cleric`). Quando uma dessas é sorteada, o gerador chama
+[`lotfp-rules`](../lotfp-rules) (`lotfp.character.create_character`) e
+anexa uma ficha de nível 1 completa logo abaixo da área no Markdown
+gerado — veja `camada3_com_npc_exemplo.md` para um exemplo. Os demais
+denizens (a maioria — animais, objetos, fenômenos) continuam só texto,
+sem ficha.
+
+Isso depende de `lotfp-rules` estar na pasta irmã (`../lotfp-rules`);
+`ynn/generator.py` ajusta o `sys.path` automaticamente para achá-la.
 
 ## Camadas
 

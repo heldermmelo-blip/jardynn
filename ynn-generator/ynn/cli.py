@@ -7,8 +7,10 @@ Uso:
 import argparse
 import random
 
-from .generator import generate_layer
+from .generator import generate_layer  # importa antes: garante lotfp-rules no sys.path
 from .tables import BAND_LABELS
+
+from lotfp.cli import render_character
 
 
 def render_layer_markdown(layer, areas):
@@ -17,6 +19,9 @@ def render_layer_markdown(layer, areas):
     for area in areas:
         lines.append(f"### Área {area['index']}")
         lines.append(area["text"])
+        if area["npc"] is not None:
+            lines.append("")
+            lines.append(render_character(area["npc"]))
         lines.append("")
     return "\n".join(lines)
 
