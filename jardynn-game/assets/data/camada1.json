@@ -1,0 +1,80 @@
+{
+  "layer": 1,
+  "areas": [
+    {
+      "index": 1,
+      "layer": 1,
+      "band": "jardim_externo",
+      "text": "Roseiras selvagens avançam sobre o caminho, os espinhos do tamanho de adagas. Aqui há uma fonte de pedra, seca há muito tempo, com uma estátua no centro que já não se sabe representar o quê. Você nota um par de luvas de jardinagem, sozinhas sobre um banco, ainda com o formato de mãos dentro delas.",
+      "has_denizen": true,
+      "has_wyrd": false,
+      "has_treasure": false,
+      "npc": null,
+      "criatura": {
+        "nome": "Par de Luvas Animadas",
+        "ca": 14,
+        "dv": "1d6",
+        "movimento": "rastejante, rápido em curtas distâncias",
+        "ataques": [
+          [
+            "estrangulamento",
+            "1d4"
+          ]
+        ],
+        "resistencia": 13,
+        "moral": 9,
+        "especial": "Preferem agarrar o pescoço por trás; soltam-se se atingidas duas vezes seguidas.",
+        "pontos_de_vida": 2
+      },
+      "planta_obj": "../jardynn-game/assets/plants\\camada1_area1_espinheiro.obj"
+    },
+    {
+      "index": 2,
+      "layer": 1,
+      "band": "jardim_externo",
+      "text": "Um caniçal denso sussurra mesmo sem vento. Aqui há um banco de pedra com um nome gravado, as letras já quase ilegíveis. Entre a vegetação, há um medalhão de bronze verde-oxidado, gravado com um jardim que não é este, preso entre as raízes de uma árvore.",
+      "has_denizen": false,
+      "has_wyrd": false,
+      "has_treasure": true,
+      "npc": null,
+      "criatura": null,
+      "planta_obj": "../jardynn-game/assets/plants\\camada1_area2_bambu.obj"
+    },
+    {
+      "index": 3,
+      "layer": 1,
+      "band": "jardim_externo",
+      "text": "Um campo de tulipas em cores que não deveriam existir juntas. Um vento fraco carrega um cheiro de terra recém-revirada. Aqui há um banco de pedra com um nome gravado, as letras já quase ilegíveis.",
+      "has_denizen": false,
+      "has_wyrd": false,
+      "has_treasure": false,
+      "npc": null,
+      "criatura": null,
+      "planta_obj": "../jardynn-game/assets/plants\\camada1_area3_flor.obj"
+    },
+    {
+      "index": 4,
+      "layer": 1,
+      "band": "jardim_externo",
+      "text": "Um campo de tulipas em cores que não deveriam existir juntas. Aqui há uma fileira de bustos de mármore, os rostos apagados pelo tempo ou por algo menos gentil.",
+      "has_denizen": false,
+      "has_wyrd": false,
+      "has_treasure": false,
+      "npc": null,
+      "criatura": null,
+      "planta_obj": "../jardynn-game/assets/plants\\camada1_area4_flor.obj"
+    },
+    {
+      "index": 5,
+      "layer": 1,
+      "band": "jardim_externo",
+      "text": "Trepadeiras com flores que se fecham lentamente quando alguém se aproxima. O ar tem um leve gosto de metal. Aqui há um portão de ferro entre duas colunas, sem cerca nos dois lados — ainda assim, parece errado passar por fora dele. Uma segunda sombra aparece ao lado de cada personagem, na direção errada para a luz disponível.",
+      "has_denizen": false,
+      "has_wyrd": true,
+      "has_treasure": false,
+      "npc": null,
+      "criatura": null,
+      "planta_obj": "../jardynn-game/assets/plants\\camada1_area5_videira.obj"
+    }
+  ]
+}

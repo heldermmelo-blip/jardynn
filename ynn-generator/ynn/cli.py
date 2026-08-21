@@ -5,6 +5,7 @@ Uso:
 """
 
 import argparse
+import json
 import random
 
 from .generator import generate_layer  # importa antes: garante lotfp-rules no sys.path
@@ -50,12 +51,25 @@ def main(argv=None):
     parser.add_argument("--layer", type=int, default=1, help="Número da camada (profundidade)")
     parser.add_argument("--areas", type=int, default=5, help="Quantidade de áreas a gerar")
     parser.add_argument("--seed", type=int, default=None, help="Seed para reprodutibilidade")
-    parser.add_argument("--output", type=str, default=None, help="Arquivo de saída (.md); padrão imprime no terminal")
+    parser.add_argument(
+        "--json", action="store_true", help="Gera JSON em vez de Markdown (para consumo por outras ferramentas, ex. Godot)"
+    )
+    parser.add_argument("--output", type=str, default=None, help="Arquivo de saída; padrão imprime no terminal")
+    parser.add_argument(
+        "--plant-output-dir",
+        type=str,
+        default=None,
+        help="Pasta onde salvar as malhas .obj das plantas (padrão: ynn-generator/output/plantas)",
+    )
     args = parser.parse_args(argv)
 
     rng = random.Random(args.seed)
-    areas = generate_layer(rng, args.layer, args.areas)
-    output = render_layer_markdown(args.layer, areas)
+    areas = generate_layer(rng, args.layer, args.areas, plant_output_dir=args.plant_output_dir)
+    output = (
+        json.dumps({"layer": args.layer, "areas": areas}, ensure_ascii=False, indent=2)
+        if args.json
+        else render_layer_markdown(args.layer, areas)
+    )
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:

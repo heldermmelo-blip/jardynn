@@ -5,6 +5,7 @@ Uso:
 """
 
 import argparse
+import json
 import random
 
 from .character import create_character
@@ -49,11 +50,20 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Gerador de personagem de nível 1 (LotFP)")
     parser.add_argument("--classe", choices=list(CLASSES.keys()), default="fighter")
     parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--json", action="store_true", help="Gera JSON em vez de Markdown (para consumo por outras ferramentas, ex. Godot)")
+    parser.add_argument("--output", type=str, default=None, help="Arquivo de saída; padrão imprime no terminal")
     args = parser.parse_args(argv)
 
     rng = random.Random(args.seed)
     character = create_character(rng, args.classe)
-    print(render_character(character))
+    output = json.dumps(character, ensure_ascii=False, indent=2) if args.json else render_character(character)
+
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as f:
+            f.write(output)
+        print(f"salvo em: {args.output}")
+    else:
+        print(output)
 
 
 if __name__ == "__main__":

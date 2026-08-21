@@ -62,14 +62,15 @@ def _pick_vegetation(rng, band):
     return rng.choice(_vegetation_for_band(band))
 
 
-def generate_area(rng, layer, index):
+def generate_area(rng, layer, index, plant_output_dir=None):
     band = band_for_layer(layer)
     vegetation_text, vegetation_species = _pick_vegetation(rng, band)
     parts = [vegetation_text]
 
     plant_obj_path = None
     if vegetation_species is not None:
-        out_path = os.path.join(PLANT_OUTPUT_DIR, f"camada{layer}_area{index}_{vegetation_species}.obj")
+        out_dir = plant_output_dir or PLANT_OUTPUT_DIR
+        out_path = os.path.join(out_dir, f"camada{layer}_area{index}_{vegetation_species}.obj")
         plant_obj_path, _ = _generate_plant_mesh(rng, vegetation_species, out_path=out_path)
 
     if rng.random() < ATMOSPHERE_CHANCE:
@@ -108,5 +109,5 @@ def generate_area(rng, layer, index):
     }
 
 
-def generate_layer(rng, layer, n_areas):
-    return [generate_area(rng, layer, i + 1) for i in range(n_areas)]
+def generate_layer(rng, layer, n_areas, plant_output_dir=None):
+    return [generate_area(rng, layer, i + 1, plant_output_dir=plant_output_dir) for i in range(n_areas)]
