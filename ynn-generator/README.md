@@ -45,6 +45,20 @@ corpo, o som de tesoura sem origem) não tem ficha nenhuma — são
 deliberadamente só atmosfera. Veja `camada5_com_criaturas_exemplo.md`
 para um exemplo.
 
+## Relevo (descritor de localidade)
+
+Cada camada sorteia, uma única vez, um "descritor de localidade" em
+[`ynn/tables.py`](ynn/tables.py) (`LOCALIDADE`) — texto original que também
+carrega um `tipo_relevo` (`plano`, `leve`, `acentuado` ou `irregular`).
+[`ynn/terrain.py`](ynn/terrain.py) usa esse tipo pra gerar uma grade
+quadrada de pontos com altura (heightmap): `plano` fica toda em zero, os
+demais usam o algoritmo diamond-square (determinístico a partir do `rng`,
+sem depender de numpy) com amplitude crescente. O resultado (`terreno` no
+JSON, com `descricao`, `tipo_relevo`, `resolucao`, `tamanho_celula` e
+`alturas`) é consumido pelo `jardynn-game` para montar a malha 3D do chão
+e apoiar as plantas na altura certa — veja `--terrain-resolution` e
+`--terrain-cell-size` em `python -m ynn.cli --help`.
+
 ## Camadas
 
 - **Camadas 1-2 — Jardim Externo**: ainda reconhecível, mas já fora do

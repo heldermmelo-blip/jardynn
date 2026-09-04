@@ -3,7 +3,7 @@
 import os
 import sys
 
-from . import tables
+from . import tables, terrain
 
 _YNN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _WORKSPACE_ROOT = os.path.dirname(_YNN_ROOT)
@@ -111,3 +111,8 @@ def generate_area(rng, layer, index, plant_output_dir=None):
 
 def generate_layer(rng, layer, n_areas, plant_output_dir=None):
     return [generate_area(rng, layer, i + 1, plant_output_dir=plant_output_dir) for i in range(n_areas)]
+
+
+def generate_terreno(rng, layer, resolution=9, cell_size=2.0):
+    band = band_for_layer(layer)
+    return terrain.generate_terrain(rng, band, resolution=resolution, cell_size=cell_size)

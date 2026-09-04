@@ -21,6 +21,12 @@ para gerar) ou a chave de uma espécie de `gielis.plants` (`"arvore"`,
 `"cogumelo"`, `"samambaia"`), que vira uma malha 3D (.obj) real da planta
 dominante daquela área.
 
+`LOCALIDADE` descreve o relevo da camada inteira (o "descritor de
+localidade" sorteado uma vez por nível) e tem um terceiro campo,
+`tipo_relevo`: `"plano"`, `"leve"`, `"acentuado"` ou `"irregular"` — usado
+por `ynn.terrain.generate_terrain` para decidir a amplitude do heightmap
+gerado para aquela camada.
+
 Conteúdo original, inspirado apenas na estrutura de geração por tabelas de
 The Gardens of Ynn — nenhum texto do livro é reproduzido aqui.
 """
@@ -295,4 +301,24 @@ ATMOSPHERE = [
     ("O silêncio aqui pesa mais do que deveria.", ("jardim_profundo", "nucleo_selvagem")),
     ("Um vento fraco carrega um cheiro de terra recém-revirada.", "all"),
     ("A luz do dia parece mais fraca aqui do que no resto do jardim, sem que nada bloqueie o céu.", ("nucleo_selvagem",)),
+]
+
+LOCALIDADE = [
+    # (texto, bandas, tipo_relevo) — tipo_relevo em "plano", "leve", "acentuado" ou "irregular";
+    # consumido por `ynn.terrain.generate_terrain` pra decidir a amplitude do heightmap da camada.
+    ("Um terreno nivelado, quase artificial de tão uniforme, como se tivesse sido nivelado a régua.", "all", "plano"),
+    ("Um gramado plano cortado por trilhas de cascalho, sem um único desnível perceptível.", ("jardim_externo",), "plano"),
+    ("O chão ondula suavemente, como respirando devagar.", "all", "leve"),
+    ("Pequenos montes de terra revirada quebram a uniformidade do solo em intervalos regulares demais para ser natural.", ("jardim_externo", "jardim_profundo"), "leve"),
+    ("Terraços de pedra baixos dividem o terreno em patamares levemente desalinhados entre si.", ("jardim_externo", "jardim_profundo"), "leve"),
+    ("Colinas abruptas se erguem sem aviso, como se o chão tivesse sido amassado por uma mão gigante.", ("jardim_profundo", "nucleo_selvagem"), "acentuado"),
+    ("O solo sobe e desce em ondas profundas demais para as árvores que crescem nele parecerem naturais.", ("jardim_profundo", "nucleo_selvagem"), "acentuado"),
+    ("Uma ravina serpenteia por toda a extensão visível, as bordas cobertas de raízes expostas.", ("jardim_profundo", "nucleo_selvagem"), "acentuado"),
+    ("O terreno se dobra em ângulos que não deveriam sustentar o peso da vegetação que carregam.", ("nucleo_selvagem",), "irregular"),
+    ("Crateras rasas se sobrepõem umas às outras, formando um relevo que parece ter fervido e endurecido.", ("nucleo_selvagem",), "irregular"),
+    ("Cada passo muda a altura do chão sob os pés de um jeito que a vista não consegue acompanhar.", ("nucleo_selvagem",), "irregular"),
+    ("Um trecho do chão se curva para cima contra o que deveria ser possível, e a vegetação ali cresce apontando para o lugar errado.", ("nucleo_selvagem",), "irregular"),
+    ("Placas inteiras de terra flutuam a pouca altura do resto do solo, presas a ele só por raízes esticadas ao limite.", ("nucleo_selvagem",), "irregular"),
+    ("Uma fenda estreita corta o caminho ao meio, funda demais para se enxergar o fundo, sem nenhuma ponte à vista.", ("jardim_profundo", "nucleo_selvagem"), "acentuado"),
+    ("Placas de pedra soltas cobrem o chão irregular, cada uma balançando de leve sob o peso de quem pisa.", ("jardim_profundo", "nucleo_selvagem"), "acentuado"),
 ]

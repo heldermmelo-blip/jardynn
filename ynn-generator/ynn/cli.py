@@ -8,7 +8,7 @@ import argparse
 import json
 import random
 
-from .generator import generate_layer  # importa antes: garante lotfp-rules no sys.path
+from .generator import generate_layer, generate_terreno  # importa antes: garante lotfp-rules no sys.path
 from .tables import BAND_LABELS
 
 from lotfp.cli import render_character
@@ -26,9 +26,12 @@ def render_creature(creature):
     return "\n".join(lines)
 
 
-def render_layer_markdown(layer, areas):
+def render_layer_markdown(layer, areas, terreno=None):
     band_label = BAND_LABELS[areas[0]["band"]] if areas else ""
     lines = [f"## Camada {layer} — {band_label}", ""]
+    if terreno is not None:
+        lines.append(f"**Relevo** ({terreno['tipo_relevo']}): {terreno['descricao']}")
+        lines.append("")
     for area in areas:
         lines.append(f"### Área {area['index']}")
         lines.append(area["text"])
@@ -61,14 +64,27 @@ def main(argv=None):
         default=None,
         help="Pasta onde salvar as malhas .obj das plantas (padrão: ynn-generator/output/plantas)",
     )
+    parser.add_argument(
+        "--terrain-resolution",
+        type=int,
+        default=9,
+        help="Resolução da grade de relevo (pontos por lado; arredondada para 2^n + 1, padrão 9)",
+    )
+    parser.add_argument(
+        "--terrain-cell-size",
+        type=float,
+        default=2.0,
+        help="Distância entre pontos adjacentes da grade de relevo, em unidades do mundo (padrão 2.0)",
+    )
     args = parser.parse_args(argv)
 
     rng = random.Random(args.seed)
+    terreno = generate_terreno(rng, args.layer, resolution=args.terrain_resolution, cell_size=args.terrain_cell_size)
     areas = generate_layer(rng, args.layer, args.areas, plant_output_dir=args.plant_output_dir)
     output = (
-        json.dumps({"layer": args.layer, "areas": areas}, ensure_ascii=False, indent=2)
+        json.dumps({"layer": args.layer, "terreno": terreno, "areas": areas}, ensure_ascii=False, indent=2)
         if args.json
-        else render_layer_markdown(args.layer, areas)
+        else render_layer_markdown(args.layer, areas, terreno=terreno)
     )
 
     if args.output:

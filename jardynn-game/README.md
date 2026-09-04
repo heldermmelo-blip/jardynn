@@ -31,10 +31,12 @@ python -m ynn.cli --layer 1 --areas 5 --seed 42 --json \
     --plant-output-dir ../jardynn-game/assets/plants
 ```
 
-- `--json` faz o gerador emitir dados estruturados (camada, áreas, NPCs,
-  criaturas, caminho da planta) em vez do Markdown normal.
+- `--json` faz o gerador emitir dados estruturados (camada, terreno, áreas,
+  NPCs, criaturas, caminho da planta) em vez do Markdown normal.
 - `--plant-output-dir` faz as malhas `.obj` das plantas serem salvas direto
   dentro do projeto Godot.
+- `--terrain-resolution`/`--terrain-cell-size` ajustam a grade de relevo
+  (`terreno.alturas` no JSON) — ver seção **Relevo** abaixo.
 
 Fichas de personagem avulsas (OSE ou LotFP) também podem ser exportadas em
 JSON do mesmo jeito:
@@ -43,6 +45,16 @@ JSON do mesmo jeito:
 cd ose-rules
 python -m ose.cli --classe fighter --seed 7 --json --output ../jardynn-game/assets/data/personagem.json
 ```
+
+## Relevo
+
+Cada camada tem um `terreno` sorteado uma única vez (o "descritor de
+localidade", `ynn.tables.LOCALIDADE`), que decide se o relevo é plano ou
+varia — e o quanto — via uma grade de pontos com altura (`terreno.alturas`,
+`resolucao` x `resolucao`, espaçados por `tamanho_celula`), gerada com o
+algoritmo diamond-square em `ynn.terrain`. `Main.gd` monta essa grade como
+uma malha triangulada (`SurfaceTool`) e usa a mesma grade, por interpolação
+bilinear, para apoiar cada planta na altura correta do terreno.
 
 ## Abrindo no Godot
 
