@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/FreeLookCamera.gd" id="2_free_look_camera"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
@@ -12,3 +13,4 @@ shadow_enabled = true
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 8, 6, 12)
 current = true
+script = ExtResource("2_free_look_camera")

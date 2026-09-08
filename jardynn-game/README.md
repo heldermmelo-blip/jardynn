@@ -65,7 +65,9 @@ bilinear, para apoiar cada planta na altura correta do terreno.
    depois que o editor gerou o `.import` correspondente).
 2. Rode a cena `scenes/Main.tscn` (F6). As plantas da camada aparecem
    enfileiradas na cena, e o texto de cada área, além de NPCs e criaturas,
-   é impresso no painel **Output**.
+   é impresso no painel **Output**. A câmera é livre (`FreeLookCamera.gd`):
+   segure o botão direito do mouse pra olhar em volta, WASD pra mover,
+   Q/E pra descer/subir, Shift pra acelerar.
 3. Para ver uma camada diferente, gere um novo JSON (seção acima),
    aponte `layer_json_path` no inspetor do nó `Main` para o novo arquivo
    (ou sobrescreva `camada1.json`) e rode de novo.
