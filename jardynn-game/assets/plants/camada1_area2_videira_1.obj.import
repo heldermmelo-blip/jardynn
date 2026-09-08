@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://blivvoyuum1s5"
+path="res://.godot/imported/camada1_area2_videira_1.obj-3b7407c7cce1f4e223bb71c0a3d5e81f.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada1_area2_videira_1.obj-3b7407c7cce1f4e223bb71c0a3d5e81f.mesh"]
+
+source_file="res://assets/plants/camada1_area2_videira_1.obj"
+dest_files=["res://.godot/imported/camada1_area2_videira_1.obj-3b7407c7cce1f4e223bb71c0a3d5e81f.mesh", "res://.godot/imported/camada1_area2_videira_1.obj-3b7407c7cce1f4e223bb71c0a3d5e81f.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

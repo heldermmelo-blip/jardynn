@@ -66,7 +66,11 @@ def tube_mesh(segment, n_sides=10, cross_section_n=2.0):
 
 def write_obj(path, parts):
     """`parts` é uma lista de (vertices Nx3, faces Mx3) já em coordenadas
-    mundiais. Escreve um único arquivo .obj combinando todas as partes."""
+    mundiais, no eixo de crescimento Z (convenção do esqueleto em
+    `skeleton.py`, `direction=(0, 0, 1)`). Escreve um único .obj combinando
+    todas as partes, remapeando Z-up (interno) para Y-up (convenção de
+    motores de jogo como o Godot) via rotação de -90° em X: (x, y, z) ->
+    (x, z, -y) — uma rotação própria, preserva o sentido das faces."""
     with open(path, "w") as f:
         offset = 0
         for idx, (vertices, faces) in enumerate(parts):
@@ -74,7 +78,7 @@ def write_obj(path, parts):
                 continue
             f.write(f"o part_{idx}\n")
             for vx, vy, vz in vertices:
-                f.write(f"v {vx:.6f} {vy:.6f} {vz:.6f}\n")
+                f.write(f"v {vx:.6f} {vz:.6f} {-vy:.6f}\n")
             for face in faces:
                 a, b, c = face + offset + 1  # .obj é indexado a partir de 1
                 f.write(f"f {a} {b} {c}\n")

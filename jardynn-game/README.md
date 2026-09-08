@@ -86,7 +86,7 @@ bilinear, para apoiar cada planta na altura correta do terreno.
 - NPCs e criaturas são só impressos, não instanciados como personagens no
   mundo 3D — os dados (atributos, PV, ataques etc.) já vêm prontos do JSON
   para quando isso for implementado.
-- `--plant-output-dir` grava o caminho completo do lado Python no campo
-  `planta_obj` do JSON; `Main.gd` extrai só o nome do arquivo e busca em
-  `res://assets/plants/`, então o projeto continua funcionando mesmo que o
-  caminho absoluto mude entre máquinas.
+- `--plant-output-dir` grava o caminho completo do lado Python em cada
+  entrada de `plantas_obj` no JSON; `Main.gd` extrai só o nome do arquivo
+  e busca em `res://assets/plants/`, então o projeto continua funcionando
+  mesmo que o caminho absoluto mude entre máquinas.
