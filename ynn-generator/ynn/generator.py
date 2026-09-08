@@ -25,6 +25,12 @@ DENIZEN_CHANCE = {"jardim_externo": 0.45, "jardim_profundo": 0.55, "nucleo_selva
 TREASURE_CHANCE = {"jardim_externo": 0.15, "jardim_profundo": 0.22, "nucleo_selvagem": 0.30}
 ATMOSPHERE_CHANCE = 0.4
 
+# Um jardim de verdade não tem uma planta solitária por área — gera alguns
+# exemplares variados da espécie dominante (mesma espécie, formas
+# diferentes a cada chamada de `_generate_plant_mesh` pelo `rng` seguir
+# andando); a densidade exata varia de área pra área.
+PLANT_VARIANT_RANGE = (3, 6)
+
 
 def band_for_layer(layer):
     if layer <= 2:
@@ -67,11 +73,14 @@ def generate_area(rng, layer, index, plant_output_dir=None):
     vegetation_text, vegetation_species = _pick_vegetation(rng, band)
     parts = [vegetation_text]
 
-    plant_obj_path = None
+    plant_obj_paths = []
     if vegetation_species is not None:
         out_dir = plant_output_dir or PLANT_OUTPUT_DIR
-        out_path = os.path.join(out_dir, f"camada{layer}_area{index}_{vegetation_species}.obj")
-        plant_obj_path, _ = _generate_plant_mesh(rng, vegetation_species, out_path=out_path)
+        n_variants = rng.randint(*PLANT_VARIANT_RANGE)
+        for variant in range(1, n_variants + 1):
+            out_path = os.path.join(out_dir, f"camada{layer}_area{index}_{vegetation_species}_{variant}.obj")
+            path, _ = _generate_plant_mesh(rng, vegetation_species, out_path=out_path)
+            plant_obj_paths.append(path)
 
     if rng.random() < ATMOSPHERE_CHANCE:
         parts.append(_pick(rng, tables.ATMOSPHERE, band))
@@ -105,7 +114,7 @@ def generate_area(rng, layer, index, plant_output_dir=None):
         "has_treasure": treasure is not None,
         "npc": npc,
         "criatura": creature,
-        "planta_obj": plant_obj_path,
+        "plantas_obj": plant_obj_paths,
     }
 
 

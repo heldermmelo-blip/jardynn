@@ -2,8 +2,9 @@ extends Node3D
 
 ## Carrega uma camada gerada pelo pipeline Python (`ynn-generator --json`) e
 ## instancia na cena o relevo (grade de pontos com altura, ver `terreno` no
-## JSON) e as plantas (.obj) de cada área sobre ele, além de imprimir no
-## console o texto descritivo e as fichas de NPCs/criaturas encontradas.
+## JSON) e as plantas (.obj, várias variantes por área — ver `plantas_obj`)
+## espalhadas sobre ele, além de imprimir no console o texto descritivo e as
+## fichas de NPCs/criaturas encontradas.
 ##
 ## Para gerar novos dados (a partir da raiz do repositório):
 ##   cd ynn-generator
@@ -15,6 +16,9 @@ extends Node3D
 @export var layer_json_path: String = "res://assets/data/camada1.json"
 @export var plants_dir: String = "res://assets/plants/"
 @export var area_spacing: float = 4.0
+@export var scatter_radius: float = 1.5
+@export var min_instances_per_variant: int = 2
+@export var max_instances_per_variant: int = 5
 
 func _ready() -> void:
 	var layer_data = _load_json(layer_json_path)
@@ -54,12 +58,16 @@ func _spawn_area(area: Dictionary, index: int, terreno) -> void:
 	if creature != null:
 		print("Criatura: %s (CA %s, DV %s, PV %s)" % [creature.get("nome"), creature.get("ca"), creature.get("dv"), creature.get("pontos_de_vida")])
 
-	var plant_path = area.get("planta_obj")
-	if plant_path != null and plant_path != "":
-		_spawn_plant(plant_path, index, terreno)
+	var plant_paths = area.get("plantas_obj", [])
+	for plant_path in plant_paths:
+		_spawn_plant_cluster(plant_path, index, terreno)
 
 
-func _spawn_plant(source_path: String, index: int, terreno) -> void:
+## Espalha várias cópias de uma malha de planta (uma das variantes de
+## `plantas_obj`) ao redor da posição da área, num raio `scatter_radius`,
+## cada uma com rotação e escala levemente diferentes — um jardim de
+## verdade não tem uma única planta isolada por canteiro.
+func _spawn_plant_cluster(source_path: String, index: int, terreno) -> void:
 	# `source_path` vem do JSON como um caminho de arquivo do lado Python
 	# (pode usar "\" no Windows); só o nome do arquivo importa aqui, pois a
 	# malha já foi gerada dentro de `plants_dir` por este mesmo pipeline.
@@ -71,13 +79,25 @@ func _spawn_plant(source_path: String, index: int, terreno) -> void:
 		push_warning("Malha não encontrada (reimporte o projeto no editor após gerar os .obj): %s" % res_path)
 		return
 
-	var x = index * area_spacing
-	var y = _height_at(terreno, x, 0.0) if terreno != null else 0.0
+	var base_x = index * area_spacing
+	var instance_count = randi_range(min_instances_per_variant, max_instances_per_variant)
 
-	var mesh_instance = MeshInstance3D.new()
-	mesh_instance.mesh = mesh
-	mesh_instance.position = Vector3(x, y, 0)
-	add_child(mesh_instance)
+	var multimesh = MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.mesh = mesh
+	multimesh.instance_count = instance_count
+
+	for i in instance_count:
+		var x = base_x + randf_range(-scatter_radius, scatter_radius)
+		var z = randf_range(-scatter_radius, scatter_radius)
+		var y = _height_at(terreno, x, z) if terreno != null else 0.0
+
+		var basis = Basis(Vector3.UP, randf_range(0.0, TAU)).scaled(Vector3.ONE * randf_range(0.8, 1.2))
+		multimesh.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
+
+	var multimesh_instance = MultiMeshInstance3D.new()
+	multimesh_instance.multimesh = multimesh
+	add_child(multimesh_instance)
 
 
 ## Monta a malha triangulada do relevo a partir da grade de alturas

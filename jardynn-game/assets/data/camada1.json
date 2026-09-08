@@ -133,123 +133,109 @@
         "especial": "Não recuam de verdade — se dispersam e voltam a pousar juntos a poucos metros de distância, observando de novo.",
         "pontos_de_vida": 1
       },
-      "planta_obj": null
+      "plantas_obj": []
     },
     {
       "index": 2,
       "layer": 1,
       "band": "jardim_externo",
-      "text": "Trepadeiras com flores que se fecham lentamente quando alguém se aproxima. Aqui há um pequeno cemitério de bichos de estimação, lápides do tamanho de uma mão, uma delas visivelmente recente. Você nota um arbusto podado em forma de pessoa que baixa os galhos numa reverência sempre que alguém passa perto.",
-      "has_denizen": true,
+      "text": "Trepadeiras com flores que se fecham lentamente quando alguém se aproxima. Um vento fraco carrega um cheiro de terra recém-revirada. Aqui há um banco de pedra com um nome gravado, as letras já quase ilegíveis.",
+      "has_denizen": false,
       "has_wyrd": false,
       "has_treasure": false,
       "npc": null,
-      "criatura": {
-        "nome": "Topiária Ambulante",
-        "ca": 14,
-        "dv": "3d8",
-        "movimento": "lento, mas constante",
-        "ataques": [
-          [
-            "chicotada de galhos",
-            "1d6"
-          ]
-        ],
-        "resistencia": 13,
-        "moral": 10,
-        "especial": "Perde galhos a cada acerto sofrido; se não for destruída, eles crescem de volta por completo até o fim do dia.",
-        "pontos_de_vida": 11
-      },
-      "planta_obj": "../jardynn-game/assets/plants\\camada1_area2_videira.obj"
+      "criatura": null,
+      "plantas_obj": [
+        "../jardynn-game/assets/plants\\camada1_area2_videira_1.obj",
+        "../jardynn-game/assets/plants\\camada1_area2_videira_2.obj",
+        "../jardynn-game/assets/plants\\camada1_area2_videira_3.obj",
+        "../jardynn-game/assets/plants\\camada1_area2_videira_4.obj"
+      ]
     },
     {
       "index": 3,
       "layer": 1,
       "band": "jardim_externo",
-      "text": "Um gramado formal, cortado em padrões geométricos que se perdem na neblina. Aqui há uma fileira de bustos de mármore, os rostos apagados pelo tempo ou por algo menos gentil. Entre a vegetação, há uma tesoura de podar de prata, impecavelmente afiada, esquecida sobre um banco de pedra.",
-      "has_denizen": false,
+      "text": "Um pomar bem cuidado demais, as frutas perfeitamente maduras o ano inteiro, nenhuma jamais cai no chão. Aqui há um tabuleiro de xadrez do tamanho de um salão de baile, as peças esculpidas na altura de uma pessoa. Você nota uma estátua que os personagens têm certeza de já ter visto em outra pose.",
+      "has_denizen": true,
       "has_wyrd": false,
-      "has_treasure": true,
+      "has_treasure": false,
       "npc": null,
-      "criatura": null,
-      "planta_obj": null
+      "criatura": {
+        "nome": "Estátua Errante",
+        "ca": 16,
+        "dv": "5d8",
+        "movimento": "muito lento; só se move quando não observada",
+        "ataques": [
+          [
+            "golpe de pedra",
+            "2d8"
+          ]
+        ],
+        "resistencia": 16,
+        "moral": 12,
+        "especial": "Fica imóvel enquanto observada diretamente por qualquer personagem; só avança quando todos desviam o olhar.",
+        "pontos_de_vida": 28
+      },
+      "plantas_obj": [
+        "../jardynn-game/assets/plants\\camada1_area3_arvore_1.obj",
+        "../jardynn-game/assets/plants\\camada1_area3_arvore_2.obj",
+        "../jardynn-game/assets/plants\\camada1_area3_arvore_3.obj",
+        "../jardynn-game/assets/plants\\camada1_area3_arvore_4.obj"
+      ]
     },
     {
       "index": 4,
       "layer": 1,
       "band": "jardim_externo",
-      "text": "Bambus finíssimos, retos como agulhas, batendo uns nos outros com um som de sinos quebrados. Aqui há um pomar de estufas com o vidro embaçado por dentro, quase todas vazias — uma ainda tem uma luz acesa lá no fundo. Você nota um viajante exausto, sentado à sombra de uma cerca-viva, que jura estar aqui há poucos minutos.",
+      "text": "Um caniçal denso sussurra mesmo sem vento. Longe, algo soa como um sino, mas nenhum sino é visível. Aqui há um relógio de sol cujo ponteiro projeta uma sombra que não corresponde a nenhuma hora do dia. Você nota um bando de pássaros brancos, silenciosos, que pousam todos ao mesmo tempo e observam.",
       "has_denizen": true,
       "has_wyrd": false,
       "has_treasure": false,
-      "npc": {
-        "classe": "Fighter",
-        "atributos": {
-          "Força": 12,
-          "Destreza": 9,
-          "Constituição": 6,
-          "Inteligência": 9,
-          "Sabedoria": 12,
-          "Carisma": 10
-        },
-        "modificadores": {
-          "Força": 0,
-          "Destreza": 0,
-          "Constituição": -1,
-          "Inteligência": 0,
-          "Sabedoria": 0,
-          "Carisma": 0
-        },
-        "pontos_de_vida": 6,
-        "bonus_ataque": 1,
-        "equipamento": [
+      "npc": null,
+      "criatura": {
+        "nome": "Bando de Pássaros Brancos",
+        "ca": 13,
+        "dv": "1d4",
+        "movimento": "curto no chão, voo errático",
+        "ataques": [
           [
-            "Mochila",
-            1
-          ],
-          [
-            "Ração de viagem (1 semana)",
-            1
-          ],
-          [
-            "Cantil de água",
-            1
-          ],
-          [
-            "Corda (15m)",
-            1
-          ],
-          [
-            "Pederneira e isqueiro",
-            1
-          ],
-          [
-            "Tocha (3)",
-            1
+            "bicadas em enxame",
+            "1d2"
           ]
         ],
-        "testes_de_resistencia": {
-          "Paralisia": 13,
-          "Veneno": 14,
-          "Sopro": 13,
-          "Dispositivos Mágicos": 15,
-          "Magia": 16
-        }
+        "resistencia": 15,
+        "moral": 6,
+        "especial": "Não recuam de verdade — se dispersam e voltam a pousar juntos a poucos metros de distância, observando de novo.",
+        "pontos_de_vida": 1
       },
-      "criatura": null,
-      "planta_obj": "../jardynn-game/assets/plants\\camada1_area4_bambu.obj"
+      "plantas_obj": [
+        "../jardynn-game/assets/plants\\camada1_area4_bambu_1.obj",
+        "../jardynn-game/assets/plants\\camada1_area4_bambu_2.obj",
+        "../jardynn-game/assets/plants\\camada1_area4_bambu_3.obj",
+        "../jardynn-game/assets/plants\\camada1_area4_bambu_4.obj",
+        "../jardynn-game/assets/plants\\camada1_area4_bambu_5.obj",
+        "../jardynn-game/assets/plants\\camada1_area4_bambu_6.obj"
+      ]
     },
     {
       "index": 5,
       "layer": 1,
       "band": "jardim_externo",
-      "text": "Bambus finíssimos, retos como agulhas, batendo uns nos outros com um som de sinos quebrados. Aqui há uma estufa de vidro rachado, o interior denso demais de vegetação para ser visto claramente.",
+      "text": "Um caniçal denso sussurra mesmo sem vento. Aqui há um pequeno cemitério de bichos de estimação, lápides do tamanho de uma mão, uma delas visivelmente recente. O caminho percorrido parece mais curto ao olhar para trás do que pareceu ao andar.",
       "has_denizen": false,
-      "has_wyrd": false,
+      "has_wyrd": true,
       "has_treasure": false,
       "npc": null,
       "criatura": null,
-      "planta_obj": "../jardynn-game/assets/plants\\camada1_area5_bambu.obj"
+      "plantas_obj": [
+        "../jardynn-game/assets/plants\\camada1_area5_bambu_1.obj",
+        "../jardynn-game/assets/plants\\camada1_area5_bambu_2.obj",
+        "../jardynn-game/assets/plants\\camada1_area5_bambu_3.obj",
+        "../jardynn-game/assets/plants\\camada1_area5_bambu_4.obj",
+        "../jardynn-game/assets/plants\\camada1_area5_bambu_5.obj",
+        "../jardynn-game/assets/plants\\camada1_area5_bambu_6.obj"
+      ]
     }
   ]
 }

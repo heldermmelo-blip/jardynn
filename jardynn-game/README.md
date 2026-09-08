@@ -38,6 +38,12 @@ python -m ynn.cli --layer 1 --areas 5 --seed 42 --json \
 - `--terrain-resolution`/`--terrain-cell-size` ajustam a grade de relevo
   (`terreno.alturas` no JSON) — ver seção **Relevo** abaixo.
 
+Cada área com vegetação de espécie única (`plantas_obj` no JSON) gera de 3
+a 6 variantes da malha (mesma espécie, formas diferentes) — `Main.gd`
+espalha várias cópias de cada variante ao redor da área (`scatter_radius`,
+`min_instances_per_variant`/`max_instances_per_variant` no inspetor), pra
+parecer um canteiro de verdade em vez de uma planta isolada.
+
 Fichas de personagem avulsas (OSE ou LotFP) também podem ser exportadas em
 JSON do mesmo jeito:
 

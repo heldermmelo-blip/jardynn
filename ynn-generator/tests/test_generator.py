@@ -78,15 +78,24 @@ def test_npc_and_creature_are_mutually_exclusive():
         assert not (area["npc"] is not None and area["criatura"] is not None)
 
 
-def test_vegetation_with_species_produces_plant_mesh():
+def test_vegetation_with_species_produces_plant_meshes():
     found_plant = False
     for seed in range(50):
         area = generate_area(random.Random(seed), layer=1, index=1)
-        if area["planta_obj"] is not None:
+        if area["plantas_obj"]:
             found_plant = True
-            assert os.path.exists(area["planta_obj"])
-            assert os.path.getsize(area["planta_obj"]) > 0
+            assert len(area["plantas_obj"]) >= 3  # PLANT_VARIANT_RANGE mínimo
+            for path in area["plantas_obj"]:
+                assert os.path.exists(path)
+                assert os.path.getsize(path) > 0
     assert found_plant
+
+
+def test_ground_cover_area_has_no_plant_meshes():
+    for seed in range(50):
+        area = generate_area(random.Random(seed), layer=1, index=1)
+        if not area["plantas_obj"]:
+            assert area["plantas_obj"] == []
 
 
 def test_ground_cover_vegetation_has_no_species():

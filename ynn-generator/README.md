@@ -12,11 +12,14 @@ Um punhado de entradas em `VEGETATION` (`ynn/tables.py`) têm uma espécie
 de [`gielis.plants`](../gielis-equations/gielis/plants) associada
 (`arvore`, `arbusto`, `espinheiro`, `bambu`, `videira`, `flor`, `cogumelo`
 ou `samambaia`). Quando uma dessas é sorteada, o gerador chama
-`gielis.plants.generate_plant` e salva a malha em
-`output/plantas/camada{N}_area{i}_{especie}.obj` — o caminho aparece
-junto do texto da área. Vegetação de cobertura (gramado, musgo, líquens)
-não tem espécie e continua só texto, sem malha. Veja
-`camada2_com_plantas_exemplo.md` para um exemplo.
+`gielis.plants.generate_plant` de 3 a 6 vezes (`PLANT_VARIANT_RANGE` em
+`ynn/generator.py`) — mesma espécie, formas diferentes a cada chamada —
+e salva cada malha em `output/plantas/camada{N}_area{i}_{especie}_{n}.obj`;
+os caminhos aparecem em `plantas_obj`, junto do texto da área. Um jardim
+não teria uma única planta solitária por canteiro. Vegetação de cobertura
+(gramado, musgo, líquens) não tem espécie e continua só texto, sem malha.
+Veja `camada2_com_plantas_exemplo.md` para um exemplo (nota: gerado antes
+dessa mudança, ainda mostra uma malha só por área).
 
 ## Ligação com lotfp-rules
 
