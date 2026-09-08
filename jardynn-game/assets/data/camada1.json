@@ -112,73 +112,7 @@
       "index": 1,
       "layer": 1,
       "band": "jardim_externo",
-      "text": "Um gramado alto e escuro, pesado de orvalho, que abafa o som dos passos. Aqui há uma estufa de vidro rachado, o interior denso demais de vegetação para ser visto claramente. Você nota uma voz educada vinda de trás de uma cerca-viva, convidando para chá em algum lugar que não existe no mapa.",
-      "has_denizen": true,
-      "has_wyrd": false,
-      "has_treasure": false,
-      "npc": null,
-      "criatura": null,
-      "planta_obj": null
-    },
-    {
-      "index": 2,
-      "layer": 1,
-      "band": "jardim_externo",
-      "text": "Videiras carregadas de uvas negras, brilhantes, nenhuma ave por perto para bicá-las. Aqui há um pequeno cemitério de bichos de estimação, lápides do tamanho de uma mão, uma delas visivelmente recente. Você nota um enxame de mariposas do tamanho de mãos, pousando em qualquer luz disponível.",
-      "has_denizen": true,
-      "has_wyrd": false,
-      "has_treasure": false,
-      "npc": null,
-      "criatura": {
-        "nome": "Enxame de Mariposas Gigantes",
-        "ca": 12,
-        "dv": "2d6",
-        "movimento": "voo lento e silencioso",
-        "ataques": [
-          [
-            "pó das asas (ofusca)",
-            "1d3"
-          ]
-        ],
-        "resistencia": 14,
-        "moral": 5,
-        "especial": "O pó das asas pode ofuscar temporariamente quem for atingido de perto.",
-        "pontos_de_vida": 6
-      },
-      "planta_obj": "../jardynn-game/assets/plants\\camada1_area2_videira.obj"
-    },
-    {
-      "index": 3,
-      "layer": 1,
-      "band": "jardim_externo",
-      "text": "Videiras carregadas de uvas negras, brilhantes, nenhuma ave por perto para bicá-las. Aqui há um aviário vazio, a porta aberta, ainda balançando de leve. Você nota um bando de pássaros brancos, silenciosos, que pousam todos ao mesmo tempo e observam.",
-      "has_denizen": true,
-      "has_wyrd": false,
-      "has_treasure": false,
-      "npc": null,
-      "criatura": {
-        "nome": "Bando de Pássaros Brancos",
-        "ca": 13,
-        "dv": "1d4",
-        "movimento": "curto no chão, voo errático",
-        "ataques": [
-          [
-            "bicadas em enxame",
-            "1d2"
-          ]
-        ],
-        "resistencia": 15,
-        "moral": 6,
-        "especial": "Não recuam de verdade — se dispersam e voltam a pousar juntos a poucos metros de distância, observando de novo.",
-        "pontos_de_vida": 2
-      },
-      "planta_obj": "../jardynn-game/assets/plants\\camada1_area3_videira.obj"
-    },
-    {
-      "index": 4,
-      "layer": 1,
-      "band": "jardim_externo",
-      "text": "Um gramado formal, cortado em padrões geométricos que se perdem na neblina. Aqui há um canil de pedra com uma dúzia de casinhas idênticas, cada porta entreaberta na mesma medida exata. Você nota um bando de pássaros brancos, silenciosos, que pousam todos ao mesmo tempo e observam. Entre a vegetação, há um medalhão de bronze verde-oxidado, gravado com um jardim que não é este, preso entre as raízes de uma árvore.",
+      "text": "Um gramado alto e escuro, pesado de orvalho, que abafa o som dos passos. Aqui há uma estufa de vidro rachado, o interior denso demais de vegetação para ser visto claramente. Você nota um bando de pássaros brancos, silenciosos, que pousam todos ao mesmo tempo e observam. Entre a vegetação, há um medalhão de bronze verde-oxidado, gravado com um jardim que não é este, preso entre as raízes de uma árvore.",
       "has_denizen": true,
       "has_wyrd": false,
       "has_treasure": true,
@@ -197,21 +131,125 @@
         "resistencia": 15,
         "moral": 6,
         "especial": "Não recuam de verdade — se dispersam e voltam a pousar juntos a poucos metros de distância, observando de novo.",
-        "pontos_de_vida": 2
+        "pontos_de_vida": 1
       },
       "planta_obj": null
+    },
+    {
+      "index": 2,
+      "layer": 1,
+      "band": "jardim_externo",
+      "text": "Trepadeiras com flores que se fecham lentamente quando alguém se aproxima. Aqui há um pequeno cemitério de bichos de estimação, lápides do tamanho de uma mão, uma delas visivelmente recente. Você nota um arbusto podado em forma de pessoa que baixa os galhos numa reverência sempre que alguém passa perto.",
+      "has_denizen": true,
+      "has_wyrd": false,
+      "has_treasure": false,
+      "npc": null,
+      "criatura": {
+        "nome": "Topiária Ambulante",
+        "ca": 14,
+        "dv": "3d8",
+        "movimento": "lento, mas constante",
+        "ataques": [
+          [
+            "chicotada de galhos",
+            "1d6"
+          ]
+        ],
+        "resistencia": 13,
+        "moral": 10,
+        "especial": "Perde galhos a cada acerto sofrido; se não for destruída, eles crescem de volta por completo até o fim do dia.",
+        "pontos_de_vida": 11
+      },
+      "planta_obj": "../jardynn-game/assets/plants\\camada1_area2_videira.obj"
+    },
+    {
+      "index": 3,
+      "layer": 1,
+      "band": "jardim_externo",
+      "text": "Um gramado formal, cortado em padrões geométricos que se perdem na neblina. Aqui há uma fileira de bustos de mármore, os rostos apagados pelo tempo ou por algo menos gentil. Entre a vegetação, há uma tesoura de podar de prata, impecavelmente afiada, esquecida sobre um banco de pedra.",
+      "has_denizen": false,
+      "has_wyrd": false,
+      "has_treasure": true,
+      "npc": null,
+      "criatura": null,
+      "planta_obj": null
+    },
+    {
+      "index": 4,
+      "layer": 1,
+      "band": "jardim_externo",
+      "text": "Bambus finíssimos, retos como agulhas, batendo uns nos outros com um som de sinos quebrados. Aqui há um pomar de estufas com o vidro embaçado por dentro, quase todas vazias — uma ainda tem uma luz acesa lá no fundo. Você nota um viajante exausto, sentado à sombra de uma cerca-viva, que jura estar aqui há poucos minutos.",
+      "has_denizen": true,
+      "has_wyrd": false,
+      "has_treasure": false,
+      "npc": {
+        "classe": "Fighter",
+        "atributos": {
+          "Força": 12,
+          "Destreza": 9,
+          "Constituição": 6,
+          "Inteligência": 9,
+          "Sabedoria": 12,
+          "Carisma": 10
+        },
+        "modificadores": {
+          "Força": 0,
+          "Destreza": 0,
+          "Constituição": -1,
+          "Inteligência": 0,
+          "Sabedoria": 0,
+          "Carisma": 0
+        },
+        "pontos_de_vida": 6,
+        "bonus_ataque": 1,
+        "equipamento": [
+          [
+            "Mochila",
+            1
+          ],
+          [
+            "Ração de viagem (1 semana)",
+            1
+          ],
+          [
+            "Cantil de água",
+            1
+          ],
+          [
+            "Corda (15m)",
+            1
+          ],
+          [
+            "Pederneira e isqueiro",
+            1
+          ],
+          [
+            "Tocha (3)",
+            1
+          ]
+        ],
+        "testes_de_resistencia": {
+          "Paralisia": 13,
+          "Veneno": 14,
+          "Sopro": 13,
+          "Dispositivos Mágicos": 15,
+          "Magia": 16
+        }
+      },
+      "criatura": null,
+      "planta_obj": "../jardynn-game/assets/plants\\camada1_area4_bambu.obj"
     },
     {
       "index": 5,
       "layer": 1,
       "band": "jardim_externo",
-      "text": "Roseiras selvagens avançam sobre o caminho, os espinhos do tamanho de adagas. Aqui há um aviário vazio, a porta aberta, ainda balançando de leve.",
+      "text": "Bambus finíssimos, retos como agulhas, batendo uns nos outros com um som de sinos quebrados. Aqui há uma estufa de vidro rachado, o interior denso demais de vegetação para ser visto claramente.",
       "has_denizen": false,
       "has_wyrd": false,
       "has_treasure": false,
       "npc": null,
       "criatura": null,
-      "planta_obj": "../jardynn-game/assets/plants\\camada1_area5_espinheiro.obj"
+      "planta_obj": "../jardynn-game/assets/plants\\camada1_area5_bambu.obj"
     }
   ]
 }

@@ -98,6 +98,16 @@ VEGETATION = [
         ("jardim_profundo", "nucleo_selvagem"),
         "espinheiro",
     ),
+    (
+        "Um canteiro de ervas cultivado com cuidado meticuloso, mas nenhuma das espécies parece ser conhecida.",
+        ("jardim_externo", "jardim_profundo"),
+        None,
+    ),
+    (
+        "Um pomar bem cuidado demais, as frutas perfeitamente maduras o ano inteiro, nenhuma jamais cai no chão.",
+        ("jardim_externo",),
+        "arvore",
+    ),
 ]
 
 FEATURES = [
@@ -283,6 +293,36 @@ DENIZENS = [
         "magic_user",
         None,
     ),
+    (
+        "um arbusto podado em forma de pessoa que baixa os galhos numa reverência sempre que alguém passa perto",
+        ("jardim_externo", "jardim_profundo"),
+        None,
+        "topiaria_ambulante",
+    ),
+    (
+        "um jogo de xadrez completo avançando pelo caminho em formação perfeita, as trinta e duas peças em passo sincronizado",
+        ("jardim_profundo", "nucleo_selvagem"),
+        None,
+        "jogo_de_xadrez_animado",
+    ),
+    (
+        "uma podadeira enferrujada que se arrasta sozinha em linha reta, cortando tudo que encontra pela frente",
+        ("jardim_profundo", "nucleo_selvagem"),
+        None,
+        "podadeira_mecanica",
+    ),
+    (
+        "uma criada de porcelana fria ao toque, servindo chá com educação impecável para cadeiras vazias",
+        ("jardim_externo", "jardim_profundo"),
+        None,
+        "serva_de_porcelana",
+    ),
+    (
+        "uma figura envolta em pétalas de rosa negra, voz baixa e convidativa, espinhos escondidos nas dobras do vestido",
+        ("jardim_profundo", "nucleo_selvagem"),
+        None,
+        "noiva_de_espinhos",
+    ),
 ]
 
 WYRD = [
@@ -320,6 +360,22 @@ WYRD = [
         "Reflexos em qualquer superfície de água próxima se movem um segundo atrasados em relação aos personagens.",
         ("nucleo_selvagem",),
     ),
+    (
+        "O céu muda de cor sem nenhuma nuvem passar na frente do sol, e ninguém consegue dizer que horas são só de olhar para ele.",
+        "all",
+    ),
+    (
+        "Qualquer bússola carregada para de apontar para um lugar fixo, girando devagar sem nunca parar de vez.",
+        ("jardim_profundo", "nucleo_selvagem"),
+    ),
+    (
+        "Por um instante a gravidade parece puxar um pouco para o lado errado, se corrigindo antes que alguém chegue a cair de verdade.",
+        ("nucleo_selvagem",),
+    ),
+    (
+        "Um trecho do caminho já percorrido aparece de novo à frente, idêntico até o último detalhe.",
+        ("jardim_profundo", "nucleo_selvagem"),
+    ),
 ]
 
 TREASURE = [
@@ -340,6 +396,18 @@ TREASURE = [
         ("nucleo_selvagem",),
     ),
     ("uma chave de ferro sem fechadura correspondente à vista, pendurada em um galho baixo", ("jardim_profundo", "nucleo_selvagem")),
+    (
+        "um par de tesouras de poda em miniatura, do tamanho de um dedo, afiadas o bastante para cortar qualquer coisa que caiba entre as lâminas",
+        ("jardim_profundo", "nucleo_selvagem"),
+    ),
+    (
+        "uma caixa de música de latão enferrujado que toca uma melodia que ninguém reconhece, mas que todos juram já ter ouvido",
+        "all",
+    ),
+    (
+        "um broche de vidro soprado em forma de inseto, as asas ainda batendo devagar sempre que ninguém olha diretamente",
+        ("nucleo_selvagem",),
+    ),
 ]
 
 ATMOSPHERE = [
