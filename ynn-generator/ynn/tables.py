@@ -140,6 +140,54 @@ FEATURES = [
         "uma escultura de gelo que não deveria existir neste clima e não parece estar derretendo",
         ("nucleo_selvagem",),
     ),
+    (
+        "um pomar de estufas com o vidro embaçado por dentro, quase todas vazias — uma ainda tem uma luz acesa lá no fundo",
+        ("jardim_externo", "jardim_profundo"),
+    ),
+    (
+        "um canil de pedra com uma dúzia de casinhas idênticas, cada porta entreaberta na mesma medida exata",
+        ("jardim_externo", "jardim_profundo"),
+    ),
+    (
+        "uma pista de gelo perfeitamente lisa, sem uma rachadura sequer, mesmo sob o calor do meio-dia",
+        ("jardim_profundo", "nucleo_selvagem"),
+    ),
+    (
+        "um lagar de vinho abandonado, as dornas cheias até a borda de um líquido escuro que ainda borbulha de leve",
+        ("jardim_externo", "jardim_profundo"),
+    ),
+    (
+        "um pequeno povoado de casas em escala real, ruas estreitas e vazias entre elas, portas todas fechadas",
+        ("jardim_profundo", "nucleo_selvagem"),
+    ),
+    (
+        "um tabuleiro de xadrez do tamanho de um salão de baile, as peças esculpidas na altura de uma pessoa",
+        ("jardim_externo", "jardim_profundo"),
+    ),
+    (
+        "uma galeria de máscaras penduradas em fileiras perfeitas, todas voltadas para o mesmo ponto vazio",
+        ("jardim_profundo", "nucleo_selvagem"),
+    ),
+    (
+        "um pequeno cemitério de bichos de estimação, lápides do tamanho de uma mão, uma delas visivelmente recente",
+        ("jardim_externo", "jardim_profundo"),
+    ),
+    (
+        "uma engrenagem exposta do tamanho de uma carroça, girando devagar, sem ligação visível a nada",
+        ("jardim_profundo", "nucleo_selvagem"),
+    ),
+    (
+        "uma fogueira que arde sem lenha nem fumaça, alta demais, aquecendo um círculo de pedras vazio",
+        ("jardim_profundo", "nucleo_selvagem"),
+    ),
+    (
+        "um teatro de sombras improvisado entre dois lençóis pendurados, uma peça em andamento sem plateia nenhuma",
+        ("nucleo_selvagem",),
+    ),
+    (
+        "tanques de vidro emendados por tubos de cobre, um líquido verde-claro circulando devagar entre eles",
+        ("nucleo_selvagem",),
+    ),
 ]
 
 DENIZENS = [
