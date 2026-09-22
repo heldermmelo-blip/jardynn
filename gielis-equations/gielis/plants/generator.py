@@ -12,7 +12,7 @@ import os
 import numpy as np
 
 from . import foliage
-from .mesh_utils import tube_mesh, write_obj
+from .mesh_utils import orthonormal_basis, rotate_around_axis, tube_mesh, write_obj
 from .skeleton import generate_skeleton
 
 OUTPUT_DIR = os.path.join(
@@ -182,6 +182,56 @@ SPECIAL_SPECIES = {
 }
 
 SPECIES = sorted(set(BRANCHING_SPECIES) | set(SPECIAL_SPECIES))
+
+
+def _generate_fallen_branch(rng):
+    """Um galho ou tronco caído/quebrado — não é espécie viva, é detrito de
+    jardim sem cuidado. Cresce quase na horizontal (leve inclinação
+    aleatória) em vez de para cima, às vezes com 1-2 cotos quebrados saindo
+    pro lado em ângulo."""
+    length = rng.uniform(0.5, 1.1)
+    radius = rng.uniform(0.02, 0.05)
+    heading = rng.uniform(0.0, 2 * np.pi)
+    tilt = rng.uniform(-0.15, 0.15)
+    direction = np.array([np.cos(heading), np.sin(heading), tilt])
+    direction = direction / np.linalg.norm(direction)
+
+    start = np.array([0.0, 0.0, 0.0])
+    end = start + direction * length
+    trunk = dict(start=start, end=end, r0=radius, r1=radius * rng.uniform(0.5, 0.75), depth=0)
+    parts = [tube_mesh(trunk, n_sides=8, cross_section_n=rng.uniform(1.6, 2.2))]
+
+    for _ in range(rng.randint(0, 2)):
+        t = rng.uniform(0.2, 0.8)
+        stub_start = start + direction * length * t
+        stub_length = length * rng.uniform(0.15, 0.35)
+        u, v = orthonormal_basis(direction)
+        twist = rng.uniform(0.0, 2 * np.pi)
+        tilt_axis = np.cos(twist) * u + np.sin(twist) * v
+        stub_dir = rotate_around_axis(direction, tilt_axis, rng.uniform(0.6, 1.4))
+        stub_end = stub_start + stub_dir * stub_length
+        stub_radius = radius * rng.uniform(0.3, 0.5)
+        stub = dict(start=stub_start, end=stub_end, r0=stub_radius, r1=stub_radius * 0.6, depth=1)
+        parts.append(tube_mesh(stub, n_sides=6, cross_section_n=2.0))
+
+    return parts, [trunk]
+
+
+def generate_fallen_branch(rng, out_path=None):
+    """Gera um galho/tronco caído (ver `_generate_fallen_branch`) e salva
+    como .obj em `out_path` (padrão: `examples/output/galho_caido.obj`).
+    Retorna `(out_path, skeleton)`, mesma convenção de `generate_plant`."""
+    parts, skeleton = _generate_fallen_branch(rng)
+
+    if out_path is None:
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        out_path = os.path.join(OUTPUT_DIR, "galho_caido.obj")
+    else:
+        out_dir = os.path.dirname(os.path.abspath(out_path))
+        os.makedirs(out_dir, exist_ok=True)
+
+    write_obj(out_path, parts)
+    return out_path, skeleton
 
 
 def generate_plant(rng, species, out_path=None, **skeleton_overrides):

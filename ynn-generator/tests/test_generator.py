@@ -98,6 +98,37 @@ def test_ground_cover_area_has_no_plant_meshes():
             assert area["plantas_obj"] == []
 
 
+def test_fallen_branches_produce_meshes_and_are_rare():
+    found_branches = False
+    triggered = 0
+    n_seeds = 60
+    for seed in range(n_seeds):
+        area = generate_area(random.Random(seed), layer=1, index=1)
+        if area["galhos_caidos_obj"]:
+            found_branches = True
+            triggered += 1
+            assert 1 <= len(area["galhos_caidos_obj"]) <= 3  # FALLEN_BRANCH_COUNT_RANGE
+            for path in area["galhos_caidos_obj"]:
+                assert os.path.exists(path)
+                assert os.path.getsize(path) > 0
+            assert "galhos cortados ou caídos" in area["text"]
+    assert found_branches
+    # FALLEN_BRANCH_CHANCE é 1/6 (~16.7%); com só 60 seeds (rápido, dado o
+    # custo de gerar malhas), a margem tem que ser bem folgada (~5 desvios
+    # padrão) pra não falhar por azar estatístico — o objetivo aqui é só
+    # pegar um bug grosseiro (chance trocada por 1.0, nunca dispara etc.),
+    # não validar a taxa exata.
+    assert 0.03 < triggered / n_seeds < 0.45
+
+
+def test_area_without_fallen_branches_has_empty_list():
+    for seed in range(50):
+        area = generate_area(random.Random(seed), layer=1, index=1)
+        if not area["galhos_caidos_obj"]:
+            assert area["galhos_caidos_obj"] == []
+            assert "galhos cortados ou caídos" not in area["text"]
+
+
 def test_ground_cover_vegetation_has_no_species():
     from ynn import tables
 

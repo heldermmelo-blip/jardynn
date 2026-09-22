@@ -14,6 +14,7 @@ for _sibling in ("lotfp-rules", "gielis-equations"):
         sys.path.insert(0, _path)
 
 from lotfp.character import create_character  # noqa: E402
+from gielis.plants import generate_fallen_branch as _generate_fallen_branch_mesh  # noqa: E402
 from gielis.plants import generate_plant as _generate_plant_mesh  # noqa: E402
 
 from .creatures import instantiate_creature
@@ -30,6 +31,11 @@ ATMOSPHERE_CHANCE = 0.4
 # diferentes a cada chamada de `_generate_plant_mesh` pelo `rng` seguir
 # andando); a densidade exata varia de área pra área.
 PLANT_VARIANT_RANGE = (3, 6)
+
+# Um jardim sem cuidado tem galhos cortados ou caídos largados pelo chão —
+# um detrito raro, não uma espécie viva (ver gielis.plants.generate_fallen_branch).
+FALLEN_BRANCH_CHANCE = 1 / 6
+FALLEN_BRANCH_COUNT_RANGE = (1, 3)
 
 
 def band_for_layer(layer):
@@ -82,6 +88,18 @@ def generate_area(rng, layer, index, plant_output_dir=None):
             path, _ = _generate_plant_mesh(rng, vegetation_species, out_path=out_path)
             plant_obj_paths.append(path)
 
+    fallen_branch_paths = []
+    if rng.random() < FALLEN_BRANCH_CHANCE:
+        out_dir = plant_output_dir or PLANT_OUTPUT_DIR
+        n_branches = rng.randint(*FALLEN_BRANCH_COUNT_RANGE)
+        for branch in range(1, n_branches + 1):
+            out_path = os.path.join(out_dir, f"camada{layer}_area{index}_galho_caido_{branch}.obj")
+            path, _ = _generate_fallen_branch_mesh(rng, out_path=out_path)
+            fallen_branch_paths.append(path)
+        parts.append(
+            "No chão, alguns galhos cortados ou caídos jazem esquecidos — sinal de um jardim que já não recebe cuidado."
+        )
+
     if rng.random() < ATMOSPHERE_CHANCE:
         parts.append(_pick(rng, tables.ATMOSPHERE, band))
 
@@ -115,6 +133,7 @@ def generate_area(rng, layer, index, plant_output_dir=None):
         "npc": npc,
         "criatura": creature,
         "plantas_obj": plant_obj_paths,
+        "galhos_caidos_obj": fallen_branch_paths,
     }
 
 
@@ -122,6 +141,6 @@ def generate_layer(rng, layer, n_areas, plant_output_dir=None):
     return [generate_area(rng, layer, i + 1, plant_output_dir=plant_output_dir) for i in range(n_areas)]
 
 
-def generate_terreno(rng, layer, resolution=9, cell_size=2.0):
+def generate_terreno(rng, layer, resolution=33, cell_size=3.0):
     band = band_for_layer(layer)
     return terrain.generate_terrain(rng, band, resolution=resolution, cell_size=cell_size)

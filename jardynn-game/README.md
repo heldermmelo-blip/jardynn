@@ -12,12 +12,12 @@ lê o que já foi gerado.
 ```
 jardynn-game/
   assets/
-    plants/   ← malhas .obj geradas por gielis.plants (via ynn-generator)
-    data/     ← camadas de jardim exportadas em JSON
+	plants/   ← malhas .obj geradas por gielis.plants (via ynn-generator)
+	data/     ← camadas de jardim exportadas em JSON
   scenes/
-    Main.tscn ← cena de exemplo: instancia as plantas de uma camada
+	Main.tscn ← cena de exemplo: instancia as plantas de uma camada
   scripts/
-    Main.gd   ← lê o JSON e monta a cena (ver comentário no topo do arquivo)
+	Main.gd   ← lê o JSON e monta a cena (ver comentário no topo do arquivo)
 ```
 
 ## Gerando novos assets
@@ -27,8 +27,8 @@ A partir da raiz do repositório (`Claude workspace/`):
 ```bash
 cd ynn-generator
 python -m ynn.cli --layer 1 --areas 5 --seed 42 --json \
-    --output ../jardynn-game/assets/data/camada1.json \
-    --plant-output-dir ../jardynn-game/assets/plants
+	--output ../jardynn-game/assets/data/camada1.json \
+	--plant-output-dir ../jardynn-game/assets/plants
 ```
 
 - `--json` faz o gerador emitir dados estruturados (camada, terreno, áreas,
@@ -43,6 +43,11 @@ a 6 variantes da malha (mesma espécie, formas diferentes) — `Main.gd`
 espalha várias cópias de cada variante ao redor da área (`scatter_radius`,
 `min_instances_per_variant`/`max_instances_per_variant` no inspetor), pra
 parecer um canteiro de verdade em vez de uma planta isolada.
+
+Cerca de 1 em 6 áreas também ganha galhos ou troncos caídos/cortados
+(`galhos_caidos_obj` no JSON, via `gielis.plants.generate_fallen_branch`)
+— sinal de um jardim sem cuidado. A malha já vem deitada da própria
+geração; `Main.gd` só posiciona e gira em Y.
 
 Fichas de personagem avulsas (OSE ou LotFP) também podem ser exportadas em
 JSON do mesmo jeito:
@@ -61,6 +66,13 @@ varia — e o quanto — via uma grade de pontos com altura (`terreno.alturas`,
 algoritmo diamond-square em `ynn.terrain`. `Main.gd` monta essa grade como
 uma malha triangulada (`SurfaceTool`) e usa a mesma grade, por interpolação
 bilinear, para apoiar cada planta na altura correta do terreno.
+
+O terreno cobre `(resolucao - 1) * tamanho_celula` unidades de lado,
+centrado na origem (padrão: 32 × 3.0 = 96 unidades). Isso precisa ser
+maior que a extensão da linha de áreas (`area_spacing` × nº de áreas, em
+`Main.gd`) — senão as últimas áreas caem fora do chão gerado. Ajuste
+`--terrain-cell-size`/`--terrain-resolution` se aumentar `--areas` ou
+`area_spacing` muito além do padrão.
 
 ## Abrindo no Godot
 

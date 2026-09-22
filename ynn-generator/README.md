@@ -21,6 +21,11 @@ não teria uma única planta solitária por canteiro. Vegetação de cobertura
 Veja `camada2_com_plantas_exemplo.md` para um exemplo (nota: gerado antes
 dessa mudança, ainda mostra uma malha só por área).
 
+Cerca de 1 em 6 áreas (`FALLEN_BRANCH_CHANCE` em `ynn/generator.py`) também
+ganha de 1 a 3 galhos/troncos caídos ou cortados, via
+`gielis.plants.generate_fallen_branch` — um detrito de jardim sem cuidado,
+não uma espécie viva; os caminhos aparecem em `galhos_caidos_obj`.
+
 ## Ligação com lotfp-rules
 
 Um punhado de entradas em `DENIZENS` (`ynn/tables.py`) são humanoides e

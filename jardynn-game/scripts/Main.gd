@@ -2,8 +2,9 @@ extends Node3D
 
 ## Carrega uma camada gerada pelo pipeline Python (`ynn-generator --json`) e
 ## instancia na cena o relevo (grade de pontos com altura, ver `terreno` no
-## JSON) e as plantas (.obj, várias variantes por área — ver `plantas_obj`)
-## espalhadas sobre ele, além de imprimir no console o texto descritivo e as
+## JSON), as plantas (.obj, várias variantes por área — ver `plantas_obj`)
+## espalhadas sobre ele, e ocasionalmente galhos caídos (`galhos_caidos_obj`,
+## ~1 em 6 áreas) — além de imprimir no console o texto descritivo e as
 ## fichas de NPCs/criaturas encontradas.
 ##
 ## Para gerar novos dados (a partir da raiz do repositório):
@@ -62,6 +63,10 @@ func _spawn_area(area: Dictionary, index: int, terreno) -> void:
 	for plant_path in plant_paths:
 		_spawn_plant_cluster(plant_path, index, terreno)
 
+	var fallen_branch_paths = area.get("galhos_caidos_obj", [])
+	for branch_path in fallen_branch_paths:
+		_spawn_fallen_branch(branch_path, index, terreno)
+
 
 ## Espalha várias cópias de uma malha de planta (uma das variantes de
 ## `plantas_obj`) ao redor da posição da área, num raio `scatter_radius`,
@@ -98,6 +103,29 @@ func _spawn_plant_cluster(source_path: String, index: int, terreno) -> void:
 	var multimesh_instance = MultiMeshInstance3D.new()
 	multimesh_instance.multimesh = multimesh
 	add_child(multimesh_instance)
+
+
+## Instancia um galho/tronco caído (`galhos_caidos_obj`, ~1 em 6 áreas) —
+## a malha já vem deitada da própria geração, então só posiciona e gira em
+## torno de Y pra variar a direção em que aponta.
+func _spawn_fallen_branch(source_path: String, index: int, terreno) -> void:
+	var filename = source_path.replace("\\", "/").get_file()
+	var res_path = plants_dir.path_join(filename)
+
+	var mesh = load(res_path)
+	if mesh == null:
+		push_warning("Malha não encontrada (reimporte o projeto no editor após gerar os .obj): %s" % res_path)
+		return
+
+	var x = index * area_spacing + randf_range(-scatter_radius, scatter_radius)
+	var z = randf_range(-scatter_radius, scatter_radius)
+	var y = _height_at(terreno, x, z) if terreno != null else 0.0
+
+	var mesh_instance = MeshInstance3D.new()
+	mesh_instance.mesh = mesh
+	mesh_instance.position = Vector3(x, y, z)
+	mesh_instance.rotation.y = randf_range(0.0, TAU)
+	add_child(mesh_instance)
 
 
 ## Monta a malha triangulada do relevo a partir da grade de alturas

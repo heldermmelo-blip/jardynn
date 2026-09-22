@@ -37,6 +37,8 @@ def render_layer_markdown(layer, areas, terreno=None):
         lines.append(area["text"])
         if area["plantas_obj"]:
             lines.append(f"*(plantas geradas: {len(area['plantas_obj'])}x `{area['plantas_obj'][0]}` e variantes)*")
+        if area["galhos_caidos_obj"]:
+            lines.append(f"*(galhos caídos: {len(area['galhos_caidos_obj'])}x `{area['galhos_caidos_obj'][0]}` e variantes)*")
         if area["npc"] is not None:
             lines.append("")
             lines.append(render_character(area["npc"]))
@@ -67,14 +69,18 @@ def main(argv=None):
     parser.add_argument(
         "--terrain-resolution",
         type=int,
-        default=9,
-        help="Resolução da grade de relevo (pontos por lado; arredondada para 2^n + 1, padrão 9)",
+        default=33,
+        help="Resolução da grade de relevo (pontos por lado; arredondada para 2^n + 1, padrão 33)",
     )
     parser.add_argument(
         "--terrain-cell-size",
         type=float,
-        default=2.0,
-        help="Distância entre pontos adjacentes da grade de relevo, em unidades do mundo (padrão 2.0)",
+        default=3.0,
+        help=(
+            "Distância entre pontos adjacentes da grade de relevo, em unidades do mundo (padrão 3.0). "
+            "O terreno cobre (resolução - 1) * tamanho_celula unidades de lado, centrado na origem — "
+            "precisa ser maior que a extensão das áreas (area_spacing * nº de áreas, no Godot)."
+        ),
     )
     args = parser.parse_args(argv)
 
