@@ -2,22 +2,24 @@ extends Node3D
 
 ## Carrega uma camada gerada pelo pipeline Python (`ynn-generator --json`) e
 ## instancia na cena o relevo (grade de pontos com altura, ver `terreno` no
-## JSON), as plantas (.obj, várias variantes por área — ver `plantas_obj`)
-## espalhadas sobre ele, e ocasionalmente galhos caídos (`galhos_caidos_obj`,
-## ~1 em 6 áreas) — além de imprimir no console o texto descritivo e as
-## fichas de NPCs/criaturas encontradas.
+## JSON) e o layout 2D (`layout` — lotes de área/torre/estufa/canteiro
+## espalhados por um campo do tamanho de um campo de futebol, ver
+## `ynn.layout`), além de imprimir no console o texto descritivo e as
+## fichas de NPCs/criaturas de cada área.
 ##
 ## Para gerar novos dados (a partir da raiz do repositório):
 ##   cd ynn-generator
 ##   python -m ynn.cli --layer 1 --areas 5 --seed 42 --json \
 ##       --output ../jardynn-game/assets/data/camada1.json \
 ##       --plant-output-dir ../jardynn-game/assets/plants
-## Use --terrain-resolution/--terrain-cell-size pra ajustar a grade de relevo.
+## Use --terrain-resolution/--terrain-cell-size (relevo) e
+## --field-width/--field-depth/--plot-size (layout) pra ajustar a escala.
 
 @export var layer_json_path: String = "res://assets/data/camada1.json"
 @export var plants_dir: String = "res://assets/plants/"
-@export var area_spacing: float = 4.0
+@export var area_spacing: float = 4.0  ## só usado no fallback sem `layout` (camadas antigas)
 @export var scatter_radius: float = 1.5
+@export var canteiro_radius: float = 3.0
 @export var min_instances_per_variant: int = 2
 @export var max_instances_per_variant: int = 5
 
@@ -35,8 +37,19 @@ func _ready() -> void:
 		add_child(_build_terrain(terreno))
 
 	var areas = layer_data.get("areas", [])
-	for i in areas.size():
-		_spawn_area(areas[i], i, terreno)
+	var camada_layout = layer_data.get("layout")
+
+	if camada_layout != null:
+		var areas_by_index = {}
+		for area in areas:
+			areas_by_index[area.get("index")] = area
+		for plot in camada_layout.get("plots", []):
+			_spawn_plot(plot, areas_by_index, terreno)
+	else:
+		# Compatibilidade com JSON gerado antes do layout 2D: enfileira as
+		# áreas numa linha reta, como o script fazia originalmente.
+		for i in areas.size():
+			_spawn_area(areas[i], i * area_spacing, 0.0, terreno)
 
 
 func _load_json(path: String):
@@ -47,7 +60,27 @@ func _load_json(path: String):
 	return parsed
 
 
-func _spawn_area(area: Dictionary, index: int, terreno) -> void:
+func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
+	var tipo = plot.get("tipo")
+	var x: float = plot.get("x", 0.0)
+	var z: float = plot.get("z", 0.0)
+
+	match tipo:
+		"area":
+			var area = areas_by_index.get(plot.get("area_index"))
+			if area != null:
+				_spawn_area(area, x, z, terreno)
+		"torre", "estufa":
+			_spawn_structure(plot.get("obj", ""), x, z, terreno)
+		"canteiro":
+			print("--- Canteiro de %s em (%.1f, %.1f) ---" % [plot.get("especie", "?"), x, z])
+			for plant_path in plot.get("plantas_obj", []):
+				_spawn_plant_cluster(plant_path, x, z, terreno, canteiro_radius)
+		_:
+			push_warning("Tipo de lote desconhecido no layout: %s" % tipo)
+
+
+func _spawn_area(area: Dictionary, base_x: float, base_z: float, terreno) -> void:
 	print("--- Área %s (%s) ---" % [area.get("index"), area.get("band")])
 	print(area.get("text", ""))
 
@@ -59,20 +92,18 @@ func _spawn_area(area: Dictionary, index: int, terreno) -> void:
 	if creature != null:
 		print("Criatura: %s (CA %s, DV %s, PV %s)" % [creature.get("nome"), creature.get("ca"), creature.get("dv"), creature.get("pontos_de_vida")])
 
-	var plant_paths = area.get("plantas_obj", [])
-	for plant_path in plant_paths:
-		_spawn_plant_cluster(plant_path, index, terreno)
+	for plant_path in area.get("plantas_obj", []):
+		_spawn_plant_cluster(plant_path, base_x, base_z, terreno, scatter_radius)
 
-	var fallen_branch_paths = area.get("galhos_caidos_obj", [])
-	for branch_path in fallen_branch_paths:
-		_spawn_fallen_branch(branch_path, index, terreno)
+	for branch_path in area.get("galhos_caidos_obj", []):
+		_spawn_fallen_branch(branch_path, base_x, base_z, terreno)
 
 
 ## Espalha várias cópias de uma malha de planta (uma das variantes de
-## `plantas_obj`) ao redor da posição da área, num raio `scatter_radius`,
-## cada uma com rotação e escala levemente diferentes — um jardim de
-## verdade não tem uma única planta isolada por canteiro.
-func _spawn_plant_cluster(source_path: String, index: int, terreno) -> void:
+## `plantas_obj`) ao redor de (base_x, base_z), num raio `radius`, cada
+## uma com rotação e escala levemente diferentes — um jardim de verdade
+## não tem uma única planta isolada por canteiro.
+func _spawn_plant_cluster(source_path: String, base_x: float, base_z: float, terreno, radius: float) -> void:
 	# `source_path` vem do JSON como um caminho de arquivo do lado Python
 	# (pode usar "\" no Windows); só o nome do arquivo importa aqui, pois a
 	# malha já foi gerada dentro de `plants_dir` por este mesmo pipeline.
@@ -84,7 +115,6 @@ func _spawn_plant_cluster(source_path: String, index: int, terreno) -> void:
 		push_warning("Malha não encontrada (reimporte o projeto no editor após gerar os .obj): %s" % res_path)
 		return
 
-	var base_x = index * area_spacing
 	var instance_count = randi_range(min_instances_per_variant, max_instances_per_variant)
 
 	var multimesh = MultiMesh.new()
@@ -93,8 +123,8 @@ func _spawn_plant_cluster(source_path: String, index: int, terreno) -> void:
 	multimesh.instance_count = instance_count
 
 	for i in instance_count:
-		var x = base_x + randf_range(-scatter_radius, scatter_radius)
-		var z = randf_range(-scatter_radius, scatter_radius)
+		var x = base_x + randf_range(-radius, radius)
+		var z = base_z + randf_range(-radius, radius)
 		var y = _height_at(terreno, x, z) if terreno != null else 0.0
 
 		var basis = Basis(Vector3.UP, randf_range(0.0, TAU)).scaled(Vector3.ONE * randf_range(0.8, 1.2))
@@ -108,7 +138,20 @@ func _spawn_plant_cluster(source_path: String, index: int, terreno) -> void:
 ## Instancia um galho/tronco caído (`galhos_caidos_obj`, ~1 em 6 áreas) —
 ## a malha já vem deitada da própria geração, então só posiciona e gira em
 ## torno de Y pra variar a direção em que aponta.
-func _spawn_fallen_branch(source_path: String, index: int, terreno) -> void:
+func _spawn_fallen_branch(source_path: String, base_x: float, base_z: float, terreno) -> void:
+	var x = base_x + randf_range(-scatter_radius, scatter_radius)
+	var z = base_z + randf_range(-scatter_radius, scatter_radius)
+	_spawn_structure(source_path, x, z, terreno, false)
+
+
+## Instancia uma malha única já pronta (torre, estufa, ou o galho caído
+## acima) em (x, z), apoiada na altura do terreno. `random_rotation` gira
+## em Y pra variar a orientação; desligue pra estruturas que devam manter
+## uma orientação fixa (nenhuma por enquanto usa isso, mas fica disponível).
+func _spawn_structure(source_path: String, x: float, z: float, terreno, random_rotation: bool = true) -> void:
+	if source_path == null or source_path == "":
+		return
+
 	var filename = source_path.replace("\\", "/").get_file()
 	var res_path = plants_dir.path_join(filename)
 
@@ -117,21 +160,20 @@ func _spawn_fallen_branch(source_path: String, index: int, terreno) -> void:
 		push_warning("Malha não encontrada (reimporte o projeto no editor após gerar os .obj): %s" % res_path)
 		return
 
-	var x = index * area_spacing + randf_range(-scatter_radius, scatter_radius)
-	var z = randf_range(-scatter_radius, scatter_radius)
 	var y = _height_at(terreno, x, z) if terreno != null else 0.0
 
 	var mesh_instance = MeshInstance3D.new()
 	mesh_instance.mesh = mesh
 	mesh_instance.position = Vector3(x, y, z)
-	mesh_instance.rotation.y = randf_range(0.0, TAU)
+	if random_rotation:
+		mesh_instance.rotation.y = randf_range(0.0, TAU)
 	add_child(mesh_instance)
 
 
 ## Monta a malha triangulada do relevo a partir da grade de alturas
 ## (`terreno.alturas`, `resolucao` x `resolucao`, espaçadas por
-## `tamanho_celula`) exportada pelo `ynn.terrain`. A grade é centralizada na
-## origem, então a linha das áreas (sempre em z=0) cruza a malha pelo meio.
+## `tamanho_celula`) exportada pelo `ynn.terrain`. A grade é centralizada
+## na origem, cobrindo todo o campo do layout.
 func _build_terrain(terreno: Dictionary) -> MeshInstance3D:
 	var resolution: int = terreno.get("resolucao")
 	var cell_size: float = terreno.get("tamanho_celula")

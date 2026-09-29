@@ -26,6 +26,29 @@ ganha de 1 a 3 galhos/troncos caídos ou cortados, via
 `gielis.plants.generate_fallen_branch` — um detrito de jardim sem cuidado,
 não uma espécie viva; os caminhos aparecem em `galhos_caidos_obj`.
 
+## Layout 2D (escala de campo de futebol)
+
+[`ynn/layout.py`](ynn/layout.py) substitui a antiga linha reta de áreas por
+um layout espacial de verdade: um campo do tamanho de um campo de futebol
+(padrão FIFA, 105m x 68m — `--field-width`/`--field-depth`), dividido numa
+grade de lotes de `--plot-size` metros (padrão 12m). Cada área, e cada
+estrutura, ocupa um lote sorteado sem repetição (mais um leve jitter).
+
+Três tipos de lote não-narrativos, populados por
+`ynn.generator.generate_layout_camada` com malhas de
+[`gielis.structures`](../gielis-equations/gielis/structures.py) (reaproveita
+o tubo de seção de Lamé e o domo da Superfórmula de `gielis.plants`):
+
+- **torre**: fuste afunilado + telhado cônico.
+- **estufa**: esqueleto de quatro postes + cumeeira + águas do telhado (sem
+  vidro/painéis ainda).
+- **canteiro**: um leito denso de uma única espécie (`flor` ou `arbusto`,
+  `CANTEIRO_SPECIES`), como as plantas por área mas mais compacto.
+
+O JSON exportado ganha uma chave `layout` (`field_width`, `field_depth`,
+`plot_size`, `plots`); cada lote de área só carrega a posição — o conteúdo
+continua vindo de `generate_area`, cruzado pelo `area_index`.
+
 ## Ligação com lotfp-rules
 
 Um punhado de entradas em `DENIZENS` (`ynn/tables.py`) são humanoides e

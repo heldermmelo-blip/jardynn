@@ -4,7 +4,7 @@ extends Camera3D
 ## segura pra olhar em volta, Shift acelera. Só pra navegar e inspecionar a
 ## cena gerada — não é controle de jogador.
 
-@export var move_speed: float = 6.0
+@export var move_speed: float = 24.0
 @export var boost_multiplier: float = 3.0
 @export var mouse_sensitivity: float = 0.003
 

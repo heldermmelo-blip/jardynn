@@ -8,7 +8,7 @@ import argparse
 import json
 import random
 
-from .generator import generate_layer, generate_terreno  # importa antes: garante lotfp-rules no sys.path
+from .generator import generate_layer, generate_layout_camada, generate_terreno  # importa antes: garante lotfp-rules no sys.path
 from .tables import BAND_LABELS
 
 from lotfp.cli import render_character
@@ -26,11 +26,17 @@ def render_creature(creature):
     return "\n".join(lines)
 
 
-def render_layer_markdown(layer, areas, terreno=None):
+def render_layer_markdown(layer, areas, terreno=None, layout=None):
     band_label = BAND_LABELS[areas[0]["band"]] if areas else ""
     lines = [f"## Camada {layer} — {band_label}", ""]
     if terreno is not None:
         lines.append(f"**Relevo** ({terreno['tipo_relevo']}): {terreno['descricao']}")
+        lines.append("")
+    if layout is not None:
+        lines.append(f"**Layout**: campo de {layout['field_width']:.0f}x{layout['field_depth']:.0f}m")
+        for plot in layout["plots"]:
+            if plot["tipo"] != "area":
+                lines.append(f"- {plot['tipo']} em ({plot['x']:.1f}, {plot['z']:.1f})")
         lines.append("")
     for area in areas:
         lines.append(f"### Área {area['index']}")
@@ -69,28 +75,50 @@ def main(argv=None):
     parser.add_argument(
         "--terrain-resolution",
         type=int,
-        default=33,
-        help="Resolução da grade de relevo (pontos por lado; arredondada para 2^n + 1, padrão 33)",
+        default=65,
+        help="Resolução da grade de relevo (pontos por lado; arredondada para 2^n + 1, padrão 65)",
     )
     parser.add_argument(
         "--terrain-cell-size",
         type=float,
-        default=3.0,
+        default=2.0,
         help=(
-            "Distância entre pontos adjacentes da grade de relevo, em unidades do mundo (padrão 3.0). "
+            "Distância entre pontos adjacentes da grade de relevo, em unidades do mundo (padrão 2.0). "
             "O terreno cobre (resolução - 1) * tamanho_celula unidades de lado, centrado na origem — "
-            "precisa ser maior que a extensão das áreas (area_spacing * nº de áreas, no Godot)."
+            "precisa ser maior que --field-width/--field-depth."
         ),
+    )
+    parser.add_argument(
+        "--field-width", type=float, default=105.0, help="Largura do campo/layout em metros (padrão 105, escala de campo de futebol)"
+    )
+    parser.add_argument(
+        "--field-depth", type=float, default=68.0, help="Profundidade do campo/layout em metros (padrão 68)"
+    )
+    parser.add_argument(
+        "--plot-size", type=float, default=12.0, help="Tamanho de cada lote da grade de layout, em metros (padrão 12)"
     )
     args = parser.parse_args(argv)
 
     rng = random.Random(args.seed)
     terreno = generate_terreno(rng, args.layer, resolution=args.terrain_resolution, cell_size=args.terrain_cell_size)
+    camada_layout = generate_layout_camada(
+        rng,
+        args.layer,
+        args.areas,
+        plant_output_dir=args.plant_output_dir,
+        field_width=args.field_width,
+        field_depth=args.field_depth,
+        plot_size=args.plot_size,
+    )
     areas = generate_layer(rng, args.layer, args.areas, plant_output_dir=args.plant_output_dir)
     output = (
-        json.dumps({"layer": args.layer, "terreno": terreno, "areas": areas}, ensure_ascii=False, indent=2)
+        json.dumps(
+            {"layer": args.layer, "terreno": terreno, "layout": camada_layout, "areas": areas},
+            ensure_ascii=False,
+            indent=2,
+        )
         if args.json
-        else render_layer_markdown(args.layer, areas, terreno=terreno)
+        else render_layer_markdown(args.layer, areas, terreno=terreno, layout=camada_layout)
     )
 
     if args.output:

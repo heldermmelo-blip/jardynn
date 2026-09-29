@@ -3,7 +3,7 @@
 import os
 import sys
 
-from . import tables, terrain
+from . import layout, tables, terrain
 
 _YNN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _WORKSPACE_ROOT = os.path.dirname(_YNN_ROOT)
@@ -16,6 +16,8 @@ for _sibling in ("lotfp-rules", "gielis-equations"):
 from lotfp.character import create_character  # noqa: E402
 from gielis.plants import generate_fallen_branch as _generate_fallen_branch_mesh  # noqa: E402
 from gielis.plants import generate_plant as _generate_plant_mesh  # noqa: E402
+from gielis.structures import generate_greenhouse as _generate_greenhouse_mesh  # noqa: E402
+from gielis.structures import generate_tower as _generate_tower_mesh  # noqa: E402
 
 from .creatures import instantiate_creature
 
@@ -36,6 +38,11 @@ PLANT_VARIANT_RANGE = (3, 6)
 # um detrito raro, não uma espécie viva (ver gielis.plants.generate_fallen_branch).
 FALLEN_BRANCH_CHANCE = 1 / 6
 FALLEN_BRANCH_COUNT_RANGE = (1, 3)
+
+# Espécie e densidade dos canteiros do layout (ver `ynn.layout`) — uma
+# única espécie por canteiro, em quantidade parecida com PLANT_VARIANT_RANGE.
+CANTEIRO_SPECIES = ("flor", "arbusto")
+CANTEIRO_VARIANT_RANGE = (4, 8)
 
 
 def band_for_layer(layer):
@@ -141,6 +148,38 @@ def generate_layer(rng, layer, n_areas, plant_output_dir=None):
     return [generate_area(rng, layer, i + 1, plant_output_dir=plant_output_dir) for i in range(n_areas)]
 
 
-def generate_terreno(rng, layer, resolution=33, cell_size=3.0):
+def generate_terreno(rng, layer, resolution=65, cell_size=2.0):
     band = band_for_layer(layer)
     return terrain.generate_terrain(rng, band, resolution=resolution, cell_size=cell_size)
+
+
+def generate_layout_camada(rng, layer, n_areas, plant_output_dir=None, **layout_kwargs):
+    """Gera o layout 2D da camada (`ynn.layout.generate_layout`) e já
+    preenche as malhas de cada estrutura não-narrativa (torre, estufa,
+    canteiro) diretamente nos lotes — as áreas (`tipo == "area"`) só
+    carregam a posição; o conteúdo delas continua vindo de `generate_area`,
+    cruzado por `area_index`."""
+    camada_layout = layout.generate_layout(rng, n_areas, **layout_kwargs)
+    out_dir = plant_output_dir or PLANT_OUTPUT_DIR
+
+    for i, plot in enumerate(camada_layout["plots"], start=1):
+        if plot["tipo"] == "torre":
+            out_path = os.path.join(out_dir, f"camada{layer}_torre_{i}.obj")
+            path, _ = _generate_tower_mesh(rng, out_path=out_path)
+            plot["obj"] = path
+        elif plot["tipo"] == "estufa":
+            out_path = os.path.join(out_dir, f"camada{layer}_estufa_{i}.obj")
+            path, _ = _generate_greenhouse_mesh(rng, out_path=out_path)
+            plot["obj"] = path
+        elif plot["tipo"] == "canteiro":
+            especie = rng.choice(CANTEIRO_SPECIES)
+            n_variants = rng.randint(*CANTEIRO_VARIANT_RANGE)
+            paths = []
+            for variant in range(1, n_variants + 1):
+                out_path = os.path.join(out_dir, f"camada{layer}_canteiro_{i}_{especie}_{variant}.obj")
+                path, _ = _generate_plant_mesh(rng, especie, out_path=out_path)
+                paths.append(path)
+            plot["especie"] = especie
+            plot["plantas_obj"] = paths
+
+    return camada_layout

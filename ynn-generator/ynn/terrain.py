@@ -78,7 +78,7 @@ def _diamond_square(rng, size, amplitude, rugosidade):
     return grid
 
 
-def generate_terrain(rng, band, resolution=33, cell_size=3.0):
+def generate_terrain(rng, band, resolution=65, cell_size=2.0):
     texto, tipo_relevo = _pick_localidade(rng, band)
     size = _nearest_valid_size(resolution)
     amplitude = AMPLITUDE_POR_TIPO[tipo_relevo]

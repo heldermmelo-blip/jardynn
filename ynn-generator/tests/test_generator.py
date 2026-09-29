@@ -1,7 +1,7 @@
 import os
 import random
 
-from ynn.generator import band_for_layer, generate_area, generate_layer
+from ynn.generator import band_for_layer, generate_area, generate_layer, generate_layout_camada
 
 
 def test_band_for_layer():
@@ -127,6 +127,36 @@ def test_area_without_fallen_branches_has_empty_list():
         if not area["galhos_caidos_obj"]:
             assert area["galhos_caidos_obj"] == []
             assert "galhos cortados ou caídos" not in area["text"]
+
+
+def test_generate_layout_camada_populates_structure_meshes():
+    rng = random.Random(1)
+    camada_layout = generate_layout_camada(
+        rng, layer=1, n_areas=2, n_torres_range=(1, 1), n_estufas_range=(1, 1), n_canteiros_range=(1, 1)
+    )
+    by_tipo = {}
+    for plot in camada_layout["plots"]:
+        by_tipo.setdefault(plot["tipo"], []).append(plot)
+
+    torre = by_tipo["torre"][0]
+    assert os.path.exists(torre["obj"])
+    assert os.path.getsize(torre["obj"]) > 0
+
+    estufa = by_tipo["estufa"][0]
+    assert os.path.exists(estufa["obj"])
+    assert os.path.getsize(estufa["obj"]) > 0
+
+    canteiro = by_tipo["canteiro"][0]
+    assert canteiro["especie"] in ("flor", "arbusto")
+    assert len(canteiro["plantas_obj"]) >= 4  # CANTEIRO_VARIANT_RANGE mínimo
+    for path in canteiro["plantas_obj"]:
+        assert os.path.exists(path)
+        assert os.path.getsize(path) > 0
+
+    assert len(by_tipo["area"]) == 2
+    for plot in by_tipo["area"]:
+        assert "obj" not in plot
+        assert "plantas_obj" not in plot
 
 
 def test_ground_cover_vegetation_has_no_species():
