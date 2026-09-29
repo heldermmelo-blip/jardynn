@@ -24,30 +24,42 @@ def _resolve_out_path(out_path, default_name):
     return out_path
 
 
-def _generate_tower(rng):
-    height = rng.uniform(8.0, 14.0)
-    base_radius = rng.uniform(0.9, 1.5)
-    top_radius = base_radius * rng.uniform(0.55, 0.75)
+def _generate_tower(rng, n_floors):
+    floor_height = rng.uniform(3.2, 4.0)
+    base_radius = rng.uniform(1.0, 1.6)
+    taper_per_floor = rng.uniform(0.04, 0.08)
 
-    shaft = dict(
-        start=np.array([0.0, 0.0, 0.0]), end=np.array([0.0, 0.0, height]), r0=base_radius, r1=top_radius, depth=0
-    )
-    parts = [tube_mesh(shaft, n_sides=12, cross_section_n=2.0)]
+    parts = []
+    skeleton = []
+    radius = base_radius
+    z = 0.0
+    for _ in range(n_floors):
+        next_radius = max(radius * (1.0 - taper_per_floor), base_radius * 0.35)
+        segment = dict(
+            start=np.array([0.0, 0.0, z]), end=np.array([0.0, 0.0, z + floor_height]), r0=radius, r1=next_radius, depth=0
+        )
+        parts.append(tube_mesh(segment, n_sides=12, cross_section_n=2.0))
+        skeleton.append(segment)
+        radius = next_radius
+        z += floor_height
 
     roof_v, roof_f = cap_mesh(
-        radius=top_radius * 1.15, height=rng.uniform(2.5, 4.0), n_sides=12, cross_section_n=rng.uniform(1.6, 2.2)
+        radius=radius * 1.2, height=rng.uniform(2.5, 4.0), n_sides=12, cross_section_n=rng.uniform(1.6, 2.2)
     )
-    roof_v = roof_v + np.array([0.0, 0.0, height])
+    roof_v = roof_v + np.array([0.0, 0.0, z])
     parts.append((roof_v, roof_f))
 
-    return parts, [shaft]
+    return parts, skeleton
 
 
-def generate_tower(rng, out_path=None):
-    """Gera uma torre (fuste afunilado + telhado cônico) e salva como .obj
-    em `out_path` (padrão: `examples/output/torre.obj`). Retorna
-    `(out_path, skeleton)`, mesma convenção de `gielis.plants.generate_plant`."""
-    parts, skeleton = _generate_tower(rng)
+def generate_tower(rng, n_floors, out_path=None):
+    """Gera uma torre com `n_floors` andares (um segmento afunilado por
+    andar, mais o telhado cônico) e salva como .obj em `out_path` (padrão:
+    `examples/output/torre.obj`). Retorna `(out_path, skeleton)` — um
+    segmento por andar, mesma convenção de `gielis.plants.generate_plant`.
+    `n_floors` deve vir de `ynn.generator.generate_torre_conteudo`, pra a
+    malha bater com o número de andares do conteúdo gerado."""
+    parts, skeleton = _generate_tower(rng, n_floors)
     out_path = _resolve_out_path(out_path, "torre.obj")
     write_obj(out_path, parts)
     return out_path, skeleton

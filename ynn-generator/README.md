@@ -39,11 +39,23 @@ Três tipos de lote não-narrativos, populados por
 [`gielis.structures`](../gielis-equations/gielis/structures.py) (reaproveita
 o tubo de seção de Lamé e o domo da Superfórmula de `gielis.plants`):
 
-- **torre**: fuste afunilado + telhado cônico.
+- **torre**: uma mini-masmorra vertical, não só decoração — `--layer`
+  decide a banda, `generate_torre_conteudo` sorteia de 3 a 8 andares
+  (`N_ANDARES_TORRE_RANGE`), cada um com conteúdo original de
+  `tables.TORRE_ANDARES` (o último de `tables.TORRE_TOPO`, mais raro),
+  podendo incluir um tesouro (`TREASURE`) ou um encontro (`DENIZENS`,
+  igual às áreas). A malha (fuste segmentado, um afunilamento por andar,
+  telhado cônico) recebe o mesmo `n_andares`, e ganha "hera" — algumas
+  variantes de `videira` (`hera_obj`) pra cobrir a base.
 - **estufa**: esqueleto de quatro postes + cumeeira + águas do telhado (sem
   vidro/painéis ainda).
 - **canteiro**: um leito denso de uma única espécie (`flor` ou `arbusto`,
   `CANTEIRO_SPECIES`), como as plantas por área mas mais compacto.
+
+A torre reaproveita o sistema de denizens/tesouro das áreas por
+simplicidade — o texto de alguns encontros ainda soa como jardim aberto
+("um banco de pedra", "um gramado") mesmo dentro da torre; ainda não há
+uma tabela de denizens exclusiva pra interiores.
 
 O JSON exportado ganha uma chave `layout` (`field_width`, `field_depth`,
 `plot_size`, `plots`); cada lote de área só carrega a posição — o conteúdo

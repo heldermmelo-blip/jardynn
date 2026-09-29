@@ -35,7 +35,17 @@ def render_layer_markdown(layer, areas, terreno=None, layout=None):
     if layout is not None:
         lines.append(f"**Layout**: campo de {layout['field_width']:.0f}x{layout['field_depth']:.0f}m")
         for plot in layout["plots"]:
-            if plot["tipo"] != "area":
+            if plot["tipo"] == "torre":
+                conteudo = plot["conteudo"]
+                lines.append(f"- torre em ({plot['x']:.1f}, {plot['z']:.1f}), {conteudo['n_andares']} andares")
+                for andar in conteudo["andares"]:
+                    marca = " (topo)" if andar["numero"] == conteudo["n_andares"] else ""
+                    lines.append(f"  - andar {andar['numero']}{marca}: {andar['texto']}")
+                    if andar.get("tesouro") is not None:
+                        lines.append(f"    - tesouro: {andar['tesouro']}")
+                    if andar.get("denizen") is not None:
+                        lines.append(f"    - encontro: {andar['denizen']}")
+            elif plot["tipo"] != "area":
                 lines.append(f"- {plot['tipo']} em ({plot['x']:.1f}, {plot['z']:.1f})")
         lines.append("")
     for area in areas:

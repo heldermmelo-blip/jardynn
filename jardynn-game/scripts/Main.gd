@@ -5,7 +5,9 @@ extends Node3D
 ## JSON) e o layout 2D (`layout` — lotes de área/torre/estufa/canteiro
 ## espalhados por um campo do tamanho de um campo de futebol, ver
 ## `ynn.layout`), além de imprimir no console o texto descritivo e as
-## fichas de NPCs/criaturas de cada área.
+## fichas de NPCs/criaturas de cada área. A torre é uma mini-masmorra
+## vertical (ver `ynn.generator.generate_torre_conteudo`): o console
+## imprime o conteúdo de cada andar, e a malha vem cercada de hera.
 ##
 ## Para gerar novos dados (a partir da raiz do repositório):
 ##   cd ynn-generator
@@ -20,6 +22,7 @@ extends Node3D
 @export var area_spacing: float = 4.0  ## só usado no fallback sem `layout` (camadas antigas)
 @export var scatter_radius: float = 1.5
 @export var canteiro_radius: float = 3.0
+@export var ivy_radius: float = 2.0
 @export var min_instances_per_variant: int = 2
 @export var max_instances_per_variant: int = 5
 
@@ -70,7 +73,9 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 			var area = areas_by_index.get(plot.get("area_index"))
 			if area != null:
 				_spawn_area(area, x, z, terreno)
-		"torre", "estufa":
+		"torre":
+			_spawn_torre(plot, x, z, terreno)
+		"estufa":
 			_spawn_structure(plot.get("obj", ""), x, z, terreno)
 		"canteiro":
 			print("--- Canteiro de %s em (%.1f, %.1f) ---" % [plot.get("especie", "?"), x, z])
@@ -78,6 +83,34 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 				_spawn_plant_cluster(plant_path, x, z, terreno, canteiro_radius)
 		_:
 			push_warning("Tipo de lote desconhecido no layout: %s" % tipo)
+
+
+## Instancia a torre e imprime o conteúdo de cada andar (ver
+## `ynn.generator.generate_torre_conteudo`: uma mini-masmorra vertical, não
+## só decoração — cada andar tem seu próprio conteúdo, o topo é sempre o
+## mais raro/significativo). A hera (`hera_obj`, malhas de videira)
+## é espalhada rente à base, cobrindo o pé da torre.
+func _spawn_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
+	var conteudo = plot.get("conteudo", {})
+	print("--- Torre em (%.1f, %.1f), %s andares ---" % [x, z, conteudo.get("n_andares", "?")])
+	for andar in conteudo.get("andares", []):
+		var marca = " (topo)" if andar.get("numero") == conteudo.get("n_andares") else ""
+		print("Andar %s%s: %s" % [andar.get("numero"), marca, andar.get("texto", "")])
+		if andar.get("tesouro") != null:
+			print("  Tesouro: %s" % andar.get("tesouro"))
+		if andar.get("denizen") != null:
+			print("  Encontro: %s" % andar.get("denizen"))
+			var npc = andar.get("npc")
+			if npc != null:
+				print("  NPC: %s (PV %s, CA %s)" % [npc.get("classe"), npc.get("pontos_de_vida"), npc.get("classe_de_armadura")])
+			var creature = andar.get("criatura")
+			if creature != null:
+				print("  Criatura: %s (CA %s, DV %s, PV %s)" % [creature.get("nome"), creature.get("ca"), creature.get("dv"), creature.get("pontos_de_vida")])
+
+	_spawn_structure(plot.get("obj", ""), x, z, terreno, false)
+
+	for ivy_path in plot.get("hera_obj", []):
+		_spawn_plant_cluster(ivy_path, x, z, terreno, ivy_radius)
 
 
 func _spawn_area(area: Dictionary, base_x: float, base_z: float, terreno) -> void:

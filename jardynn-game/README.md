@@ -55,10 +55,14 @@ Desde a introdução de `layout` no JSON (ver README do `ynn-generator`), o
 jardim não é mais uma linha reta: é um campo do tamanho de um campo de
 futebol (105m x 68m por padrão) com áreas, torres, estufas e canteiros
 espalhados numa grade de lotes. `Main.gd` lê `layout.plots` e instancia
-cada um na posição (x, z) do lote (torre/estufa como malha única; canteiro
+cada um na posição (x, z) do lote (estufa como malha única; canteiro
 como cluster denso, igual às plantas de área mas com `canteiro_radius`
 menor). JSON gerado antes dessa mudança (sem `layout`) ainda funciona —
 cai de volta na linha reta antiga (`area_spacing`).
+
+A torre é tratada à parte: além da malha, imprime no console o conteúdo
+de cada andar (`plot.conteudo`, ver README do `ynn-generator`) e espalha
+hera (`hera_obj`) rente à base (`ivy_radius`).
 
 Fichas de personagem avulsas (OSE ou LotFP) também podem ser exportadas em
 JSON do mesmo jeito:

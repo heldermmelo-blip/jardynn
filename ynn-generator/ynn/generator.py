@@ -44,6 +44,13 @@ FALLEN_BRANCH_COUNT_RANGE = (1, 3)
 CANTEIRO_SPECIES = ("flor", "arbusto")
 CANTEIRO_VARIANT_RANGE = (4, 8)
 
+# A torre é uma mini-masmorra vertical, não só decoração: cada andar (menos
+# o topo) sorteia um conteúdo em TORRE_ANDARES; o topo sorteia em
+# TORRE_TOPO, separadamente. A malha (gielis.structures.generate_tower)
+# recebe o mesmo número de andares, pra bater com o conteúdo.
+N_ANDARES_TORRE_RANGE = (3, 8)
+IVY_VARIANT_RANGE = (3, 6)
+
 
 def band_for_layer(layer):
     if layer <= 2:
@@ -71,6 +78,25 @@ def _denizens_for_band(band):
 
 def _pick_denizen(rng, band):
     return rng.choice(_denizens_for_band(band))
+
+
+def _torre_andar_for_band(entries, band):
+    return [(text, tipo) for text, bands, tipo in entries if bands == "all" or band in bands]
+
+
+def _pick_andar_conteudo(rng, entries, band, numero):
+    texto, tipo = rng.choice(_torre_andar_for_band(entries, band))
+    andar = {"numero": numero, "texto": texto}
+    if tipo == "tesouro":
+        andar["tesouro"] = _pick(rng, tables.TREASURE, band)
+    elif tipo == "encontro":
+        denizen, denizen_class, denizen_creature = _pick_denizen(rng, band)
+        andar["denizen"] = denizen
+        if denizen_class is not None:
+            andar["npc"] = create_character(rng, denizen_class)
+        elif denizen_creature is not None:
+            andar["criatura"] = instantiate_creature(rng, denizen_creature)
+    return andar
 
 
 def _vegetation_for_band(band):
@@ -153,6 +179,21 @@ def generate_terreno(rng, layer, resolution=65, cell_size=2.0):
     return terrain.generate_terrain(rng, band, resolution=resolution, cell_size=cell_size)
 
 
+def generate_torre_conteudo(rng, layer, n_andares_range=N_ANDARES_TORRE_RANGE):
+    """Sorteia o conteúdo da torre: um número de andares (`n_andares_range`,
+    padrão 3-8) e um conteúdo original por andar — os normais de
+    `tables.TORRE_ANDARES`, o último de `tables.TORRE_TOPO` (mais raro e
+    significativo). Cada andar pode carregar um tesouro (`tables.TREASURE`)
+    ou um denizen/NPC/criatura (`tables.DENIZENS`), igual às áreas."""
+    band = band_for_layer(layer)
+    n_andares = rng.randint(*n_andares_range)
+
+    andares = [_pick_andar_conteudo(rng, tables.TORRE_ANDARES, band, numero) for numero in range(1, n_andares)]
+    andares.append(_pick_andar_conteudo(rng, tables.TORRE_TOPO, band, n_andares))
+
+    return {"n_andares": n_andares, "andares": andares}
+
+
 def generate_layout_camada(rng, layer, n_areas, plant_output_dir=None, **layout_kwargs):
     """Gera o layout 2D da camada (`ynn.layout.generate_layout`) e já
     preenche as malhas de cada estrutura não-narrativa (torre, estufa,
@@ -164,9 +205,19 @@ def generate_layout_camada(rng, layer, n_areas, plant_output_dir=None, **layout_
 
     for i, plot in enumerate(camada_layout["plots"], start=1):
         if plot["tipo"] == "torre":
+            conteudo = generate_torre_conteudo(rng, layer)
             out_path = os.path.join(out_dir, f"camada{layer}_torre_{i}.obj")
-            path, _ = _generate_tower_mesh(rng, out_path=out_path)
+            path, _ = _generate_tower_mesh(rng, conteudo["n_andares"], out_path=out_path)
             plot["obj"] = path
+            plot["conteudo"] = conteudo
+
+            n_ivy = rng.randint(*IVY_VARIANT_RANGE)
+            ivy_paths = []
+            for variant in range(1, n_ivy + 1):
+                ivy_path = os.path.join(out_dir, f"camada{layer}_torre_{i}_hera_{variant}.obj")
+                path, _ = _generate_plant_mesh(rng, "videira", out_path=ivy_path)
+                ivy_paths.append(path)
+            plot["hera_obj"] = ivy_paths
         elif plot["tipo"] == "estufa":
             out_path = os.path.join(out_dir, f"camada{layer}_estufa_{i}.obj")
             path, _ = _generate_greenhouse_mesh(rng, out_path=out_path)

@@ -27,6 +27,12 @@ localidade" sorteado uma vez por nível) e tem um terceiro campo,
 por `ynn.terrain.generate_terrain` para decidir a amplitude do heightmap
 gerado para aquela camada.
 
+`TORRE_ANDARES` e `TORRE_TOPO` descrevem o conteúdo de cada andar da torre
+do layout (ver `ynn.generator.generate_torre_conteudo`) — `TORRE_ANDARES`
+para os andares normais, `TORRE_TOPO` só para o último. Cada entrada tem
+um terceiro campo, `tipo`: `"tesouro"` (sorteia de `TREASURE`),
+`"encontro"` (sorteia um denizen de `DENIZENS`) ou `None` (só atmosfera).
+
 Conteúdo original, inspirado apenas na estrutura de geração por tabelas de
 The Gardens of Ynn — nenhum texto do livro é reproduzido aqui.
 """
@@ -437,4 +443,36 @@ LOCALIDADE = [
     ("Placas inteiras de terra flutuam a pouca altura do resto do solo, presas a ele só por raízes esticadas ao limite.", ("nucleo_selvagem",), "irregular"),
     ("Uma fenda estreita corta o caminho ao meio, funda demais para se enxergar o fundo, sem nenhuma ponte à vista.", ("jardim_profundo", "nucleo_selvagem"), "acentuado"),
     ("Placas de pedra soltas cobrem o chão irregular, cada uma balançando de leve sob o peso de quem pisa.", ("jardim_profundo", "nucleo_selvagem"), "acentuado"),
+]
+
+TORRE_ANDARES = [
+    # (texto, bandas, tipo) — tipo em "tesouro", "encontro" ou None.
+    ("O andar está vazio, só poeira e silêncio.", "all", None),
+    ("Um pequeno tesouro foi deixado para trás aqui, esquecido entre os destroços.", "all", "tesouro"),
+    ("Algo vive neste andar e reage à presença de quem entra.", "all", "encontro"),
+    ("Móveis apodrecidos se desfazem ao toque — uma cadeira, uma mesa, os restos de uma cama.", "all", None),
+    ("Uma estante de livros embolorados ainda de pé; a maioria das páginas grudou umas nas outras.", "all", None),
+    ("Ninhos de pássaros nos cantos mais altos, ovos e filhotes piando sem parar.", "all", None),
+    ("Teias de aranha grossas dificultam a visão e o movimento por aqui.", ("jardim_profundo", "nucleo_selvagem"), None),
+    ("Um esqueleto preso à parede por correntes enferrujadas há muito tempo.", ("jardim_profundo", "nucleo_selvagem"), None),
+    ("Rações perfeitamente conservadas, o suficiente para alimentar um grupo grande por dias.", "all", None),
+    ("Retratos emoldurados de rostos alienígenamente belos cobrem a parede.", ("jardim_profundo", "nucleo_selvagem"), "tesouro"),
+    ("Um espelho de corpo inteiro que reflete tudo, menos quem está olhando para ele.", ("nucleo_selvagem",), None),
+]
+
+TORRE_TOPO = [
+    # Mesmo formato de TORRE_ANDARES, mas só pro último andar — conteúdo
+    # mais raro/significativo, reservado pro topo da torre.
+    ("Um sino enorme de bronze, silencioso, pendurado bem no centro do andar.", "all", None),
+    ("Um telescópio antigo, apontado para um trecho do céu que não parece bater com o de baixo.", "all", None),
+    ("Uma câmera escura projeta, invertida, uma imagem do jardim lá fora numa parede caiada.", "all", None),
+    ("Um tesouro bem maior que o normal está escondido aqui.", "all", "tesouro"),
+    ("Uma biblioteca arcana, prateleiras cheias de livros sobre magias que ninguém mais lembra de estudar.", ("jardim_profundo", "nucleo_selvagem"), None),
+    ("Algo poderoso e perigoso vive neste andar — o mais alto de todos.", ("jardim_profundo", "nucleo_selvagem"), "encontro"),
+    ("Uma armadilha está escondida no assoalho, pronta pra disparar no primeiro passo em falso.", "all", None),
+    ("Uma armadura completa, de aparência amaldiçoada, montada num pedestal, esperando um dono.", ("nucleo_selvagem",), None),
+    ("Uma máquina voadora incompleta, engrenagens e lona espalhadas pelo chão em volta dela.", "all", None),
+    ("Um espelho gigante, usado pra mandar sinais refletindo luz a longa distância.", "all", None),
+    ("Um caixão de vidro guarda um corpo perfeitamente preservado, como se dormisse.", ("nucleo_selvagem",), None),
+    ("Uma lâmpada enorme, alimentada por algo vivo e luminoso preso dentro dela, ilumina tudo ao redor.", "all", None),
 ]

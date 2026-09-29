@@ -1,7 +1,7 @@
 import os
 import random
 
-from ynn.generator import band_for_layer, generate_area, generate_layer, generate_layout_camada
+from ynn.generator import band_for_layer, generate_area, generate_layer, generate_layout_camada, generate_torre_conteudo
 
 
 def test_band_for_layer():
@@ -141,6 +141,11 @@ def test_generate_layout_camada_populates_structure_meshes():
     torre = by_tipo["torre"][0]
     assert os.path.exists(torre["obj"])
     assert os.path.getsize(torre["obj"]) > 0
+    assert torre["conteudo"]["n_andares"] == len(torre["conteudo"]["andares"])
+    assert len(torre["hera_obj"]) >= 3  # IVY_VARIANT_RANGE mínimo
+    for path in torre["hera_obj"]:
+        assert os.path.exists(path)
+        assert os.path.getsize(path) > 0
 
     estufa = by_tipo["estufa"][0]
     assert os.path.exists(estufa["obj"])
@@ -157,6 +162,48 @@ def test_generate_layout_camada_populates_structure_meshes():
     for plot in by_tipo["area"]:
         assert "obj" not in plot
         assert "plantas_obj" not in plot
+
+
+def test_torre_conteudo_has_one_entry_per_floor():
+    for seed in range(30):
+        conteudo = generate_torre_conteudo(random.Random(seed), layer=3)
+        assert 3 <= conteudo["n_andares"] <= 8  # N_ANDARES_TORRE_RANGE
+        assert len(conteudo["andares"]) == conteudo["n_andares"]
+        assert [a["numero"] for a in conteudo["andares"]] == list(range(1, conteudo["n_andares"] + 1))
+
+
+def test_torre_topo_is_the_last_floor_and_distinct_table():
+    from ynn import tables
+
+    topo_textos = {texto for texto, _, _ in tables.TORRE_TOPO}
+    andar_textos = {texto for texto, _, _ in tables.TORRE_ANDARES}
+    assert topo_textos.isdisjoint(andar_textos)
+
+    for seed in range(30):
+        conteudo = generate_torre_conteudo(random.Random(seed), layer=3)
+        topo = conteudo["andares"][-1]
+        assert topo["numero"] == conteudo["n_andares"]
+        assert topo["texto"] in topo_textos
+
+
+def test_torre_andar_com_tesouro_ou_encontro_preenchido():
+    found_tesouro = False
+    found_encontro = False
+    for seed in range(60):
+        conteudo = generate_torre_conteudo(random.Random(seed), layer=3)
+        for andar in conteudo["andares"]:
+            if andar.get("tesouro") is not None:
+                found_tesouro = True
+            if andar.get("denizen") is not None:
+                found_encontro = True
+    assert found_tesouro
+    assert found_encontro
+
+
+def test_torre_conteudo_is_deterministic():
+    conteudo_a = generate_torre_conteudo(random.Random(42), layer=3)
+    conteudo_b = generate_torre_conteudo(random.Random(42), layer=3)
+    assert conteudo_a == conteudo_b
 
 
 def test_ground_cover_vegetation_has_no_species():
