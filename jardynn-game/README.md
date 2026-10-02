@@ -60,6 +60,10 @@ como cluster denso, igual às plantas de área mas com `canteiro_radius`
 menor). JSON gerado antes dessa mudança (sem `layout`) ainda funciona —
 cai de volta na linha reta antiga (`area_spacing`).
 
+Estufas variam de tamanho e forma (`plot.planta`: dado, lados/portas,
+andares) e gazebos imprimem estado, bibelô, tesouro e a regra de abrigo
+noturno (`plot.conteudo`).
+
 A torre é tratada à parte: além da malha, imprime no console o conteúdo
 de cada andar (`plot.conteudo`, ver README do `ynn-generator`) e espalha
 hera (`hera_obj`) rente à base (`ivy_radius`).

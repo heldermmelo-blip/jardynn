@@ -47,8 +47,19 @@ o tubo de seção de Lamé e o domo da Superfórmula de `gielis.plants`):
   igual às áreas). A malha (fuste segmentado, um afunilamento por andar,
   telhado cônico) recebe o mesmo `n_andares`, e ganha "hera" — algumas
   variantes de `videira` (`hera_obj`) pra cobrir a base.
-- **estufa**: esqueleto de quatro postes + cumeeira + águas do telhado (sem
-  vidro/painéis ainda).
+- **estufa**: esqueleto de postes nos cantos + vigas por andar + telhado
+  (sem vidro/painéis ainda). Tamanho e forma vêm de um "dado" sorteado
+  (`ESTUFA_DADOS`, `generate_estufa_planta`), seguindo o mecanismo do livro
+  de usar a face do dado como planta baixa: d4/d8/d20 = triângulo,
+  d6/d10 = retângulo, d12 = pentágono, e o número de lados é também o de
+  portas. Dados maiores dão estufas maiores; o d12 tem 2 andares e o d20,
+  3 (os maiores são mais raros). Vem em `plot.planta`.
+- **gazebo**: pavilhão aberto (plataforma, 6 ou 8 postes, grade baixa com
+  uma abertura de entrada, telhado em cúpula e pináculo). Em
+  `plot.conteudo`: estado do pavilhão (`GAZEBO_ESTADO`), um bibelô largado
+  (`GAZEBO_BIBELOS`), um tesouro (`TREASURE`) e a regra de abrigo noturno
+  (`REFUGIO_GAZEBO`: com uma chama acesa lá dentro, as criaturas não
+  atacam).
 - **canteiro**: um leito denso de uma única espécie (`flor` ou `arbusto`,
   `CANTEIRO_SPECIES`), como as plantas por área mas mais compacto.
 

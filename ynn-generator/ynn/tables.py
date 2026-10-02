@@ -33,6 +33,10 @@ para os andares normais, `TORRE_TOPO` só para o último. Cada entrada tem
 um terceiro campo, `tipo`: `"tesouro"` (sorteia de `TREASURE`),
 `"encontro"` (sorteia um denizen de `DENIZENS`) ou `None` (só atmosfera).
 
+`GAZEBO_ESTADO` (como o pavilhão está) e `GAZEBO_BIBELOS` (o que ficou
+largado dentro) são sorteados por `ynn.generator.generate_gazebo_conteudo`,
+formato `(texto, bandas)` como as demais.
+
 Conteúdo original, inspirado apenas na estrutura de geração por tabelas de
 The Gardens of Ynn — nenhum texto do livro é reproduzido aqui.
 """
@@ -475,4 +479,23 @@ TORRE_TOPO = [
     ("Um espelho gigante, usado pra mandar sinais refletindo luz a longa distância.", "all", None),
     ("Um caixão de vidro guarda um corpo perfeitamente preservado, como se dormisse.", ("nucleo_selvagem",), None),
     ("Uma lâmpada enorme, alimentada por algo vivo e luminoso preso dentro dela, ilumina tudo ao redor.", "all", None),
+]
+
+GAZEBO_ESTADO = [
+    ("Um pavilhão de madeira de ar festivo, a tinta alegre desbotada e descascando em lascas.", "all"),
+    ("Um coreto de madeira branca, as ripas do piso empenadas, o telhado ainda firme.", ("jardim_externo", "jardim_profundo")),
+    ("Um pavilhão de treliça coberto de trepadeiras mortas, as cadeiras de vime desfiadas em volta de uma mesinha torta.", "all"),
+    ("Um gazebo de madeira escura, a pintura inteira descascada, cortinas apodrecidas ainda presas nos postes.", ("jardim_profundo", "nucleo_selvagem")),
+    ("Um pavilhão aberto de ferro e madeira, almofadas mofadas empilhadas nos bancos, teias de aranha de poste a poste.", "all"),
+    ("Um coreto que parece recém-varrido, mas a poeira volta a cobrir tudo cada vez que alguém desvia o olhar.", ("nucleo_selvagem",)),
+]
+
+GAZEBO_BIBELOS = [
+    ("um bule de porcelana lascado e três xícaras que não combinam", "all"),
+    ("um baralho incompleto, as cartas gastas pelo manuseio de muitas mãos", "all"),
+    ("um cachimbo longo de espuma-do-mar, ainda com resto de fumo perfumado no fornilho", "all"),
+    ("uma caixinha de charutos cheia de botões, fitas e bilhetes sem destinatário", ("jardim_externo", "jardim_profundo")),
+    ("um leque de renda negra esquecido sobre uma almofada", ("jardim_profundo", "nucleo_selvagem")),
+    ("um tabuleiro de damas com as peças dispostas no meio de uma partida interrompida", "all"),
+    ("um relógio de bolso parado numa hora que muda toda vez que é olhado", ("nucleo_selvagem",)),
 ]

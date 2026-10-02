@@ -1,8 +1,8 @@
-"""Estruturas arquitetônicas simples (torre, estufa) para o layout do
-jardim — não são plantas, mas reaproveitam os mesmos utilitários de
+"""Estruturas arquitetônicas simples (torre, estufa, gazebo) para o layout
+do jardim — não são plantas, mas reaproveitam os mesmos utilitários de
 `gielis.plants`: o tubo com seção de Lamé (`mesh_utils.tube_mesh`) para
 postes/vigas/torre, e o domo da Superfórmula (`foliage.cap_mesh`,
-originalmente o chapéu de cogumelo) para o telhado da torre.
+originalmente o chapéu de cogumelo) para os telhados.
 """
 
 import os
@@ -14,6 +14,8 @@ from .plants.mesh_utils import tube_mesh, write_obj
 
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "examples", "output")
 
+STORY_HEIGHT = 2.6
+
 
 def _resolve_out_path(out_path, default_name):
     if out_path is None:
@@ -22,6 +24,31 @@ def _resolve_out_path(out_path, default_name):
     out_dir = os.path.dirname(os.path.abspath(out_path))
     os.makedirs(out_dir, exist_ok=True)
     return out_path
+
+
+def _add_beam(parts, skeleton, start, end, radius, depth, n_sides=6):
+    segment = dict(start=start, end=end, r0=radius, r1=radius, depth=depth)
+    parts.append(tube_mesh(segment, n_sides=n_sides, cross_section_n=2.0))
+    skeleton.append(segment)
+
+
+def _polygon_corners(radius, sides, phase):
+    angles = phase + 2 * np.pi * np.arange(sides) / sides
+    return [np.array([radius * np.cos(a), radius * np.sin(a), 0.0]) for a in angles]
+
+
+def _polygon_fan(radius, sides, z):
+    """Piso poligonal plano em `z` (dupla face, igual às folhas)."""
+    angles = 2 * np.pi * np.arange(sides) / sides
+    ring = np.column_stack([radius * np.cos(angles), radius * np.sin(angles), np.full(sides, z)])
+    vertices = np.vstack([ring, [[0.0, 0.0, z]]])
+    center = sides
+    faces = []
+    for i in range(sides):
+        j = (i + 1) % sides
+        faces.append([center, i, j])
+        faces.append([center, j, i])
+    return vertices, np.array(faces, dtype=int)
 
 
 def _generate_tower(rng, n_floors):
@@ -65,48 +92,104 @@ def generate_tower(rng, n_floors, out_path=None):
     return out_path, skeleton
 
 
-def _generate_greenhouse(rng):
-    width = rng.uniform(4.0, 6.5)
-    depth = rng.uniform(6.0, 10.0)
-    wall_height = rng.uniform(2.2, 3.0)
-    ridge_height = wall_height + rng.uniform(1.5, 2.5)
-    post_radius = 0.06
+def _generate_greenhouse(rng, sides, n_floors, radius):
+    wall_height = STORY_HEIGHT * n_floors
+    post_radius = 0.06 + 0.02 * (n_floors - 1)
 
-    corners = [
-        np.array([-width / 2, -depth / 2, 0.0]),
-        np.array([width / 2, -depth / 2, 0.0]),
-        np.array([width / 2, depth / 2, 0.0]),
-        np.array([-width / 2, depth / 2, 0.0]),
-    ]
+    if sides == 4:
+        width = radius * 1.4
+        depth = width * rng.uniform(1.0, 1.5)
+        corners = [
+            np.array([-width / 2, -depth / 2, 0.0]),
+            np.array([width / 2, -depth / 2, 0.0]),
+            np.array([width / 2, depth / 2, 0.0]),
+            np.array([-width / 2, depth / 2, 0.0]),
+        ]
+    else:
+        corners = _polygon_corners(radius, sides, phase=rng.uniform(0.0, 2 * np.pi))
 
     parts = []
     skeleton = []
+    up = np.array([0.0, 0.0, 1.0])
+
     for corner in corners:
-        post = dict(start=corner, end=corner + np.array([0.0, 0.0, wall_height]), r0=post_radius, r1=post_radius, depth=0)
-        parts.append(tube_mesh(post, n_sides=6, cross_section_n=2.0))
-        skeleton.append(post)
+        _add_beam(parts, skeleton, corner, corner + up * wall_height, post_radius, depth=0)
 
-    ridge_a = np.array([0.0, -depth / 2, ridge_height])
-    ridge_b = np.array([0.0, depth / 2, ridge_height])
-    ridge = dict(start=ridge_a, end=ridge_b, r0=post_radius, r1=post_radius, depth=1)
-    parts.append(tube_mesh(ridge, n_sides=6, cross_section_n=2.0))
-    skeleton.append(ridge)
+    for level in range(1, n_floors + 1):
+        for i, corner in enumerate(corners):
+            nxt = corners[(i + 1) % len(corners)]
+            _add_beam(parts, skeleton, corner + up * STORY_HEIGHT * level, nxt + up * STORY_HEIGHT * level, post_radius, depth=1)
 
-    top_corners = [corner + np.array([0.0, 0.0, wall_height]) for corner in corners]
-    ridge_ends = [ridge_a, ridge_a, ridge_b, ridge_b]
-    for top_corner, ridge_end in zip(top_corners, ridge_ends):
-        beam = dict(start=top_corner, end=ridge_end, r0=post_radius, r1=post_radius, depth=1)
-        parts.append(tube_mesh(beam, n_sides=6, cross_section_n=2.0))
-        skeleton.append(beam)
+    top_corners = [corner + up * wall_height for corner in corners]
+    if sides == 4:
+        ridge_height = wall_height + rng.uniform(1.5, 2.5)
+        ridge_a = np.array([0.0, -depth / 2, ridge_height])
+        ridge_b = np.array([0.0, depth / 2, ridge_height])
+        _add_beam(parts, skeleton, ridge_a, ridge_b, post_radius, depth=1)
+        for top_corner, ridge_end in zip(top_corners, [ridge_a, ridge_a, ridge_b, ridge_b]):
+            _add_beam(parts, skeleton, top_corner, ridge_end, post_radius, depth=1)
+    else:
+        apex = np.array([0.0, 0.0, wall_height + radius * rng.uniform(0.5, 0.8)])
+        for top_corner in top_corners:
+            _add_beam(parts, skeleton, top_corner, apex, post_radius, depth=1)
 
     return parts, skeleton
 
 
-def generate_greenhouse(rng, out_path=None):
-    """Gera o esqueleto de uma estufa (quatro postes + cumeeira + águas do
-    telhado, sem vidro/painéis) e salva como .obj em `out_path` (padrão:
-    `examples/output/estufa.obj`). Retorna `(out_path, skeleton)`."""
-    parts, skeleton = _generate_greenhouse(rng)
+def generate_greenhouse(rng, sides=4, n_floors=1, radius=3.6, out_path=None):
+    """Gera o esqueleto de uma estufa (postes nos cantos, vigas por andar e
+    águas do telhado, sem vidro/painéis) e salva como .obj em `out_path`
+    (padrão: `examples/output/estufa.obj`). `sides` é o número de cantos da
+    planta baixa (4 = retangular com cumeeira; os demais, polígono regular
+    com telhado em pirâmide), `n_floors` o número de andares e `radius` o
+    raio circunscrito da planta (m). Retorna `(out_path, skeleton)`."""
+    parts, skeleton = _generate_greenhouse(rng, sides, n_floors, radius)
     out_path = _resolve_out_path(out_path, "estufa.obj")
+    write_obj(out_path, parts)
+    return out_path, skeleton
+
+
+def _generate_gazebo(rng):
+    n_posts = rng.choice([6, 8])
+    radius = rng.uniform(1.8, 2.6)
+    post_height = rng.uniform(2.4, 2.8)
+    post_radius = 0.07
+    up = np.array([0.0, 0.0, 1.0])
+    platform_height = 0.3
+
+    parts = [_polygon_fan(radius * 1.1, n_posts, platform_height)]
+    skeleton = []
+    corners = _polygon_corners(radius, n_posts, phase=rng.uniform(0.0, 2 * np.pi))
+
+    for corner in corners:
+        base = corner + up * platform_height
+        _add_beam(parts, skeleton, base, base + up * post_height, post_radius, depth=0)
+
+    entrance = rng.randrange(n_posts)
+    for i, corner in enumerate(corners):
+        nxt = corners[(i + 1) % n_posts]
+        top = up * (platform_height + post_height)
+        _add_beam(parts, skeleton, corner + top, nxt + top, post_radius, depth=1)
+        if i != entrance:
+            rail = up * (platform_height + 0.9)
+            _add_beam(parts, skeleton, corner + rail, nxt + rail, post_radius * 0.8, depth=1)
+
+    roof_z = platform_height + post_height
+    roof_height = rng.uniform(1.2, 2.0)
+    roof_v, roof_f = cap_mesh(radius=radius * 1.25, height=roof_height, n_sides=n_posts, cross_section_n=2.0)
+    parts.append((roof_v + np.array([0.0, 0.0, roof_z]), roof_f))
+    finial_base = np.array([0.0, 0.0, roof_z + roof_height])
+    _add_beam(parts, skeleton, finial_base, finial_base + up * 0.4, 0.04, depth=2)
+
+    return parts, skeleton
+
+
+def generate_gazebo(rng, out_path=None):
+    """Gera um gazebo (pavilhão aberto: plataforma, 6 ou 8 postes, grade
+    baixa com uma abertura de entrada, telhado em cúpula e um pináculo) e
+    salva como .obj em `out_path` (padrão: `examples/output/gazebo.obj`).
+    Retorna `(out_path, skeleton)`."""
+    parts, skeleton = _generate_gazebo(rng)
+    out_path = _resolve_out_path(out_path, "gazebo.obj")
     write_obj(out_path, parts)
     return out_path, skeleton

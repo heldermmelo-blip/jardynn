@@ -5,7 +5,9 @@ extends Node3D
 ## JSON) e o layout 2D (`layout` — lotes de área/torre/estufa/canteiro
 ## espalhados por um campo do tamanho de um campo de futebol, ver
 ## `ynn.layout`), além de imprimir no console o texto descritivo e as
-## fichas de NPCs/criaturas de cada área. A torre é uma mini-masmorra
+## fichas de NPCs/criaturas de cada área. Estufas variam de tamanho/forma
+## (planta baixa sorteada por "dado") e gazebos trazem bibelô, tesouro e a
+## regra de abrigo noturno. A torre é uma mini-masmorra
 ## vertical (ver `ynn.generator.generate_torre_conteudo`): o console
 ## imprime o conteúdo de cada andar, e a malha vem cercada de hera.
 ##
@@ -76,6 +78,16 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 		"torre":
 			_spawn_torre(plot, x, z, terreno)
 		"estufa":
+			var planta = plot.get("planta", {})
+			print("--- Estufa em (%.1f, %.1f): d%s, %s portas, %s andar(es) ---" % [x, z, planta.get("dado", "?"), planta.get("portas", "?"), planta.get("andares", "?")])
+			_spawn_structure(plot.get("obj", ""), x, z, terreno)
+		"gazebo":
+			var gazebo = plot.get("conteudo", {})
+			print("--- Gazebo em (%.1f, %.1f) ---" % [x, z])
+			print(gazebo.get("texto", ""))
+			print("  Bibelô: %s" % gazebo.get("bibelo", ""))
+			print("  Tesouro: %s" % gazebo.get("tesouro", ""))
+			print("  %s" % gazebo.get("refugio", ""))
 			_spawn_structure(plot.get("obj", ""), x, z, terreno)
 		"canteiro":
 			print("--- Canteiro de %s em (%.1f, %.1f) ---" % [plot.get("especie", "?"), x, z])

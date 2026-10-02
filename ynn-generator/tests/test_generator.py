@@ -132,7 +132,13 @@ def test_area_without_fallen_branches_has_empty_list():
 def test_generate_layout_camada_populates_structure_meshes():
     rng = random.Random(1)
     camada_layout = generate_layout_camada(
-        rng, layer=1, n_areas=2, n_torres_range=(1, 1), n_estufas_range=(1, 1), n_canteiros_range=(1, 1)
+        rng,
+        layer=1,
+        n_areas=2,
+        n_torres_range=(1, 1),
+        n_estufas_range=(1, 1),
+        n_canteiros_range=(1, 1),
+        n_gazebos_range=(1, 1),
     )
     by_tipo = {}
     for plot in camada_layout["plots"]:
@@ -150,6 +156,14 @@ def test_generate_layout_camada_populates_structure_meshes():
     estufa = by_tipo["estufa"][0]
     assert os.path.exists(estufa["obj"])
     assert os.path.getsize(estufa["obj"]) > 0
+    assert estufa["planta"]["dado"] in (4, 6, 8, 10, 12, 20)
+    assert estufa["planta"]["portas"] == estufa["planta"]["lados"]
+
+    gazebo = by_tipo["gazebo"][0]
+    assert os.path.exists(gazebo["obj"])
+    assert os.path.getsize(gazebo["obj"]) > 0
+    for chave in ("texto", "bibelo", "tesouro", "refugio"):
+        assert gazebo["conteudo"][chave]
 
     canteiro = by_tipo["canteiro"][0]
     assert canteiro["especie"] in ("flor", "arbusto")
@@ -162,6 +176,41 @@ def test_generate_layout_camada_populates_structure_meshes():
     for plot in by_tipo["area"]:
         assert "obj" not in plot
         assert "plantas_obj" not in plot
+
+
+def test_estufa_planta_follows_dice_table():
+    from ynn.generator import ESTUFA_DADOS, generate_estufa_planta
+
+    vistos = set()
+    for seed in range(300):
+        planta = generate_estufa_planta(random.Random(seed))
+        info = ESTUFA_DADOS[planta["dado"]]
+        assert planta["lados"] == info["lados"] == planta["portas"]
+        assert planta["andares"] == info["andares"]
+        assert planta["raio"] == info["raio"]
+        vistos.add(planta["dado"])
+    assert vistos == set(ESTUFA_DADOS)  # todos os tamanhos aparecem
+
+
+def test_estufa_bigger_dice_are_bigger_and_taller():
+    from ynn.generator import ESTUFA_DADOS
+
+    assert ESTUFA_DADOS[12]["andares"] == 2
+    assert ESTUFA_DADOS[20]["andares"] == 3
+    assert all(ESTUFA_DADOS[d]["andares"] == 1 for d in (4, 6, 8, 10))
+    assert ESTUFA_DADOS[4]["raio"] < ESTUFA_DADOS[12]["raio"]
+    # Cabe num lote (12 m): o raio circunscrito não passa da metade do lote.
+    assert all(info["raio"] <= 6.0 for info in ESTUFA_DADOS.values())
+
+
+def test_gazebo_conteudo_fields_and_determinism():
+    from ynn.generator import REFUGIO_GAZEBO, generate_gazebo_conteudo
+
+    a = generate_gazebo_conteudo(random.Random(7), layer=3)
+    b = generate_gazebo_conteudo(random.Random(7), layer=3)
+    assert a == b
+    assert a["refugio"] == REFUGIO_GAZEBO
+    assert a["texto"] and a["bibelo"] and a["tesouro"]
 
 
 def test_torre_conteudo_has_one_entry_per_floor():

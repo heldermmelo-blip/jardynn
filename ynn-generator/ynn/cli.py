@@ -45,6 +45,18 @@ def render_layer_markdown(layer, areas, terreno=None, layout=None):
                         lines.append(f"    - tesouro: {andar['tesouro']}")
                     if andar.get("denizen") is not None:
                         lines.append(f"    - encontro: {andar['denizen']}")
+            elif plot["tipo"] == "estufa":
+                planta = plot["planta"]
+                lines.append(
+                    f"- estufa em ({plot['x']:.1f}, {plot['z']:.1f}): d{planta['dado']}, "
+                    f"{planta['lados']} lados/portas, {planta['andares']} andar(es), raio {planta['raio']:.1f} m"
+                )
+            elif plot["tipo"] == "gazebo":
+                conteudo = plot["conteudo"]
+                lines.append(f"- gazebo em ({plot['x']:.1f}, {plot['z']:.1f}): {conteudo['texto']}")
+                lines.append(f"  - bibelô: {conteudo['bibelo']}")
+                lines.append(f"  - tesouro: {conteudo['tesouro']}")
+                lines.append(f"  - {conteudo['refugio']}")
             elif plot["tipo"] != "area":
                 lines.append(f"- {plot['tipo']} em ({plot['x']:.1f}, {plot['z']:.1f})")
         lines.append("")

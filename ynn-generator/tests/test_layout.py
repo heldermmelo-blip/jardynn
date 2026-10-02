@@ -8,14 +8,25 @@ from ynn.layout import generate_layout
 def test_generate_layout_returns_expected_plot_count():
     rng = random.Random(1)
     result = generate_layout(
-        rng, n_areas=5, n_torres_range=(1, 1), n_estufas_range=(2, 2), n_canteiros_range=(3, 3)
+        rng,
+        n_areas=5,
+        n_torres_range=(1, 1),
+        n_estufas_range=(2, 2),
+        n_canteiros_range=(3, 3),
+        n_gazebos_range=(2, 2),
     )
-    assert len(result["plots"]) == 1 + 2 + 3 + 5
+    assert len(result["plots"]) == 1 + 2 + 3 + 2 + 5
 
     counts = {}
     for plot in result["plots"]:
         counts[plot["tipo"]] = counts.get(plot["tipo"], 0) + 1
-    assert counts == {"torre": 1, "estufa": 2, "canteiro": 3, "area": 5}
+    assert counts == {"torre": 1, "estufa": 2, "canteiro": 3, "gazebo": 2, "area": 5}
+
+
+def test_default_layout_includes_at_least_one_gazebo():
+    for seed in range(20):
+        result = generate_layout(random.Random(seed), n_areas=3)
+        assert any(plot["tipo"] == "gazebo" for plot in result["plots"])
 
 
 def test_area_plots_have_matching_indices():

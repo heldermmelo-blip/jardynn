@@ -16,6 +16,7 @@ for _sibling in ("lotfp-rules", "gielis-equations"):
 from lotfp.character import create_character  # noqa: E402
 from gielis.plants import generate_fallen_branch as _generate_fallen_branch_mesh  # noqa: E402
 from gielis.plants import generate_plant as _generate_plant_mesh  # noqa: E402
+from gielis.structures import generate_gazebo as _generate_gazebo_mesh  # noqa: E402
 from gielis.structures import generate_greenhouse as _generate_greenhouse_mesh  # noqa: E402
 from gielis.structures import generate_tower as _generate_tower_mesh  # noqa: E402
 
@@ -50,6 +51,25 @@ CANTEIRO_VARIANT_RANGE = (4, 8)
 # recebe o mesmo número de andares, pra bater com o conteúdo.
 N_ANDARES_TORRE_RANGE = (3, 8)
 IVY_VARIANT_RANGE = (3, 6)
+
+# Tamanho/forma de cada estufa vêm de um "dado" sorteado: a face do dado é a
+# planta baixa (`lados` = número de cantos/portas), dados maiores dão
+# estufas maiores, e os dois maiores ganham mais andares. `raio` é o raio
+# circunscrito da planta em metros (limitado pra caber num lote de 12 m);
+# `peso` deixa as estufas gigantes raras.
+ESTUFA_DADOS = {
+    4: dict(lados=3, raio=3.0, andares=1, peso=4),
+    6: dict(lados=4, raio=3.6, andares=1, peso=4),
+    8: dict(lados=3, raio=4.2, andares=1, peso=3),
+    10: dict(lados=4, raio=4.8, andares=1, peso=2),
+    12: dict(lados=5, raio=5.3, andares=2, peso=2),
+    20: dict(lados=3, raio=5.8, andares=3, peso=1),
+}
+
+REFUGIO_GAZEBO = (
+    "Abrigo noturno: com uma chama acesa sob o telhado (vela, lampião ou fogueira), "
+    "as criaturas do jardim não entram para atacar quem está lá dentro."
+)
 
 
 def band_for_layer(layer):
@@ -194,10 +214,37 @@ def generate_torre_conteudo(rng, layer, n_andares_range=N_ANDARES_TORRE_RANGE):
     return {"n_andares": n_andares, "andares": andares}
 
 
+def generate_estufa_planta(rng):
+    """Sorteia o "dado" de uma estufa e devolve sua planta: número de lados
+    (= cantos = portas), andares e raio, conforme `ESTUFA_DADOS`."""
+    dados = list(ESTUFA_DADOS)
+    dado = rng.choices(dados, weights=[ESTUFA_DADOS[d]["peso"] for d in dados])[0]
+    info = ESTUFA_DADOS[dado]
+    return {
+        "dado": dado,
+        "lados": info["lados"],
+        "portas": info["lados"],
+        "andares": info["andares"],
+        "raio": info["raio"],
+    }
+
+
+def generate_gazebo_conteudo(rng, layer):
+    """Conteúdo de um gazebo: o estado do pavilhão, um bibelô largado
+    dentro, um tesouro (`tables.TREASURE`) e a regra de abrigo noturno."""
+    band = band_for_layer(layer)
+    return {
+        "texto": _pick(rng, tables.GAZEBO_ESTADO, band),
+        "bibelo": _pick(rng, tables.GAZEBO_BIBELOS, band),
+        "tesouro": _pick(rng, tables.TREASURE, band),
+        "refugio": REFUGIO_GAZEBO,
+    }
+
+
 def generate_layout_camada(rng, layer, n_areas, plant_output_dir=None, **layout_kwargs):
     """Gera o layout 2D da camada (`ynn.layout.generate_layout`) e já
     preenche as malhas de cada estrutura não-narrativa (torre, estufa,
-    canteiro) diretamente nos lotes — as áreas (`tipo == "area"`) só
+    gazebo, canteiro) diretamente nos lotes — as áreas (`tipo == "area"`) só
     carregam a posição; o conteúdo delas continua vindo de `generate_area`,
     cruzado por `area_index`."""
     camada_layout = layout.generate_layout(rng, n_areas, **layout_kwargs)
@@ -219,9 +266,18 @@ def generate_layout_camada(rng, layer, n_areas, plant_output_dir=None, **layout_
                 ivy_paths.append(path)
             plot["hera_obj"] = ivy_paths
         elif plot["tipo"] == "estufa":
+            planta = generate_estufa_planta(rng)
             out_path = os.path.join(out_dir, f"camada{layer}_estufa_{i}.obj")
-            path, _ = _generate_greenhouse_mesh(rng, out_path=out_path)
+            path, _ = _generate_greenhouse_mesh(
+                rng, sides=planta["lados"], n_floors=planta["andares"], radius=planta["raio"], out_path=out_path
+            )
             plot["obj"] = path
+            plot["planta"] = planta
+        elif plot["tipo"] == "gazebo":
+            out_path = os.path.join(out_dir, f"camada{layer}_gazebo_{i}.obj")
+            path, _ = _generate_gazebo_mesh(rng, out_path=out_path)
+            plot["obj"] = path
+            plot["conteudo"] = generate_gazebo_conteudo(rng, layer)
         elif plot["tipo"] == "canteiro":
             especie = rng.choice(CANTEIRO_SPECIES)
             n_variants = rng.randint(*CANTEIRO_VARIANT_RANGE)

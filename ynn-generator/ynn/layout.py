@@ -1,5 +1,5 @@
 """Layout espacial 2D de uma camada — em vez de uma linha reta de áreas,
-distribui áreas e estruturas (torres, estufas, canteiros) por uma grade de
+distribui áreas e estruturas (torres, estufas, gazebos, canteiros) por uma grade de
 lotes sobre um terreno do tamanho de um campo de futebol (padrão FIFA:
 105m x 68m).
 
@@ -16,6 +16,7 @@ PLOT_SIZE = 12.0
 N_TORRES_RANGE = (1, 1)
 N_ESTUFAS_RANGE = (1, 2)
 N_CANTEIROS_RANGE = (1, 3)
+N_GAZEBOS_RANGE = (1, 2)
 
 
 def _grid_cells(field_width, field_depth, plot_size):
@@ -41,6 +42,7 @@ def generate_layout(
     n_torres_range=N_TORRES_RANGE,
     n_estufas_range=N_ESTUFAS_RANGE,
     n_canteiros_range=N_CANTEIROS_RANGE,
+    n_gazebos_range=N_GAZEBOS_RANGE,
 ):
     cells = _grid_cells(field_width, field_depth, plot_size)
     rng.shuffle(cells)
@@ -48,7 +50,8 @@ def generate_layout(
     n_torres = rng.randint(*n_torres_range)
     n_estufas = rng.randint(*n_estufas_range)
     n_canteiros = rng.randint(*n_canteiros_range)
-    n_needed = n_torres + n_estufas + n_canteiros + n_areas
+    n_gazebos = rng.randint(*n_gazebos_range)
+    n_needed = n_torres + n_estufas + n_canteiros + n_gazebos + n_areas
     if n_needed > len(cells):
         raise ValueError(
             f"grade de {len(cells)} lotes ({plot_size}m) é pequena demais para "
@@ -72,6 +75,7 @@ def generate_layout(
     _take(n_torres, "torre")
     _take(n_estufas, "estufa")
     _take(n_canteiros, "canteiro")
+    _take(n_gazebos, "gazebo")
     for area_index in range(1, n_areas + 1):
         _take(1, "area", area_index=area_index)
 
