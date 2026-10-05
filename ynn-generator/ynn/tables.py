@@ -33,6 +33,12 @@ para os andares normais, `TORRE_TOPO` só para o último. Cada entrada tem
 um terceiro campo, `tipo`: `"tesouro"` (sorteia de `TREASURE`),
 `"encontro"` (sorteia um denizen de `DENIZENS`) ou `None` (só atmosfera).
 
+`ESTUFA_CONTEUDO` tem uma entrada sorteada por estufa
+(`ynn.generator.generate_estufa_conteudo`), com formato `(texto, bandas,
+tipo, criatura)`: `tipo` é `"valor"` (rola um valor em ouro, crescente com
+a profundidade), `"criatura"` (instancia a ficha `criatura` de
+`ynn.creatures.CREATURES`) ou `None` (só atmosfera/regra no próprio texto).
+
 `GAZEBO_ESTADO` (como o pavilhão está) e `GAZEBO_BIBELOS` (o que ficou
 largado dentro) são sorteados por `ynn.generator.generate_gazebo_conteudo`,
 formato `(texto, bandas)` como as demais.
@@ -498,4 +504,21 @@ GAZEBO_BIBELOS = [
     ("um leque de renda negra esquecido sobre uma almofada", ("jardim_profundo", "nucleo_selvagem")),
     ("um tabuleiro de damas com as peças dispostas no meio de uma partida interrompida", "all"),
     ("um relógio de bolso parado numa hora que muda toda vez que é olhado", ("nucleo_selvagem",)),
+]
+
+ESTUFA_CONTEUDO = [
+    # (texto, bandas, tipo, criatura) — tipo em "valor", "criatura" ou None.
+    ("Vasos de plantas raras, cada um com uma plaqueta de colecionador escrita em latim.", "all", "valor", None),
+    ("Nada de notável: só vasos vazios e terra seca rachada.", "all", None, None),
+    ("Ervas medicinais crescem entre os vasos — 1d4+1 doses, e cada dose cura 1 PV.", "all", None, None),
+    ("Frutos graúdos e maduros pendem dos galhos, seguros de comer.", "all", None, None),
+    ("Flores lindas e venenosas: comer ou se espetar nelas causa 1d8 de dano (1d4 doses colhíveis).", "all", None, None),
+    ("Mesas e cadeiras de ferro, enferrujadas e cobertas de musgo, postas como para um chá abandonado.", "all", None, None),
+    ("Nenhuma planta: prateleiras vazias e vidro limpo demais pra um lugar abandonado.", "all", None, None),
+    ("Gaiolas ornamentais de ouro penduradas do teto, vazias, ainda balançando de leve.", "all", "valor", None),
+    ("Um jarro carnívoro enorme, enraizado perto da porta, abre a boca na direção de quem entra.", ("jardim_profundo", "nucleo_selvagem"), "criatura", "jarro_carnivoro"),
+    ("Limo verde digestivo cobre o teto; qualquer barulho súbito faz pingar gotas que queimam (1d6).", ("jardim_profundo", "nucleo_selvagem"), None, None),
+    ("Esporos densos no ar: respirar causa 1 de dano por turno, e quem falhar numa resistência a veneno continua sofrendo ao sair.", ("jardim_profundo", "nucleo_selvagem"), None, None),
+    ("Sob a folhagem, esqueletos humanos com trepadeiras saindo das costelas se levantam quando alguém se aproxima.", ("jardim_profundo", "nucleo_selvagem"), "criatura", "esqueleto_vegetal"),
+    ("A estufa está lacrada por fora, as portas pregadas; lá dentro, a folhagem empurra o vidro tentando sair.", ("nucleo_selvagem",), None, None),
 ]

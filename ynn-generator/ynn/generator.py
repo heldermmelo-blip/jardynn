@@ -229,6 +229,25 @@ def generate_estufa_planta(rng):
     }
 
 
+def generate_estufa_conteudo(rng, layer):
+    """Sorteia o conteúdo de uma estufa em `tables.ESTUFA_CONTEUDO`: texto,
+    e conforme o tipo, um valor em ouro (`1d6 + camada`, crescente com a
+    profundidade) ou a ficha de uma criatura."""
+    band = band_for_layer(layer)
+    entries = [
+        (texto, tipo, criatura_key)
+        for texto, bandas, tipo, criatura_key in tables.ESTUFA_CONTEUDO
+        if bandas == "all" or band in bandas
+    ]
+    texto, tipo, criatura_key = rng.choice(entries)
+    conteudo = {"texto": texto}
+    if tipo == "valor":
+        conteudo["valor_ouro"] = rng.randint(1, 6) + layer
+    elif tipo == "criatura":
+        conteudo["criatura"] = instantiate_creature(rng, criatura_key)
+    return conteudo
+
+
 def generate_gazebo_conteudo(rng, layer):
     """Conteúdo de um gazebo: o estado do pavilhão, um bibelô largado
     dentro, um tesouro (`tables.TREASURE`) e a regra de abrigo noturno."""
@@ -273,6 +292,7 @@ def generate_layout_camada(rng, layer, n_areas, plant_output_dir=None, **layout_
             )
             plot["obj"] = path
             plot["planta"] = planta
+            plot["conteudo"] = generate_estufa_conteudo(rng, layer)
         elif plot["tipo"] == "gazebo":
             out_path = os.path.join(out_dir, f"camada{layer}_gazebo_{i}.obj")
             path, _ = _generate_gazebo_mesh(rng, out_path=out_path)

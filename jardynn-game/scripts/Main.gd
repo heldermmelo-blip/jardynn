@@ -80,6 +80,13 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 		"estufa":
 			var planta = plot.get("planta", {})
 			print("--- Estufa em (%.1f, %.1f): d%s, %s portas, %s andar(es) ---" % [x, z, planta.get("dado", "?"), planta.get("portas", "?"), planta.get("andares", "?")])
+			var estufa = plot.get("conteudo", {})
+			print(estufa.get("texto", ""))
+			if estufa.get("valor_ouro") != null:
+				print("  Vale %s de ouro" % estufa.get("valor_ouro"))
+			var estufa_criatura = estufa.get("criatura")
+			if estufa_criatura != null:
+				print("  Criatura: %s (CA %s, DV %s, PV %s)" % [estufa_criatura.get("nome"), estufa_criatura.get("ca"), estufa_criatura.get("dv"), estufa_criatura.get("pontos_de_vida")])
 			_spawn_structure(plot.get("obj", ""), x, z, terreno)
 		"gazebo":
 			var gazebo = plot.get("conteudo", {})

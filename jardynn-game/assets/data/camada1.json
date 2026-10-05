@@ -4412,6 +4412,9 @@
           "portas": 5,
           "andares": 2,
           "raio": 5.3
+        },
+        "conteudo": {
+          "texto": "Flores lindas e venenosas: comer ou se espetar nelas causa 1d8 de dano (1d4 doses colhíveis)."
         }
       },
       {
@@ -4420,11 +4423,14 @@
         "z": -27.812653727416382,
         "obj": "../jardynn-game/assets/plants\\camada1_estufa_3.obj",
         "planta": {
-          "dado": 6,
-          "lados": 4,
-          "portas": 4,
+          "dado": 4,
+          "lados": 3,
+          "portas": 3,
           "andares": 1,
-          "raio": 3.6
+          "raio": 3.0
+        },
+        "conteudo": {
+          "texto": "Nada de notável: só vasos vazios e terra seca rachada."
         }
       },
       {
@@ -4436,36 +4442,37 @@
           "../jardynn-game/assets/plants\\camada1_canteiro_4_flor_1.obj",
           "../jardynn-game/assets/plants\\camada1_canteiro_4_flor_2.obj",
           "../jardynn-game/assets/plants\\camada1_canteiro_4_flor_3.obj",
-          "../jardynn-game/assets/plants\\camada1_canteiro_4_flor_4.obj"
+          "../jardynn-game/assets/plants\\camada1_canteiro_4_flor_4.obj",
+          "../jardynn-game/assets/plants\\camada1_canteiro_4_flor_5.obj",
+          "../jardynn-game/assets/plants\\camada1_canteiro_4_flor_6.obj",
+          "../jardynn-game/assets/plants\\camada1_canteiro_4_flor_7.obj"
         ]
       },
       {
         "tipo": "canteiro",
         "x": 38.802144841118796,
         "z": -3.7215322770756565,
-        "especie": "flor",
+        "especie": "arbusto",
         "plantas_obj": [
-          "../jardynn-game/assets/plants\\camada1_canteiro_5_flor_1.obj",
-          "../jardynn-game/assets/plants\\camada1_canteiro_5_flor_2.obj",
-          "../jardynn-game/assets/plants\\camada1_canteiro_5_flor_3.obj",
-          "../jardynn-game/assets/plants\\camada1_canteiro_5_flor_4.obj",
-          "../jardynn-game/assets/plants\\camada1_canteiro_5_flor_5.obj",
-          "../jardynn-game/assets/plants\\camada1_canteiro_5_flor_6.obj",
-          "../jardynn-game/assets/plants\\camada1_canteiro_5_flor_7.obj",
-          "../jardynn-game/assets/plants\\camada1_canteiro_5_flor_8.obj"
+          "../jardynn-game/assets/plants\\camada1_canteiro_5_arbusto_1.obj",
+          "../jardynn-game/assets/plants\\camada1_canteiro_5_arbusto_2.obj",
+          "../jardynn-game/assets/plants\\camada1_canteiro_5_arbusto_3.obj",
+          "../jardynn-game/assets/plants\\camada1_canteiro_5_arbusto_4.obj",
+          "../jardynn-game/assets/plants\\camada1_canteiro_5_arbusto_5.obj",
+          "../jardynn-game/assets/plants\\camada1_canteiro_5_arbusto_6.obj",
+          "../jardynn-game/assets/plants\\camada1_canteiro_5_arbusto_7.obj"
         ]
       },
       {
         "tipo": "canteiro",
         "x": -9.763541389626276,
         "z": 6.364967781160384,
-        "especie": "flor",
+        "especie": "arbusto",
         "plantas_obj": [
-          "../jardynn-game/assets/plants\\camada1_canteiro_6_flor_1.obj",
-          "../jardynn-game/assets/plants\\camada1_canteiro_6_flor_2.obj",
-          "../jardynn-game/assets/plants\\camada1_canteiro_6_flor_3.obj",
-          "../jardynn-game/assets/plants\\camada1_canteiro_6_flor_4.obj",
-          "../jardynn-game/assets/plants\\camada1_canteiro_6_flor_5.obj"
+          "../jardynn-game/assets/plants\\camada1_canteiro_6_arbusto_1.obj",
+          "../jardynn-game/assets/plants\\camada1_canteiro_6_arbusto_2.obj",
+          "../jardynn-game/assets/plants\\camada1_canteiro_6_arbusto_3.obj",
+          "../jardynn-game/assets/plants\\camada1_canteiro_6_arbusto_4.obj"
         ]
       },
       {
@@ -4474,9 +4481,9 @@
         "z": 19.241796668967584,
         "obj": "../jardynn-game/assets/plants\\camada1_gazebo_7.obj",
         "conteudo": {
-          "texto": "Um coreto de madeira branca, as ripas do piso empenadas, o telhado ainda firme.",
-          "bibelo": "um cachimbo longo de espuma-do-mar, ainda com resto de fumo perfumado no fornilho",
-          "tesouro": "um regador de cobre, meio enterrado, ainda com água que nunca parece acabar",
+          "texto": "Um pavilhão de madeira de ar festivo, a tinta alegre desbotada e descascando em lascas.",
+          "bibelo": "um tabuleiro de damas com as peças dispostas no meio de uma partida interrompida",
+          "tesouro": "uma caixa de música de latão enferrujado que toca uma melodia que ninguém reconhece, mas que todos juram já ter ouvido",
           "refugio": "Abrigo noturno: com uma chama acesa sob o telhado (vela, lampião ou fogueira), as criaturas do jardim não entram para atacar quem está lá dentro."
         }
       },
@@ -4487,8 +4494,8 @@
         "obj": "../jardynn-game/assets/plants\\camada1_gazebo_8.obj",
         "conteudo": {
           "texto": "Um coreto de madeira branca, as ripas do piso empenadas, o telhado ainda firme.",
-          "bibelo": "um tabuleiro de damas com as peças dispostas no meio de uma partida interrompida",
-          "tesouro": "moedas antigas espalhadas sob um arbusto, todas do mesmo lado para cima",
+          "bibelo": "um baralho incompleto, as cartas gastas pelo manuseio de muitas mãos",
+          "tesouro": "um regador de cobre, meio enterrado, ainda com água que nunca parece acabar",
           "refugio": "Abrigo noturno: com uma chama acesa sob o telhado (vela, lampião ou fogueira), as criaturas do jardim não entram para atacar quem está lá dentro."
         }
       },
@@ -4529,18 +4536,18 @@
       "index": 1,
       "layer": 1,
       "band": "jardim_externo",
-      "text": "Um caniçal denso sussurra mesmo sem vento. Um vento fraco carrega um cheiro de terra recém-revirada. Aqui há um aviário vazio, a porta aberta, ainda balançando de leve. Entre a vegetação, há moedas antigas espalhadas sob um arbusto, todas do mesmo lado para cima.",
+      "text": "Um pomar de árvores frutíferas cujos frutos caem já podres, mas ainda perfumados. O ar tem um leve gosto de metal. Aqui há um pomar de estufas com o vidro embaçado por dentro, quase todas vazias — uma ainda tem uma luz acesa lá no fundo.",
       "has_denizen": false,
       "has_wyrd": false,
-      "has_treasure": true,
+      "has_treasure": false,
       "npc": null,
       "criatura": null,
       "plantas_obj": [
-        "../jardynn-game/assets/plants\\camada1_area1_bambu_1.obj",
-        "../jardynn-game/assets/plants\\camada1_area1_bambu_2.obj",
-        "../jardynn-game/assets/plants\\camada1_area1_bambu_3.obj",
-        "../jardynn-game/assets/plants\\camada1_area1_bambu_4.obj",
-        "../jardynn-game/assets/plants\\camada1_area1_bambu_5.obj"
+        "../jardynn-game/assets/plants\\camada1_area1_arvore_1.obj",
+        "../jardynn-game/assets/plants\\camada1_area1_arvore_2.obj",
+        "../jardynn-game/assets/plants\\camada1_area1_arvore_3.obj",
+        "../jardynn-game/assets/plants\\camada1_area1_arvore_4.obj",
+        "../jardynn-game/assets/plants\\camada1_area1_arvore_5.obj"
       ],
       "galhos_caidos_obj": []
     },
@@ -4548,33 +4555,31 @@
       "index": 2,
       "layer": 1,
       "band": "jardim_externo",
-      "text": "Trepadeiras com flores que se fecham lentamente quando alguém se aproxima. Aqui há um pequeno cemitério de bichos de estimação, lápides do tamanho de uma mão, uma delas visivelmente recente. Você nota um par de luvas de jardinagem, sozinhas sobre um banco, ainda com o formato de mãos dentro delas.",
+      "text": "Trepadeiras com flores que se fecham lentamente quando alguém se aproxima. Aqui há uma fonte de pedra, seca há muito tempo, com uma estátua no centro que já não se sabe representar o quê. Você nota um bando de pássaros brancos, silenciosos, que pousam todos ao mesmo tempo e observam. Uma segunda sombra aparece ao lado de cada personagem, na direção errada para a luz disponível.",
       "has_denizen": true,
-      "has_wyrd": false,
+      "has_wyrd": true,
       "has_treasure": false,
       "npc": null,
       "criatura": {
-        "nome": "Par de Luvas Animadas",
-        "ca": 14,
-        "dv": "1d6",
-        "movimento": "rastejante, rápido em curtas distâncias",
+        "nome": "Bando de Pássaros Brancos",
+        "ca": 13,
+        "dv": "1d4",
+        "movimento": "curto no chão, voo errático",
         "ataques": [
           [
-            "estrangulamento",
-            "1d4"
+            "bicadas em enxame",
+            "1d2"
           ]
         ],
-        "resistencia": 13,
-        "moral": 9,
-        "especial": "Preferem agarrar o pescoço por trás; soltam-se se atingidas duas vezes seguidas.",
-        "pontos_de_vida": 2
+        "resistencia": 15,
+        "moral": 6,
+        "especial": "Não recuam de verdade — se dispersam e voltam a pousar juntos a poucos metros de distância, observando de novo.",
+        "pontos_de_vida": 3
       },
       "plantas_obj": [
         "../jardynn-game/assets/plants\\camada1_area2_videira_1.obj",
         "../jardynn-game/assets/plants\\camada1_area2_videira_2.obj",
-        "../jardynn-game/assets/plants\\camada1_area2_videira_3.obj",
-        "../jardynn-game/assets/plants\\camada1_area2_videira_4.obj",
-        "../jardynn-game/assets/plants\\camada1_area2_videira_5.obj"
+        "../jardynn-game/assets/plants\\camada1_area2_videira_3.obj"
       ],
       "galhos_caidos_obj": []
     },
@@ -4582,46 +4587,49 @@
       "index": 3,
       "layer": 1,
       "band": "jardim_externo",
-      "text": "Um canteiro de ervas cultivado com cuidado meticuloso, mas nenhuma das espécies parece ser conhecida. Aqui há um pomar de estufas com o vidro embaçado por dentro, quase todas vazias — uma ainda tem uma luz acesa lá no fundo. Você nota uma criada de porcelana fria ao toque, servindo chá com educação impecável para cadeiras vazias.",
-      "has_denizen": true,
+      "text": "Um pomar de árvores frutíferas cujos frutos caem já podres, mas ainda perfumados. Aqui há um caramanchão de ferro forjado, coberto de trepadeiras, com um banco vazio de frente para o nada.",
+      "has_denizen": false,
       "has_wyrd": false,
       "has_treasure": false,
       "npc": null,
-      "criatura": {
-        "nome": "Serva de Porcelana",
-        "ca": 13,
-        "dv": "1d8",
-        "movimento": "normal, passos silenciosos",
-        "ataques": [
-          [
-            "bandeja na cabeça",
-            "1d4"
-          ]
-        ],
-        "resistencia": 15,
-        "moral": 6,
-        "especial": "Racha em vez de sangrar; ao cair a 0 PV, estilhaça-se, causando 1d4 a quem estiver adjacente.",
-        "pontos_de_vida": 6
-      },
-      "plantas_obj": [],
+      "criatura": null,
+      "plantas_obj": [
+        "../jardynn-game/assets/plants\\camada1_area3_arvore_1.obj",
+        "../jardynn-game/assets/plants\\camada1_area3_arvore_2.obj",
+        "../jardynn-game/assets/plants\\camada1_area3_arvore_3.obj",
+        "../jardynn-game/assets/plants\\camada1_area3_arvore_4.obj"
+      ],
       "galhos_caidos_obj": []
     },
     {
       "index": 4,
       "layer": 1,
       "band": "jardim_externo",
-      "text": "Bambus finíssimos, retos como agulhas, batendo uns nos outros com um som de sinos quebrados. Aqui há um lagar de vinho abandonado, as dornas cheias até a borda de um líquido escuro que ainda borbulha de leve. Entre a vegetação, há uma caixa de música de latão enferrujado que toca uma melodia que ninguém reconhece, mas que todos juram já ter ouvido.",
-      "has_denizen": false,
-      "has_wyrd": false,
-      "has_treasure": true,
+      "text": "Roseiras selvagens avançam sobre o caminho, os espinhos do tamanho de adagas. Aqui há um aviário vazio, a porta aberta, ainda balançando de leve. Você nota uma estátua que os personagens têm certeza de já ter visto em outra pose. Uma segunda sombra aparece ao lado de cada personagem, na direção errada para a luz disponível.",
+      "has_denizen": true,
+      "has_wyrd": true,
+      "has_treasure": false,
       "npc": null,
-      "criatura": null,
+      "criatura": {
+        "nome": "Estátua Errante",
+        "ca": 16,
+        "dv": "5d8",
+        "movimento": "muito lento; só se move quando não observada",
+        "ataques": [
+          [
+            "golpe de pedra",
+            "2d8"
+          ]
+        ],
+        "resistencia": 16,
+        "moral": 12,
+        "especial": "Fica imóvel enquanto observada diretamente por qualquer personagem; só avança quando todos desviam o olhar.",
+        "pontos_de_vida": 18
+      },
       "plantas_obj": [
-        "../jardynn-game/assets/plants\\camada1_area4_bambu_1.obj",
-        "../jardynn-game/assets/plants\\camada1_area4_bambu_2.obj",
-        "../jardynn-game/assets/plants\\camada1_area4_bambu_3.obj",
-        "../jardynn-game/assets/plants\\camada1_area4_bambu_4.obj",
-        "../jardynn-game/assets/plants\\camada1_area4_bambu_5.obj"
+        "../jardynn-game/assets/plants\\camada1_area4_espinheiro_1.obj",
+        "../jardynn-game/assets/plants\\camada1_area4_espinheiro_2.obj",
+        "../jardynn-game/assets/plants\\camada1_area4_espinheiro_3.obj"
       ],
       "galhos_caidos_obj": []
     },
@@ -4629,13 +4637,17 @@
       "index": 5,
       "layer": 1,
       "band": "jardim_externo",
-      "text": "Um gramado formal, cortado em padrões geométricos que se perdem na neblina. Longe, algo soa como um sino, mas nenhum sino é visível. Aqui há um relógio de sol cujo ponteiro projeta uma sombra que não corresponde a nenhuma hora do dia.",
+      "text": "Roseiras selvagens avançam sobre o caminho, os espinhos do tamanho de adagas. Aqui há um tabuleiro de xadrez do tamanho de um salão de baile, as peças esculpidas na altura de uma pessoa.",
       "has_denizen": false,
       "has_wyrd": false,
       "has_treasure": false,
       "npc": null,
       "criatura": null,
-      "plantas_obj": [],
+      "plantas_obj": [
+        "../jardynn-game/assets/plants\\camada1_area5_espinheiro_1.obj",
+        "../jardynn-game/assets/plants\\camada1_area5_espinheiro_2.obj",
+        "../jardynn-game/assets/plants\\camada1_area5_espinheiro_3.obj"
+      ],
       "galhos_caidos_obj": []
     }
   ]

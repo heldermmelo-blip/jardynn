@@ -53,7 +53,14 @@ o tubo de seção de Lamé e o domo da Superfórmula de `gielis.plants`):
   de usar a face do dado como planta baixa: d4/d8/d20 = triângulo,
   d6/d10 = retângulo, d12 = pentágono, e o número de lados é também o de
   portas. Dados maiores dão estufas maiores; o d12 tem 2 andares e o d20,
-  3 (os maiores são mais raros). Vem em `plot.planta`.
+  3 (os maiores são mais raros). Vem em `plot.planta`. Cada estufa também
+  sorteia um conteúdo em `ESTUFA_CONTEUDO` (`generate_estufa_conteudo`,
+  em `plot.conteudo`), como no livro: plantas raras ou gaiolas de ouro
+  (valor em ouro crescente com a profundidade), ervas medicinais, frutos
+  seguros, flores venenosas, esporos, limo no teto, ou uma criatura —
+  `Jarro Carnívoro` e `Esqueleto Vegetal` (`ynn/creatures.py`), só do
+  jardim profundo em diante, assim como a estufa lacrada (só no núcleo
+  selvagem).
 - **gazebo**: pavilhão aberto (plataforma, 6 ou 8 postes, grade baixa com
   uma abertura de entrada, telhado em cúpula e pináculo). Em
   `plot.conteudo`: estado do pavilhão (`GAZEBO_ESTADO`), um bibelô largado

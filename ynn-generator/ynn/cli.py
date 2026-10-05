@@ -51,6 +51,12 @@ def render_layer_markdown(layer, areas, terreno=None, layout=None):
                     f"- estufa em ({plot['x']:.1f}, {plot['z']:.1f}): d{planta['dado']}, "
                     f"{planta['lados']} lados/portas, {planta['andares']} andar(es), raio {planta['raio']:.1f} m"
                 )
+                conteudo = plot["conteudo"]
+                lines.append(f"  - {conteudo['texto']}")
+                if conteudo.get("valor_ouro") is not None:
+                    lines.append(f"    - vale {conteudo['valor_ouro']} de ouro")
+                if conteudo.get("criatura") is not None:
+                    lines.append(f"    - criatura: {conteudo['criatura']['nome']}")
             elif plot["tipo"] == "gazebo":
                 conteudo = plot["conteudo"]
                 lines.append(f"- gazebo em ({plot['x']:.1f}, {plot['z']:.1f}): {conteudo['texto']}")

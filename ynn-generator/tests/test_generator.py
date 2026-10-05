@@ -158,6 +158,7 @@ def test_generate_layout_camada_populates_structure_meshes():
     assert os.path.getsize(estufa["obj"]) > 0
     assert estufa["planta"]["dado"] in (4, 6, 8, 10, 12, 20)
     assert estufa["planta"]["portas"] == estufa["planta"]["lados"]
+    assert estufa["conteudo"]["texto"]
 
     gazebo = by_tipo["gazebo"][0]
     assert os.path.exists(gazebo["obj"])
@@ -201,6 +202,46 @@ def test_estufa_bigger_dice_are_bigger_and_taller():
     assert ESTUFA_DADOS[4]["raio"] < ESTUFA_DADOS[12]["raio"]
     # Cabe num lote (12 m): o raio circunscrito não passa da metade do lote.
     assert all(info["raio"] <= 6.0 for info in ESTUFA_DADOS.values())
+
+
+def test_estufa_conteudo_table_references_valid_creatures():
+    from ynn import tables
+    from ynn.creatures import CREATURES
+
+    for texto, _bandas, tipo, criatura_key in tables.ESTUFA_CONTEUDO:
+        assert tipo in ("valor", "criatura", None)
+        if tipo == "criatura":
+            assert criatura_key in CREATURES
+        else:
+            assert criatura_key is None
+
+
+def test_estufa_conteudo_fills_value_or_creature():
+    from ynn.generator import generate_estufa_conteudo
+
+    visto_valor = visto_criatura = visto_simples = False
+    for seed in range(200):
+        layer = 3
+        conteudo = generate_estufa_conteudo(random.Random(seed), layer)
+        assert conteudo["texto"]
+        if "valor_ouro" in conteudo:
+            visto_valor = True
+            assert 1 + layer <= conteudo["valor_ouro"] <= 6 + layer
+        elif "criatura" in conteudo:
+            visto_criatura = True
+            assert conteudo["criatura"]["pontos_de_vida"] >= 1
+        else:
+            visto_simples = True
+    assert visto_valor and visto_criatura and visto_simples
+
+
+def test_estufa_conteudo_respects_bands():
+    from ynn.generator import generate_estufa_conteudo
+
+    for seed in range(200):
+        conteudo = generate_estufa_conteudo(random.Random(seed), layer=1)  # jardim_externo
+        assert "criatura" not in conteudo  # monstros só do jardim profundo em diante
+        assert "lacrada" not in conteudo["texto"]
 
 
 def test_gazebo_conteudo_fields_and_determinism():
