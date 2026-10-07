@@ -79,6 +79,16 @@ o tubo de seção de Lamé e o domo da Superfórmula de `gielis.plants`):
   um vão no centro) e uma escada em espiral em volta de um mastro central.
   Recebe o mesmo `n_andares` do conteúdo e ganha "hera" — algumas variantes
   de `videira` (`hera_obj`) em coroa ao redor da base.
+  **O conteúdo de cada andar fica visível dentro da torre**: cada entrada
+  de `TORRE_ANDARES`/`TORRE_TOPO` traz um `prop` (o objeto no piso: baú,
+  estante, móveis, ninhos, teias, esqueleto, retratos, espelho; e no topo
+  sino, telescópio, câmera escura, biblioteca, armadilha, armadura,
+  máquina voadora, caixão, lâmpada viva...) e um `rotulo`. `plot.geometria`
+  leva as medidas *dessa* torre (altura do andar, raio do vão da escada,
+  raio de cada piso, ângulo da porta) pro Godot encaixar os objetos no
+  piso em anel sem bloquear a entrada. Como cada torre sorteia seu número
+  de andares (3 a 8, o `d6+2` do livro) e o conteúdo de cada um, duas
+  torres nunca são iguais.
 - **estufa**: esqueleto de postes nos cantos + vigas por andar + telhado
   (sem vidro/painéis ainda). Tamanho e forma vêm de um "dado" sorteado
   (`ESTUFA_DADOS`, `generate_estufa_planta`), seguindo o mecanismo do livro

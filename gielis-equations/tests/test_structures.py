@@ -100,3 +100,11 @@ def test_gazebo_builds_and_is_deterministic(tmp_path):
     assert len(skel_a) == len(skel_b)
     with open(path_a) as fa, open(path_b) as fb:
         assert fa.read() == fb.read()
+
+
+def test_tower_skeleton_exposes_floor_radii_and_door_angle(tmp_path):
+    _, skeleton = generate_tower(random.Random(5), 8, out_path=os.path.join(tmp_path, "t.obj"))
+    radii = [seg["r0"] for seg in skeleton]
+    assert radii == sorted(radii, reverse=True)  # afunila pra cima
+    assert all(r - 1.3 >= 1.0 for r in radii)  # sobra >= 1 m de piso em anel até no último andar
+    assert 0.0 <= skeleton[0]["porta_angulo"] < 2 * np.pi

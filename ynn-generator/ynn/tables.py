@@ -29,9 +29,11 @@ gerado para aquela camada.
 
 `TORRE_ANDARES` e `TORRE_TOPO` descrevem o conteúdo de cada andar da torre
 do layout (ver `ynn.generator.generate_torre_conteudo`) — `TORRE_ANDARES`
-para os andares normais, `TORRE_TOPO` só para o último. Cada entrada tem
-um terceiro campo, `tipo`: `"tesouro"` (sorteia de `TREASURE`),
-`"encontro"` (sorteia um denizen de `DENIZENS`) ou `None` (só atmosfera).
+para os andares normais, `TORRE_TOPO` só para o último. Formato `(texto,
+bandas, tipo, prop, rotulo)`: `tipo` é `"tesouro"` (sorteia de `TREASURE`),
+`"encontro"` (sorteia um denizen de `DENIZENS`) ou `None`; `prop` é o objeto
+que o Godot monta no piso do andar (`"bau"`, `"estante"`, `"sino"`...; `None`
+= andar vazio) e `rotulo` o texto curto que flutua sobre ele.
 
 `ESTUFA_CONTEUDO` tem uma entrada sorteada por estufa
 (`ynn.generator.generate_estufa_conteudo`), com formato `(texto, bandas,
@@ -461,35 +463,37 @@ LOCALIDADE = [
 ]
 
 TORRE_ANDARES = [
-    # (texto, bandas, tipo) — tipo em "tesouro", "encontro" ou None.
-    ("O andar está vazio, só poeira e silêncio.", "all", None),
-    ("Um pequeno tesouro foi deixado para trás aqui, esquecido entre os destroços.", "all", "tesouro"),
-    ("Algo vive neste andar e reage à presença de quem entra.", "all", "encontro"),
-    ("Móveis apodrecidos se desfazem ao toque — uma cadeira, uma mesa, os restos de uma cama.", "all", None),
-    ("Uma estante de livros embolorados ainda de pé; a maioria das páginas grudou umas nas outras.", "all", None),
-    ("Ninhos de pássaros nos cantos mais altos, ovos e filhotes piando sem parar.", "all", None),
-    ("Teias de aranha grossas dificultam a visão e o movimento por aqui.", ("jardim_profundo", "nucleo_selvagem"), None),
-    ("Um esqueleto preso à parede por correntes enferrujadas há muito tempo.", ("jardim_profundo", "nucleo_selvagem"), None),
-    ("Rações perfeitamente conservadas, o suficiente para alimentar um grupo grande por dias.", "all", None),
-    ("Retratos emoldurados de rostos alienígenamente belos cobrem a parede.", ("jardim_profundo", "nucleo_selvagem"), "tesouro"),
-    ("Um espelho de corpo inteiro que reflete tudo, menos quem está olhando para ele.", ("nucleo_selvagem",), None),
+    # (texto, bandas, tipo, prop, rotulo) — tipo em "tesouro", "encontro" ou
+    # None; `prop` é o objeto que o Godot monta no piso do andar (None = só
+    # o andar vazio); `rotulo` é o texto curto que flutua sobre ele.
+    ("O andar está vazio, só poeira e silêncio.", "all", None, None, "Vazio"),
+    ("Um pequeno tesouro foi deixado para trás aqui, esquecido entre os destroços.", "all", "tesouro", "bau", "Tesouro"),
+    ("Algo vive neste andar e reage à presença de quem entra.", "all", "encontro", "criatura", "Habitante"),
+    ("Móveis apodrecidos se desfazem ao toque — uma cadeira, uma mesa, os restos de uma cama.", "all", None, "mobilia", "Móveis podres"),
+    ("Uma estante de livros embolorados ainda de pé; a maioria das páginas grudou umas nas outras.", "all", None, "estante", "Estante"),
+    ("Ninhos de pássaros nos cantos mais altos, ovos e filhotes piando sem parar.", "all", None, "ninhos", "Ninhos"),
+    ("Teias de aranha grossas dificultam a visão e o movimento por aqui.", ("jardim_profundo", "nucleo_selvagem"), None, "teias", "Teias"),
+    ("Um esqueleto preso à parede por correntes enferrujadas há muito tempo.", ("jardim_profundo", "nucleo_selvagem"), None, "esqueleto", "Esqueleto acorrentado"),
+    ("Rações perfeitamente conservadas, o suficiente para alimentar um grupo grande por dias.", "all", None, "caixotes", "Rações"),
+    ("Retratos emoldurados de rostos alienígenamente belos cobrem a parede.", ("jardim_profundo", "nucleo_selvagem"), "tesouro", "quadros", "Retratos"),
+    ("Um espelho de corpo inteiro que reflete tudo, menos quem está olhando para ele.", ("nucleo_selvagem",), None, "espelho", "Espelho"),
 ]
 
 TORRE_TOPO = [
     # Mesmo formato de TORRE_ANDARES, mas só pro último andar — conteúdo
     # mais raro/significativo, reservado pro topo da torre.
-    ("Um sino enorme de bronze, silencioso, pendurado bem no centro do andar.", "all", None),
-    ("Um telescópio antigo, apontado para um trecho do céu que não parece bater com o de baixo.", "all", None),
-    ("Uma câmera escura projeta, invertida, uma imagem do jardim lá fora numa parede caiada.", "all", None),
-    ("Um tesouro bem maior que o normal está escondido aqui.", "all", "tesouro"),
-    ("Uma biblioteca arcana, prateleiras cheias de livros sobre magias que ninguém mais lembra de estudar.", ("jardim_profundo", "nucleo_selvagem"), None),
-    ("Algo poderoso e perigoso vive neste andar — o mais alto de todos.", ("jardim_profundo", "nucleo_selvagem"), "encontro"),
-    ("Uma armadilha está escondida no assoalho, pronta pra disparar no primeiro passo em falso.", "all", None),
-    ("Uma armadura completa, de aparência amaldiçoada, montada num pedestal, esperando um dono.", ("nucleo_selvagem",), None),
-    ("Uma máquina voadora incompleta, engrenagens e lona espalhadas pelo chão em volta dela.", "all", None),
-    ("Um espelho gigante, usado pra mandar sinais refletindo luz a longa distância.", "all", None),
-    ("Um caixão de vidro guarda um corpo perfeitamente preservado, como se dormisse.", ("nucleo_selvagem",), None),
-    ("Uma lâmpada enorme, alimentada por algo vivo e luminoso preso dentro dela, ilumina tudo ao redor.", "all", None),
+    ("Um sino enorme de bronze, silencioso, pendurado bem no centro do andar.", "all", None, "sino", "Sino de bronze"),
+    ("Um telescópio antigo, apontado para um trecho do céu que não parece bater com o de baixo.", "all", None, "telescopio", "Telescópio"),
+    ("Uma câmera escura projeta, invertida, uma imagem do jardim lá fora numa parede caiada.", "all", None, "camera_escura", "Câmera escura"),
+    ("Um tesouro bem maior que o normal está escondido aqui.", "all", "tesouro", "bau_grande", "Grande tesouro"),
+    ("Uma biblioteca arcana, prateleiras cheias de livros sobre magias que ninguém mais lembra de estudar.", ("jardim_profundo", "nucleo_selvagem"), None, "biblioteca", "Biblioteca arcana"),
+    ("Algo poderoso e perigoso vive neste andar — o mais alto de todos.", ("jardim_profundo", "nucleo_selvagem"), "encontro", "criatura", "Criatura poderosa"),
+    ("Uma armadilha está escondida no assoalho, pronta pra disparar no primeiro passo em falso.", "all", None, "armadilha", "Armadilha"),
+    ("Uma armadura completa, de aparência amaldiçoada, montada num pedestal, esperando um dono.", ("nucleo_selvagem",), None, "armadura", "Armadura amaldiçoada"),
+    ("Uma máquina voadora incompleta, engrenagens e lona espalhadas pelo chão em volta dela.", "all", None, "maquina", "Máquina voadora"),
+    ("Um espelho gigante, usado pra mandar sinais refletindo luz a longa distância.", "all", None, "espelho_sinal", "Espelho de sinais"),
+    ("Um caixão de vidro guarda um corpo perfeitamente preservado, como se dormisse.", ("nucleo_selvagem",), None, "caixao", "Caixão de vidro"),
+    ("Uma lâmpada enorme, alimentada por algo vivo e luminoso preso dentro dela, ilumina tudo ao redor.", "all", None, "lampada", "Lâmpada viva"),
 ]
 
 GAZEBO_ESTADO = [

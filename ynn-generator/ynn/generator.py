@@ -18,6 +18,7 @@ from gielis.plants import generate_fallen_branch as _generate_fallen_branch_mesh
 from gielis.plants import generate_plant as _generate_plant_mesh  # noqa: E402
 from gielis.structures import generate_gazebo as _generate_gazebo_mesh  # noqa: E402
 from gielis.structures import generate_greenhouse as _generate_greenhouse_mesh  # noqa: E402
+from gielis.structures import TOWER_FLOOR_HEIGHT, TOWER_STAIRWELL_RADIUS  # noqa: E402
 from gielis.structures import generate_tower as _generate_tower_mesh  # noqa: E402
 
 from .creatures import instantiate_creature
@@ -101,12 +102,12 @@ def _pick_denizen(rng, band):
 
 
 def _torre_andar_for_band(entries, band):
-    return [(text, tipo) for text, bands, tipo in entries if bands == "all" or band in bands]
+    return [(text, tipo, prop, rotulo) for text, bands, tipo, prop, rotulo in entries if bands == "all" or band in bands]
 
 
 def _pick_andar_conteudo(rng, entries, band, numero):
-    texto, tipo = rng.choice(_torre_andar_for_band(entries, band))
-    andar = {"numero": numero, "texto": texto}
+    texto, tipo, prop, rotulo = rng.choice(_torre_andar_for_band(entries, band))
+    andar = {"numero": numero, "texto": texto, "prop": prop, "rotulo": rotulo}
     if tipo == "tesouro":
         andar["tesouro"] = _pick(rng, tables.TREASURE, band)
     elif tipo == "encontro":
@@ -211,7 +212,7 @@ def generate_torre_conteudo(rng, layer, n_andares_range=N_ANDARES_TORRE_RANGE):
     significativo). Cada andar pode carregar um tesouro (`tables.TREASURE`)
     ou um denizen/NPC/criatura (`tables.DENIZENS`), igual às áreas."""
     band = band_for_layer(layer)
-    n_andares = rng.randint(*n_andares_range)
+    n_andares = rng.randint(*n_andares_range)  # padrão 3-8: o equivalente a d6+2 do livro
 
     andares = [_pick_andar_conteudo(rng, tables.TORRE_ANDARES, band, numero) for numero in range(1, n_andares)]
     andares.append(_pick_andar_conteudo(rng, tables.TORRE_TOPO, band, n_andares))
@@ -272,9 +273,17 @@ def _preencher_lote(rng, layer, plot, i, out_dir):
     if plot["tipo"] == "torre":
         conteudo = generate_torre_conteudo(rng, layer)
         out_path = os.path.join(out_dir, f"camada{layer}_torre_{i}.obj")
-        path, _ = _generate_tower_mesh(rng, conteudo["n_andares"], out_path=out_path)
+        path, skeleton = _generate_tower_mesh(rng, conteudo["n_andares"], out_path=out_path)
         plot["obj"] = path
         plot["conteudo"] = conteudo
+        # Medidas dessa torre específica (cada uma tem seus andares e raio),
+        # pra o Godot encaixar os objetos de cada andar no piso em anel.
+        plot["geometria"] = {
+            "altura_andar": TOWER_FLOOR_HEIGHT,
+            "raio_vao": TOWER_STAIRWELL_RADIUS,
+            "raios_andar": [float(seg["r0"]) for seg in skeleton],
+            "porta_angulo": float(skeleton[0]["porta_angulo"]),
+        }
 
         n_ivy = rng.randint(*IVY_VARIANT_RANGE)
         ivy_paths = []

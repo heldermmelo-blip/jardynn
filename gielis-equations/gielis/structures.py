@@ -85,7 +85,7 @@ def _generate_tower(rng, n_floors):
     sides = TOWER_SIDES
     floor_h = TOWER_FLOOR_HEIGHT
     radius0 = rng.uniform(2.8, 3.4)
-    taper = rng.uniform(0.02, 0.04)
+    taper = rng.uniform(0.01, 0.02)  # pouco: o piso em anel do topo tem que sobrar espaço
     total_h = n_floors * floor_h
     door = rng.randrange(sides)
     stair_phase = rng.uniform(0.0, 2 * np.pi)
@@ -148,6 +148,10 @@ def _generate_tower(rng, n_floors):
     )
     parts.append((roof_v + np.array([0.0, 0.0, total_h]), roof_f))
 
+    # Ângulo (rad, plano XY de construção) do centro do setor da porta, pra
+    # quem posicionar objetos dentro da torre não bloquear a entrada.
+    skeleton[0]["porta_angulo"] = 2 * np.pi * (door + 0.5) / sides
+
     return parts, skeleton
 
 
@@ -155,7 +159,8 @@ def generate_tower(rng, n_floors, out_path=None):
     """Gera uma torre oca e enterável com `n_floors` andares (ver
     `_generate_tower`) e salva como .obj em `out_path` (padrão:
     `examples/output/torre.obj`). Retorna `(out_path, skeleton)` — um
-    segmento (o eixo) por andar, mesma convenção de `generate_plant`.
+    segmento (o eixo) por andar, mesma convenção de `generate_plant`; `r0`
+    é o raio do piso daquele andar e o primeiro segmento traz `porta_angulo`.
     `n_floors` deve vir de `ynn.generator.generate_torre_conteudo`, pra a
     malha bater com o número de andares do conteúdo gerado."""
     parts, skeleton = _generate_tower(rng, n_floors)

@@ -4568,20 +4568,28 @@
           "andares": [
             {
               "numero": 1,
-              "texto": "Teias de aranha grossas dificultam a visão e o movimento por aqui."
+              "texto": "Teias de aranha grossas dificultam a visão e o movimento por aqui.",
+              "prop": "teias",
+              "rotulo": "Teias"
             },
             {
               "numero": 2,
               "texto": "Retratos emoldurados de rostos alienígenamente belos cobrem a parede.",
+              "prop": "quadros",
+              "rotulo": "Retratos",
               "tesouro": "um regador de cobre, meio enterrado, ainda com água que nunca parece acabar"
             },
             {
               "numero": 3,
-              "texto": "Móveis apodrecidos se desfazem ao toque — uma cadeira, uma mesa, os restos de uma cama."
+              "texto": "Móveis apodrecidos se desfazem ao toque — uma cadeira, uma mesa, os restos de uma cama.",
+              "prop": "mobilia",
+              "rotulo": "Móveis podres"
             },
             {
               "numero": 4,
               "texto": "Algo vive neste andar e reage à presença de quem entra.",
+              "prop": "criatura",
+              "rotulo": "Habitante",
               "denizen": "um jardineiro curvado sobre um canteiro, que não ergue os olhos quando questionado, apenas continua podando algo que já não tem folhas",
               "npc": {
                 "classe": "Specialist",
@@ -4652,14 +4660,31 @@
             },
             {
               "numero": 5,
-              "texto": "Rações perfeitamente conservadas, o suficiente para alimentar um grupo grande por dias."
+              "texto": "Rações perfeitamente conservadas, o suficiente para alimentar um grupo grande por dias.",
+              "prop": "caixotes",
+              "rotulo": "Rações"
             },
             {
               "numero": 6,
               "texto": "Um tesouro bem maior que o normal está escondido aqui.",
+              "prop": "bau_grande",
+              "rotulo": "Grande tesouro",
               "tesouro": "um regador de cobre, meio enterrado, ainda com água que nunca parece acabar"
             }
           ]
+        },
+        "geometria": {
+          "altura_andar": 3.4,
+          "raio_vao": 1.3,
+          "raios_andar": [
+            2.823454405246445,
+            2.7910372106232275,
+            2.75862001600001,
+            2.7262028213767926,
+            2.6937856267535754,
+            2.6613684321303577
+          ],
+          "porta_angulo": 3.3379421944391554
         },
         "hera_obj": [
           "../jardynn-game/assets/plants\\camada5_torre_11_hera_1.obj",

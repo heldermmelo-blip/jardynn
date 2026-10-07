@@ -265,8 +265,8 @@ def test_torre_conteudo_has_one_entry_per_floor():
 def test_torre_topo_is_the_last_floor_and_distinct_table():
     from ynn import tables
 
-    topo_textos = {texto for texto, _, _ in tables.TORRE_TOPO}
-    andar_textos = {texto for texto, _, _ in tables.TORRE_ANDARES}
+    topo_textos = {entrada[0] for entrada in tables.TORRE_TOPO}
+    andar_textos = {entrada[0] for entrada in tables.TORRE_ANDARES}
     assert topo_textos.isdisjoint(andar_textos)
 
     for seed in range(30):
@@ -274,6 +274,49 @@ def test_torre_topo_is_the_last_floor_and_distinct_table():
         topo = conteudo["andares"][-1]
         assert topo["numero"] == conteudo["n_andares"]
         assert topo["texto"] in topo_textos
+
+
+def test_torre_andares_carry_a_prop_and_label():
+    for seed in range(20):
+        conteudo = generate_torre_conteudo(random.Random(seed), layer=3)
+        for andar in conteudo["andares"]:
+            assert andar["rotulo"]
+            assert "prop" in andar
+            if andar.get("denizen") is not None:
+                assert andar["prop"] == "criatura"
+
+
+def test_every_tower_prop_has_a_godot_builder():
+    from pathlib import Path
+
+    from ynn import tables
+
+    scripts = (Path(__file__).resolve().parents[2] / "jardynn-game" / "scripts").glob("*.gd")
+    fonte = " ".join(path.read_text(encoding="utf-8") for path in scripts)
+    props = {entrada[3] for entrada in tables.TORRE_ANDARES + tables.TORRE_TOPO if entrada[3]}
+    assert len(props) >= 15
+    for prop in props:
+        assert f'"{prop}"' in fonte, f"nenhum script do Godot tem construtor para o prop {prop!r}"
+
+
+def test_towers_differ_in_floors_and_geometry():
+    from ynn.generator import _preencher_lote
+
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        torres = []
+        for seed in (1, 2, 3, 4, 5, 6):
+            plot = {"tipo": "torre", "x": 0.0, "z": 0.0}
+            _preencher_lote(random.Random(seed), 3, plot, seed, tmp)
+            torres.append(plot)
+    andares = {t["conteudo"]["n_andares"] for t in torres}
+    assert len(andares) > 1  # cada torre tem seus próprios andares, sorteados por dados
+    for t in torres:
+        geo = t["geometria"]
+        assert len(geo["raios_andar"]) == t["conteudo"]["n_andares"]
+        assert geo["altura_andar"] > 0 and 0 < geo["raio_vao"] < min(geo["raios_andar"])
+        assert 0.0 <= geo["porta_angulo"] < 6.2832
 
 
 def test_torre_andar_com_tesouro_ou_encontro_preenchido():

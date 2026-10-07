@@ -12,12 +12,12 @@ lê o que já foi gerado.
 ```
 jardynn-game/
   assets/
-    plants/   ← malhas .obj geradas por gielis.plants (via ynn-generator)
-    data/     ← camadas de jardim exportadas em JSON
+	plants/   ← malhas .obj geradas por gielis.plants (via ynn-generator)
+	data/     ← camadas de jardim exportadas em JSON
   scenes/
-    Main.tscn ← cena de exemplo: instancia as plantas de uma camada
+	Main.tscn ← cena de exemplo: instancia as plantas de uma camada
   scripts/
-    Main.gd   ← lê o JSON e monta a cena (ver comentário no topo do arquivo)
+	Main.gd   ← lê o JSON e monta a cena (ver comentário no topo do arquivo)
 ```
 
 ## Gerando novos assets
@@ -27,8 +27,8 @@ A partir da raiz do repositório (`Claude workspace/`):
 ```bash
 cd ynn-generator
 python -m ynn.cli --modo livro --profundidade 4 --seed 42 --json \
-    --output ../jardynn-game/assets/data/camada1.json \
-    --plant-output-dir ../jardynn-game/assets/plants
+	--output ../jardynn-game/assets/data/camada1.json \
+	--plant-output-dir ../jardynn-game/assets/plants
 ```
 
 - `--json` faz o gerador emitir dados estruturados (camada, terreno, áreas,
@@ -63,7 +63,12 @@ detalhe. O relevo varia só ao redor dos locais cujo detalhe pede.
 As **torres são prédios onde os aventureiros entram**: paredes ocas de
 ~6 m de largura, porta no térreo, janelas nos andares de cima, piso em
 cada andar e uma escada em espiral (material de dupla face, já que as
-paredes não têm espessura).
+paredes não têm espessura). O **conteúdo sorteado de cada andar** aparece
+dentro: `TorreProps.gd` monta o objeto de cada andar com formas simples
+(baú, estante, sino, telescópio, caixão...), `Main.gd` o encaixa no piso em
+anel (longe da porta, girando a cada andar), com um rótulo flutuante
+("Andar 3 · Móveis podres") e uma luz por andar. Tudo vem do JSON *daquela*
+torre (`geometria` e `conteudo`): cada uma tem seus andares sorteados.
 
 ## Layout 2D
 

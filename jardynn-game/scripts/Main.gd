@@ -31,6 +31,8 @@ extends Node3D
 
 # O .obj não traz cor (nem material), então cada tipo de objeto ganha uma
 # cor fixa — senão tudo aparece branco/cinza e some contra o fundo.
+const TorreProps = preload("res://scripts/TorreProps.gd")
+
 const COLOR_TERRENO := Color(0.22, 0.3, 0.16)
 const COLOR_PLANTA := Color(0.28, 0.5, 0.22)
 const COLOR_FLOR := Color(0.85, 0.4, 0.55)
@@ -166,6 +168,68 @@ func _spawn_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
 
 	for ivy_path in plot.get("hera_obj", []):
 		_spawn_plant_cluster(ivy_path, x, z, terreno, ivy_radius, COLOR_HERA, ivy_inner_radius)
+
+	_spawn_props_torre(plot, x, z, terreno)
+
+
+## Posiciona, dentro da torre, o conteúdo sorteado de cada andar: um objeto
+## no piso em anel (`prop`, montado por `TorreProps`), um rótulo flutuante e
+## uma luz por andar. Tudo sai dos dados *dessa* torre (`geometria` e
+## `conteudo`): cada uma tem seu número de andares, o raio de cada piso e a
+## posição da porta. Os ângulos do JSON estão no plano de construção (z pra
+## cima); no Godot (Y pra cima) o z vira -z.
+func _spawn_props_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
+	var geo = plot.get("geometria", {})
+	var raios = geo.get("raios_andar", [])
+	if raios.is_empty():
+		return
+	var altura_andar: float = geo.get("altura_andar", 3.4)
+	var raio_vao: float = geo.get("raio_vao", 1.3)
+	var porta: float = geo.get("porta_angulo", 0.0)
+	var base_y: float = _height_at(terreno, x, z) if terreno != null else 0.0
+
+	for andar in plot.get("conteudo", {}).get("andares", []):
+		var indice = int(andar.get("numero")) - 1
+		if indice < 0 or indice >= raios.size():
+			continue
+
+		var raio_andar: float = raios[indice]
+		var raio_meio = (raio_vao + raio_andar) / 2.0
+		var angulo = porta + PI + indice * 2.4  # longe da porta, girando a cada andar
+		var piso_y = base_y + indice * altura_andar + 0.05
+
+		var luz = OmniLight3D.new()
+		luz.position = Vector3(x, piso_y + altura_andar * 0.65, z)
+		luz.omni_range = 6.0
+		luz.light_energy = 0.7
+		luz.light_color = Color(1.0, 0.85, 0.6)
+		add_child(luz)
+
+		var raiz = Node3D.new()
+		raiz.position = Vector3(x + cos(angulo) * raio_meio, piso_y, z - sin(angulo) * raio_meio)
+		raiz.rotation.y = angulo - PI / 2.0
+		var escala = clamp((raio_andar - raio_vao) / 1.4, 0.55, 1.0)
+		raiz.scale = Vector3.ONE * escala
+		add_child(raiz)
+
+		var prop = andar.get("prop")
+		var altura_prop = 0.0
+		if prop != null:
+			altura_prop = TorreProps.build(str(prop), raiz) * escala
+
+		var nome = str(andar.get("rotulo", ""))
+		if andar.get("criatura") != null:
+			nome = str(andar.get("criatura").get("nome"))
+		elif andar.get("npc") != null:
+			nome = str(andar.get("npc").get("classe"))
+		var rotulo = Label3D.new()
+		rotulo.text = "Andar %s · %s" % [_n(andar.get("numero")), nome]
+		rotulo.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		rotulo.font_size = 40
+		rotulo.pixel_size = 0.005
+		rotulo.outline_size = 10
+		rotulo.position = raiz.position + Vector3(0, altura_prop + 0.4, 0)
+		add_child(rotulo)
 
 
 func _spawn_area(area: Dictionary, base_x: float, base_z: float, terreno) -> void:
