@@ -70,13 +70,17 @@ def write_obj(path, parts):
     `skeleton.py`, `direction=(0, 0, 1)`). Escreve um único .obj combinando
     todas as partes, remapeando Z-up (interno) para Y-up (convenção de
     motores de jogo como o Godot) via rotação de -90° em X: (x, y, z) ->
-    (x, z, -y) — uma rotação própria, preserva o sentido das faces."""
+    (x, z, -y) — uma rotação própria, preserva o sentido das faces.
+
+    Tudo vai num único objeto (`o`): o importador de .obj do Godot cria uma
+    superfície por objeto, e o limite é 256 — uma árvore com folhas passa
+    disso e perdia partes na importação."""
     with open(path, "w") as f:
+        f.write("o mesh\n")
         offset = 0
-        for idx, (vertices, faces) in enumerate(parts):
+        for vertices, faces in parts:
             if len(vertices) == 0:
                 continue
-            f.write(f"o part_{idx}\n")
             for vx, vy, vz in vertices:
                 f.write(f"v {vx:.6f} {vz:.6f} {-vy:.6f}\n")
             for face in faces:

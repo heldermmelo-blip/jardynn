@@ -28,13 +28,24 @@ extends Node3D
 @export var min_instances_per_variant: int = 2
 @export var max_instances_per_variant: int = 5
 
+# O .obj não traz cor (nem material), então cada tipo de objeto ganha uma
+# cor fixa — senão tudo aparece branco/cinza e some contra o fundo.
+const COLOR_TERRENO := Color(0.22, 0.3, 0.16)
+const COLOR_PLANTA := Color(0.28, 0.5, 0.22)
+const COLOR_FLOR := Color(0.85, 0.4, 0.55)
+const COLOR_HERA := Color(0.16, 0.38, 0.18)
+const COLOR_GALHO := Color(0.38, 0.26, 0.16)
+const COLOR_TORRE := Color(0.62, 0.36, 0.28)
+const COLOR_ESTUFA := Color(0.7, 0.88, 0.92)
+const COLOR_GAZEBO := Color(0.93, 0.88, 0.74)
+
 func _ready() -> void:
 	var layer_data = _load_json(layer_json_path)
 	if layer_data == null:
 		push_error("Não foi possível carregar %s" % layer_json_path)
 		return
 
-	print("== Camada %s ==" % layer_data.get("layer", "?"))
+	print("== Camada %s ==" % _n(layer_data.get("layer", "?")))
 
 	var terreno = layer_data.get("terreno")
 	if terreno != null:
@@ -79,15 +90,15 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 			_spawn_torre(plot, x, z, terreno)
 		"estufa":
 			var planta = plot.get("planta", {})
-			print("--- Estufa em (%.1f, %.1f): d%s, %s portas, %s andar(es) ---" % [x, z, planta.get("dado", "?"), planta.get("portas", "?"), planta.get("andares", "?")])
+			print("--- Estufa em (%.1f, %.1f): d%s, %s portas, %s andar(es) ---" % [x, z, _n(planta.get("dado", "?")), _n(planta.get("portas", "?")), _n(planta.get("andares", "?"))])
 			var estufa = plot.get("conteudo", {})
 			print(estufa.get("texto", ""))
 			if estufa.get("valor_ouro") != null:
-				print("  Vale %s de ouro" % estufa.get("valor_ouro"))
+				print("  Vale %s de ouro" % _n(estufa.get("valor_ouro")))
 			var estufa_criatura = estufa.get("criatura")
 			if estufa_criatura != null:
-				print("  Criatura: %s (CA %s, DV %s, PV %s)" % [estufa_criatura.get("nome"), estufa_criatura.get("ca"), estufa_criatura.get("dv"), estufa_criatura.get("pontos_de_vida")])
-			_spawn_structure(plot.get("obj", ""), x, z, terreno)
+				print("  Criatura: %s (CA %s, DV %s, PV %s)" % [estufa_criatura.get("nome"), _n(estufa_criatura.get("ca")), estufa_criatura.get("dv"), _n(estufa_criatura.get("pontos_de_vida"))])
+			_spawn_structure(plot.get("obj", ""), x, z, terreno, COLOR_ESTUFA)
 		"gazebo":
 			var gazebo = plot.get("conteudo", {})
 			print("--- Gazebo em (%.1f, %.1f) ---" % [x, z])
@@ -95,11 +106,12 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 			print("  Bibelô: %s" % gazebo.get("bibelo", ""))
 			print("  Tesouro: %s" % gazebo.get("tesouro", ""))
 			print("  %s" % gazebo.get("refugio", ""))
-			_spawn_structure(plot.get("obj", ""), x, z, terreno)
+			_spawn_structure(plot.get("obj", ""), x, z, terreno, COLOR_GAZEBO)
 		"canteiro":
 			print("--- Canteiro de %s em (%.1f, %.1f) ---" % [plot.get("especie", "?"), x, z])
+			var cor_canteiro = COLOR_FLOR if plot.get("especie") == "flor" else COLOR_PLANTA
 			for plant_path in plot.get("plantas_obj", []):
-				_spawn_plant_cluster(plant_path, x, z, terreno, canteiro_radius)
+				_spawn_plant_cluster(plant_path, x, z, terreno, canteiro_radius, cor_canteiro)
 		_:
 			push_warning("Tipo de lote desconhecido no layout: %s" % tipo)
 
@@ -111,41 +123,41 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 ## é espalhada rente à base, cobrindo o pé da torre.
 func _spawn_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
 	var conteudo = plot.get("conteudo", {})
-	print("--- Torre em (%.1f, %.1f), %s andares ---" % [x, z, conteudo.get("n_andares", "?")])
+	print("--- Torre em (%.1f, %.1f), %s andares ---" % [x, z, _n(conteudo.get("n_andares", "?"))])
 	for andar in conteudo.get("andares", []):
 		var marca = " (topo)" if andar.get("numero") == conteudo.get("n_andares") else ""
-		print("Andar %s%s: %s" % [andar.get("numero"), marca, andar.get("texto", "")])
+		print("Andar %s%s: %s" % [_n(andar.get("numero")), marca, andar.get("texto", "")])
 		if andar.get("tesouro") != null:
 			print("  Tesouro: %s" % andar.get("tesouro"))
 		if andar.get("denizen") != null:
 			print("  Encontro: %s" % andar.get("denizen"))
 			var npc = andar.get("npc")
 			if npc != null:
-				print("  NPC: %s (PV %s, CA %s)" % [npc.get("classe"), npc.get("pontos_de_vida"), npc.get("classe_de_armadura")])
+				print("  NPC: %s (PV %s, CA %s)" % [npc.get("classe"), _n(npc.get("pontos_de_vida")), _n(npc.get("classe_de_armadura"))])
 			var creature = andar.get("criatura")
 			if creature != null:
-				print("  Criatura: %s (CA %s, DV %s, PV %s)" % [creature.get("nome"), creature.get("ca"), creature.get("dv"), creature.get("pontos_de_vida")])
+				print("  Criatura: %s (CA %s, DV %s, PV %s)" % [creature.get("nome"), _n(creature.get("ca")), creature.get("dv"), _n(creature.get("pontos_de_vida"))])
 
-	_spawn_structure(plot.get("obj", ""), x, z, terreno, false)
+	_spawn_structure(plot.get("obj", ""), x, z, terreno, COLOR_TORRE, false)
 
 	for ivy_path in plot.get("hera_obj", []):
-		_spawn_plant_cluster(ivy_path, x, z, terreno, ivy_radius)
+		_spawn_plant_cluster(ivy_path, x, z, terreno, ivy_radius, COLOR_HERA)
 
 
 func _spawn_area(area: Dictionary, base_x: float, base_z: float, terreno) -> void:
-	print("--- Área %s (%s) ---" % [area.get("index"), area.get("band")])
+	print("--- Área %s (%s) ---" % [_n(area.get("index")), area.get("band")])
 	print(area.get("text", ""))
 
 	var npc = area.get("npc")
 	if npc != null:
-		print("NPC: %s (PV %s, CA %s)" % [npc.get("classe"), npc.get("pontos_de_vida"), npc.get("classe_de_armadura")])
+		print("NPC: %s (PV %s, CA %s)" % [npc.get("classe"), _n(npc.get("pontos_de_vida")), _n(npc.get("classe_de_armadura"))])
 
 	var creature = area.get("criatura")
 	if creature != null:
-		print("Criatura: %s (CA %s, DV %s, PV %s)" % [creature.get("nome"), creature.get("ca"), creature.get("dv"), creature.get("pontos_de_vida")])
+		print("Criatura: %s (CA %s, DV %s, PV %s)" % [creature.get("nome"), _n(creature.get("ca")), creature.get("dv"), _n(creature.get("pontos_de_vida"))])
 
 	for plant_path in area.get("plantas_obj", []):
-		_spawn_plant_cluster(plant_path, base_x, base_z, terreno, scatter_radius)
+		_spawn_plant_cluster(plant_path, base_x, base_z, terreno, scatter_radius, COLOR_PLANTA)
 
 	for branch_path in area.get("galhos_caidos_obj", []):
 		_spawn_fallen_branch(branch_path, base_x, base_z, terreno)
@@ -155,7 +167,7 @@ func _spawn_area(area: Dictionary, base_x: float, base_z: float, terreno) -> voi
 ## `plantas_obj`) ao redor de (base_x, base_z), num raio `radius`, cada
 ## uma com rotação e escala levemente diferentes — um jardim de verdade
 ## não tem uma única planta isolada por canteiro.
-func _spawn_plant_cluster(source_path: String, base_x: float, base_z: float, terreno, radius: float) -> void:
+func _spawn_plant_cluster(source_path: String, base_x: float, base_z: float, terreno, radius: float, color: Color) -> void:
 	# `source_path` vem do JSON como um caminho de arquivo do lado Python
 	# (pode usar "\" no Windows); só o nome do arquivo importa aqui, pois a
 	# malha já foi gerada dentro de `plants_dir` por este mesmo pipeline.
@@ -184,6 +196,7 @@ func _spawn_plant_cluster(source_path: String, base_x: float, base_z: float, ter
 
 	var multimesh_instance = MultiMeshInstance3D.new()
 	multimesh_instance.multimesh = multimesh
+	multimesh_instance.material_override = _material(color)
 	add_child(multimesh_instance)
 
 
@@ -193,14 +206,27 @@ func _spawn_plant_cluster(source_path: String, base_x: float, base_z: float, ter
 func _spawn_fallen_branch(source_path: String, base_x: float, base_z: float, terreno) -> void:
 	var x = base_x + randf_range(-scatter_radius, scatter_radius)
 	var z = base_z + randf_range(-scatter_radius, scatter_radius)
-	_spawn_structure(source_path, x, z, terreno, false)
+	_spawn_structure(source_path, x, z, terreno, COLOR_GALHO, false)
 
 
-## Instancia uma malha única já pronta (torre, estufa, ou o galho caído
-## acima) em (x, z), apoiada na altura do terreno. `random_rotation` gira
-## em Y pra variar a orientação; desligue pra estruturas que devam manter
-## uma orientação fixa (nenhuma por enquanto usa isso, mas fica disponível).
-func _spawn_structure(source_path: String, x: float, z: float, terreno, random_rotation: bool = true) -> void:
+## Cria um material liso da cor dada (ver as constantes COLOR_*).
+func _material(color: Color) -> StandardMaterial3D:
+	var material = StandardMaterial3D.new()
+	material.albedo_color = color
+	return material
+
+
+## Converte um número do JSON (sempre float no Godot) pra inteiro legível
+## nos prints ("Andar 3", não "Andar 3.0"); outros valores passam como estão.
+func _n(value) -> String:
+	return str(int(value)) if value is float else str(value)
+
+
+## Instancia uma malha única já pronta (torre, estufa, gazebo, ou o galho
+## caído acima) em (x, z), apoiada na altura do terreno, com a cor dada.
+## `random_rotation` gira em Y pra variar a orientação; desligue pra
+## estruturas que devam manter uma orientação fixa (torre e galho).
+func _spawn_structure(source_path: String, x: float, z: float, terreno, color: Color, random_rotation: bool = true) -> void:
 	if source_path == null or source_path == "":
 		return
 
@@ -217,6 +243,7 @@ func _spawn_structure(source_path: String, x: float, z: float, terreno, random_r
 	var mesh_instance = MeshInstance3D.new()
 	mesh_instance.mesh = mesh
 	mesh_instance.position = Vector3(x, y, z)
+	mesh_instance.material_override = _material(color)
 	if random_rotation:
 		mesh_instance.rotation.y = randf_range(0.0, TAU)
 	add_child(mesh_instance)
@@ -250,21 +277,19 @@ func _build_terrain(terreno: Dictionary) -> MeshInstance3D:
 			var p11 = Vector3(x1, next_row[x + 1], z1)
 
 			st.add_vertex(p00)
-			st.add_vertex(p01)
 			st.add_vertex(p10)
+			st.add_vertex(p01)
 
 			st.add_vertex(p10)
-			st.add_vertex(p01)
 			st.add_vertex(p11)
+			st.add_vertex(p01)
 
 	st.generate_normals()
 
 	var mesh_instance = MeshInstance3D.new()
 	mesh_instance.mesh = st.commit()
 
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.22, 0.3, 0.16)
-	mesh_instance.material_override = material
+	mesh_instance.material_override = _material(COLOR_TERRENO)
 
 	return mesh_instance
 
