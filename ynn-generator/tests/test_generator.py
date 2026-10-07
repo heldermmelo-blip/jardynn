@@ -347,3 +347,82 @@ def test_ground_cover_vegetation_has_no_species():
     ]
     assert ground_cover_entries
     assert all(species is None for _, species in ground_cover_entries)
+
+
+def test_torre_extras_follow_their_chances():
+    import math
+
+    from ynn.generator import (
+        TORRE_INCLINACAO_GRAUS,
+        TORRE_INCLINADA_CHANCE,
+        TORRE_TOPO_BROTADO_CHANCE,
+        TORRE_TREPADEIRA_CHANCE,
+        sortear_extras_torre,
+    )
+
+    n = 3000
+    topo = trepadeiras = inclinadas = 0
+    for seed in range(n):
+        extras = sortear_extras_torre(random.Random(seed), 3)
+        topo += extras["topo"] is not None
+        trepadeiras += extras["trepadeiras"]
+        if extras["inclinacao"] is not None:
+            inclinadas += 1
+            assert TORRE_INCLINACAO_GRAUS[0] <= extras["inclinacao"]["graus"] <= TORRE_INCLINACAO_GRAUS[1]
+            assert 0.0 <= extras["inclinacao"]["azimute"] < 2 * math.pi
+    assert abs(topo / n - TORRE_TOPO_BROTADO_CHANCE) < 0.04
+    assert abs(trepadeiras / n - TORRE_TREPADEIRA_CHANCE) < 0.04
+    assert abs(inclinadas / n - TORRE_INCLINADA_CHANCE) < 0.03  # 1 em cada 10
+
+
+def test_torre_topo_species_respect_bands_and_exist():
+    from gielis.plants import SPECIES
+
+    from ynn import tables
+    from ynn.generator import TORRE_TOPO_VARIANTES, sortear_extras_torre
+
+    for _texto, especie, _bandas in tables.TORRE_BROTO:
+        assert especie in SPECIES and especie in TORRE_TOPO_VARIANTES
+
+    externo = {sortear_extras_torre(random.Random(s), 1)["topo"][1] for s in range(400) if sortear_extras_torre(random.Random(s), 1)["topo"]}
+    selvagem = {sortear_extras_torre(random.Random(s), 5)["topo"][1] for s in range(400) if sortear_extras_torre(random.Random(s), 5)["topo"]}
+    assert externo <= {"arvore", "arbusto", "flor"}
+    assert "cogumelo" in selvagem
+
+
+def test_preencher_lote_writes_all_tower_extras(monkeypatch, tmp_path):
+    from ynn import generator
+
+    forcado = {
+        "topo": ("Uma árvore antiga criou raízes no topo.", "arvore"),
+        "trepadeiras": True,
+        "inclinacao": {"graus": 8.0, "azimute": 1.0},
+    }
+    monkeypatch.setattr(generator, "sortear_extras_torre", lambda rng, layer: forcado)
+    plot = {"tipo": "torre", "x": 0.0, "z": 0.0}
+    generator._preencher_lote(random.Random(3), 3, plot, 1, str(tmp_path))
+
+    assert plot["inclinacao"] == forcado["inclinacao"]
+    assert os.path.getsize(plot["trepadeiras_obj"]) > 0
+    assert 1 <= len(plot["topo_obj"]) <= 2  # TORRE_TOPO_VARIANTES["arvore"]
+    assert all(os.path.getsize(path) > 0 for path in plot["topo_obj"])
+    assert plot["conteudo"]["topo_brotado"]["especie"] == "arvore"
+    assert plot["geometria"]["altura_total"] == plot["conteudo"]["n_andares"] * plot["geometria"]["altura_andar"]
+    # destelhada: a malha acaba no topo (só a cornija passa)
+    with open(plot["obj"]) as f:
+        alturas = [float(line.split()[2]) for line in f if line.startswith("v ")]
+    assert max(alturas) <= plot["geometria"]["altura_total"] + 0.3
+
+
+def test_preencher_lote_without_extras_keeps_the_conical_roof(monkeypatch, tmp_path):
+    from ynn import generator
+
+    monkeypatch.setattr(
+        generator, "sortear_extras_torre", lambda rng, layer: {"topo": None, "trepadeiras": False, "inclinacao": None}
+    )
+    plot = {"tipo": "torre", "x": 0.0, "z": 0.0}
+    generator._preencher_lote(random.Random(3), 3, plot, 1, str(tmp_path))
+    assert "topo_obj" not in plot and "trepadeiras_obj" not in plot and "inclinacao" not in plot
+    with open(plot["obj"]) as f:
+        alturas = [float(line.split()[2]) for line in f if line.startswith("v ")]
+    assert max(alturas) > plot["geometria"]["altura_total"] + 2.0  # telhado

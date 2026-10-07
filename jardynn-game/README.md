@@ -70,6 +70,12 @@ anel (longe da porta, girando a cada andar), com um rótulo flutuante
 ("Andar 3 · Móveis podres") e uma luz por andar. Tudo vem do JSON *daquela*
 torre (`geometria` e `conteudo`): cada uma tem seus andares sorteados.
 
+Nem toda torre é igual: algumas têm **trepadeiras subindo pelas paredes**
+(`trepadeiras_obj`), outras **perderam o telhado e algo brotou no topo**
+(`topo_obj`) e **uma em cada dez fica inclinada** (`inclinacao`). A torre
+inteira (malha, plantas, objetos dos andares, rótulos e luzes) fica num nó
+girado em torno da base, então nada se desalinha quando ela pende.
+
 ## Layout 2D
 
 Desde a introdução de `layout` no JSON (ver README do `ynn-generator`), o

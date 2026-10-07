@@ -46,6 +46,9 @@ sorteadas por `d20 + profundidade`: `LOCAIS` traz `(nome, tipo_de_lote)` e
 `DETALHES` traz `(texto, tipo_relevo, efeito)`. Ambas vão do ameno ao
 estranho conforme o índice, então quanto mais fundo, mais estranho.
 
+`TORRE_BROTO` diz o que brotou no topo das torres destelhadas, formato
+`(texto, especie, bandas)`.
+
 `GAZEBO_ESTADO` (como o pavilhão está) e `GAZEBO_BIBELOS` (o que ficou
 largado dentro) são sorteados por `ynn.generator.generate_gazebo_conteudo`,
 formato `(texto, bandas)` como as demais.
@@ -616,4 +619,14 @@ DETALHES = [
     ("Uma porta de madeira simples, pintada de verde, entre dois arbustos: leva para fora de Ynn.", "plano", "saida"),
     ("Dois detalhes se enroscam e valem ao mesmo tempo.", "plano", "duplo"),
     ("Emaranhado total: dois detalhes aplicam-se juntos.", "plano", "duplo"),
+]
+
+TORRE_BROTO = [
+    # (texto, especie, bandas) — o que brotou no topo de uma torre destelhada
+    # (`ynn.generator.sortear_extras_torre`); `especie` é de `gielis.plants`.
+    ("Uma árvore antiga criou raízes no topo e abriu o que restava do telhado com o tronco.", "arvore", "all"),
+    ("Um mato espesso de arbustos tomou o topo, o telhado caído há muito tempo.", "arbusto", "all"),
+    ("Um canteiro selvagem de flores brotou no assoalho do topo, aberto ao céu.", "flor", "all"),
+    ("Samambaias gigantes pendem das bordas do topo destelhado.", "samambaia", ("jardim_profundo", "nucleo_selvagem")),
+    ("Cogumelos enormes cresceram no assoalho apodrecido do topo.", "cogumelo", ("nucleo_selvagem",)),
 ]

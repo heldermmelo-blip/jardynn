@@ -20,6 +20,7 @@ from gielis.structures import generate_gazebo as _generate_gazebo_mesh  # noqa: 
 from gielis.structures import generate_greenhouse as _generate_greenhouse_mesh  # noqa: E402
 from gielis.structures import TOWER_FLOOR_HEIGHT, TOWER_STAIRWELL_RADIUS  # noqa: E402
 from gielis.structures import generate_tower as _generate_tower_mesh  # noqa: E402
+from gielis.structures import generate_tower_vines as _generate_tower_vines_mesh  # noqa: E402
 
 from .creatures import instantiate_creature
 
@@ -52,6 +53,15 @@ CANTEIRO_VARIANT_RANGE = (4, 8)
 # recebe o mesmo número de andares, pra bater com o conteúdo.
 N_ANDARES_TORRE_RANGE = (3, 8)
 IVY_VARIANT_RANGE = (3, 6)
+
+# Nem toda torre é igual: algumas ganham trepadeiras subindo pelas paredes,
+# algumas perdem o telhado e deixam algo brotar no topo, e uma em cada dez
+# fica inclinada. Cada efeito é sorteado por torre (`sortear_extras_torre`).
+TORRE_TREPADEIRA_CHANCE = 0.6
+TORRE_TOPO_BROTADO_CHANCE = 0.4
+TORRE_INCLINADA_CHANCE = 1 / 10
+TORRE_INCLINACAO_GRAUS = (4.0, 12.0)
+TORRE_TOPO_VARIANTES = {"arvore": (1, 2), "arbusto": (2, 3), "flor": (3, 4), "samambaia": (2, 3), "cogumelo": (2, 4)}
 
 # Tamanho/forma de cada estufa vêm de um "dado" sorteado: a face do dado é a
 # planta baixa (`lados` = número de cantos/portas), dados maiores dão
@@ -205,6 +215,23 @@ def generate_terreno(rng, layer, resolution=65, cell_size=2.0):
     return terrain.generate_terrain(rng, band, resolution=resolution, cell_size=cell_size)
 
 
+def sortear_extras_torre(rng, layer):
+    """Sorteia os efeitos opcionais de uma torre: `topo` (texto, espécie) de
+    `tables.TORRE_BROTO` se ela perdeu o telhado e algo brotou lá em cima, ou
+    None; `trepadeiras` (bool) se há plantas subindo pelas paredes; e
+    `inclinacao` (`graus`, `azimute` em rad) se ela está torta, ou None."""
+    band = band_for_layer(layer)
+    topo = None
+    if rng.random() < TORRE_TOPO_BROTADO_CHANCE:
+        entradas = [(texto, especie) for texto, especie, bandas in tables.TORRE_BROTO if bandas == "all" or band in bandas]
+        topo = rng.choice(entradas)
+    trepadeiras = rng.random() < TORRE_TREPADEIRA_CHANCE
+    inclinacao = None
+    if rng.random() < TORRE_INCLINADA_CHANCE:
+        inclinacao = {"graus": rng.uniform(*TORRE_INCLINACAO_GRAUS), "azimute": rng.uniform(0.0, 6.283185307179586)}
+    return {"topo": topo, "trepadeiras": trepadeiras, "inclinacao": inclinacao}
+
+
 def generate_torre_conteudo(rng, layer, n_andares_range=N_ANDARES_TORRE_RANGE):
     """Sorteia o conteúdo da torre: um número de andares (`n_andares_range`,
     padrão 3-8) e um conteúdo original por andar — os normais de
@@ -273,7 +300,10 @@ def _preencher_lote(rng, layer, plot, i, out_dir):
     if plot["tipo"] == "torre":
         conteudo = generate_torre_conteudo(rng, layer)
         out_path = os.path.join(out_dir, f"camada{layer}_torre_{i}.obj")
-        path, skeleton = _generate_tower_mesh(rng, conteudo["n_andares"], out_path=out_path)
+        extras = sortear_extras_torre(rng, layer)
+        path, skeleton = _generate_tower_mesh(
+            rng, conteudo["n_andares"], out_path=out_path, roof=extras["topo"] is None
+        )
         plot["obj"] = path
         plot["conteudo"] = conteudo
         # Medidas dessa torre específica (cada uma tem seus andares e raio),
@@ -283,6 +313,8 @@ def _preencher_lote(rng, layer, plot, i, out_dir):
             "raio_vao": TOWER_STAIRWELL_RADIUS,
             "raios_andar": [float(seg["r0"]) for seg in skeleton],
             "porta_angulo": float(skeleton[0]["porta_angulo"]),
+            "altura_total": float(skeleton[0]["altura_total"]),
+            "raio_topo": float(skeleton[0]["raio_topo"]),
         }
 
         n_ivy = rng.randint(*IVY_VARIANT_RANGE)
@@ -292,6 +324,23 @@ def _preencher_lote(rng, layer, plot, i, out_dir):
             path, _ = _generate_plant_mesh(rng, "videira", out_path=ivy_path)
             ivy_paths.append(path)
         plot["hera_obj"] = ivy_paths
+
+        if extras["topo"] is not None:
+            texto_topo, especie_topo = extras["topo"]
+            paths = []
+            for variant in range(1, rng.randint(*TORRE_TOPO_VARIANTES[especie_topo]) + 1):
+                topo_path = os.path.join(out_dir, f"camada{layer}_torre_{i}_topo_{variant}.obj")
+                path, _ = _generate_plant_mesh(rng, especie_topo, out_path=topo_path)
+                paths.append(path)
+            plot["topo_obj"] = paths
+            conteudo["topo_brotado"] = {"texto": texto_topo, "especie": especie_topo}
+        if extras["trepadeiras"]:
+            path, _ = _generate_tower_vines_mesh(
+                rng, skeleton, out_path=os.path.join(out_dir, f"camada{layer}_torre_{i}_trepadeiras.obj")
+            )
+            plot["trepadeiras_obj"] = path
+        if extras["inclinacao"] is not None:
+            plot["inclinacao"] = extras["inclinacao"]
     elif plot["tipo"] == "estufa":
         planta = generate_estufa_planta(rng)
         out_path = os.path.join(out_dir, f"camada{layer}_estufa_{i}.obj")

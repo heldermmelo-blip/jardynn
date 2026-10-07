@@ -4,7 +4,7 @@ import random
 import numpy as np
 import pytest
 
-from gielis.structures import generate_greenhouse, generate_gazebo, generate_tower
+from gielis.structures import generate_greenhouse, generate_gazebo, generate_tower, generate_tower_vines
 
 
 def _vertex_count(path):
@@ -108,3 +108,36 @@ def test_tower_skeleton_exposes_floor_radii_and_door_angle(tmp_path):
     assert radii == sorted(radii, reverse=True)  # afunila pra cima
     assert all(r - 1.3 >= 1.0 for r in radii)  # sobra >= 1 m de piso em anel até no último andar
     assert 0.0 <= skeleton[0]["porta_angulo"] < 2 * np.pi
+
+
+def test_tower_without_roof_is_open_on_top_with_a_soil_floor(tmp_path):
+    with_roof, _ = generate_tower(random.Random(6), 4, out_path=os.path.join(tmp_path, "a.obj"), roof=True)
+    open_top, skeleton = generate_tower(random.Random(6), 4, out_path=os.path.join(tmp_path, "b.obj"), roof=False)
+    total = skeleton[0]["altura_total"]
+    assert _vertices(with_roof)[:, 1].max() > total + 2.0  # telhado cônico
+    assert total <= _vertices(open_top)[:, 1].max() <= total + 0.3  # só a cornija passa do topo
+    assert skeleton[0]["raio_topo"] > 2.0
+    piso_de_terra = np.isclose(_vertices(open_top)[:, 1], total - 0.08)
+    assert piso_de_terra.sum() > 10
+
+
+def test_tower_vines_hug_the_outer_wall_and_climb(tmp_path):
+    _, skeleton = generate_tower(random.Random(7), 5, out_path=os.path.join(tmp_path, "t.obj"))
+    path, hastes = generate_tower_vines(random.Random(8), skeleton, out_path=os.path.join(tmp_path, "v.obj"))
+    v = _vertices(path)  # .obj é Y-up
+    zs = [float(seg["start"][2]) for seg in skeleton] + [float(skeleton[-1]["end"][2])]
+    rs = [float(seg["r0"]) for seg in skeleton] + [float(skeleton[-1]["r1"])]
+    raio_parede = np.interp(v[:, 1], zs, rs)
+    raio = np.hypot(v[:, 0], v[:, 2])
+    assert (raio >= raio_parede - 0.05).all()  # nunca atravessa a parede pra dentro
+    assert (raio <= raio_parede + 1.0).all()  # rente à parede
+    assert v[:, 1].max() > 0.3 * zs[-1]  # sobe de verdade
+    assert 3 <= len(hastes) <= 6
+
+
+def test_tower_vines_are_deterministic(tmp_path):
+    _, skeleton = generate_tower(random.Random(7), 4, out_path=os.path.join(tmp_path, "t.obj"))
+    a, _ = generate_tower_vines(random.Random(9), skeleton, out_path=os.path.join(tmp_path, "a.obj"))
+    b, _ = generate_tower_vines(random.Random(9), skeleton, out_path=os.path.join(tmp_path, "b.obj"))
+    with open(a) as fa, open(b) as fb:
+        assert fa.read() == fb.read()

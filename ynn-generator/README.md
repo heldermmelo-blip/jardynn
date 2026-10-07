@@ -89,6 +89,13 @@ o tubo de seção de Lamé e o domo da Superfórmula de `gielis.plants`):
   piso em anel sem bloquear a entrada. Como cada torre sorteia seu número
   de andares (3 a 8, o `d6+2` do livro) e o conteúdo de cada um, duas
   torres nunca são iguais.
+  Outros efeitos, sorteados por torre (`sortear_extras_torre`): **nem toda
+  torre tem trepadeiras** (60%: hastes de folhas subindo pela parede em
+  manchas, `trepadeiras_obj`, via `gielis.structures.generate_tower_vines`);
+  **40% perdem o telhado** e algo brota lá em cima (`TORRE_BROTO`: árvore,
+  mato, flores, samambaias, cogumelos; `topo_obj` e `conteudo.topo_brotado`),
+  com a malha destelhada (piso de terra e cornija no topo); e **uma em cada
+  dez fica inclinada** (`inclinacao`: 4 a 12 graus, azimute sorteado).
 - **estufa**: esqueleto de postes nos cantos + vigas por andar + telhado
   (sem vidro/painéis ainda). Tamanho e forma vêm de um "dado" sorteado
   (`ESTUFA_DADOS`, `generate_estufa_planta`), seguindo o mecanismo do livro

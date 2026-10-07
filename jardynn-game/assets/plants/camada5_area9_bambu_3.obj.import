@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://cf0om01i2rjg"
+path="res://.godot/imported/camada5_area9_bambu_3.obj-768662abad9293d8ea2ae3c5ba2bfadf.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada5_area9_bambu_3.obj-768662abad9293d8ea2ae3c5ba2bfadf.mesh"]
+
+source_file="res://assets/plants/camada5_area9_bambu_3.obj"
+dest_files=["res://.godot/imported/camada5_area9_bambu_3.obj-768662abad9293d8ea2ae3c5ba2bfadf.mesh", "res://.godot/imported/camada5_area9_bambu_3.obj-768662abad9293d8ea2ae3c5ba2bfadf.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

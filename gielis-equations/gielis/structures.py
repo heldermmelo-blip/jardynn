@@ -9,7 +9,7 @@ import os
 
 import numpy as np
 
-from .plants.foliage import cap_mesh
+from .plants.foliage import cap_mesh, leaf_mesh, place_leaf
 from .plants.mesh_utils import tube_mesh, write_obj
 
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "examples", "output")
@@ -75,7 +75,7 @@ def _annulus(radius_out, radius_in, sides, z):
     return vertices, np.array(faces, dtype=int)
 
 
-def _generate_tower(rng, n_floors):
+def _generate_tower(rng, n_floors, roof=True):
     """Torre oca, para os aventureiros entrarem: paredes de um polígono de
     16 lados (~6 m de largura, como os andares do livro), porta no térreo,
     janelas nos andares de cima, piso em cada andar (os de cima em anel,
@@ -143,27 +143,41 @@ def _generate_tower(rng, n_floors):
         )
         parts.append(tube_mesh(step, n_sides=4, cross_section_n=4.0))
 
-    roof_v, roof_f = cap_mesh(
-        radius=radius_at(total_h) * 1.25, height=rng.uniform(2.8, 4.0), n_sides=sides, cross_section_n=2.0
-    )
-    parts.append((roof_v + np.array([0.0, 0.0, total_h]), roof_f))
+    if roof:
+        roof_v, roof_f = cap_mesh(
+            radius=radius_at(total_h) * 1.25, height=rng.uniform(2.8, 4.0), n_sides=sides, cross_section_n=2.0
+        )
+        parts.append((roof_v + np.array([0.0, 0.0, total_h]), roof_f))
+    else:
+        # Torre destelhada: um piso de terra tapando o topo (onde algo pode
+        # brotar) e uma cornija de tijolo em volta da borda.
+        parts.append(_polygon_fan(radius_at(total_h) * 0.97, sides, total_h - 0.08))
+        for i in range(sides):
+            a = np.array(ring_point(i, total_h))
+            b = np.array(ring_point(i + 1, total_h))
+            cornice = dict(start=a, end=b, r0=0.14, r1=0.14, depth=3)
+            parts.append(tube_mesh(cornice, n_sides=5, cross_section_n=2.0))
 
     # Ângulo (rad, plano XY de construção) do centro do setor da porta, pra
     # quem posicionar objetos dentro da torre não bloquear a entrada.
     skeleton[0]["porta_angulo"] = 2 * np.pi * (door + 0.5) / sides
+    skeleton[0]["altura_total"] = total_h
+    skeleton[0]["raio_topo"] = radius_at(total_h)
 
     return parts, skeleton
 
 
-def generate_tower(rng, n_floors, out_path=None):
+def generate_tower(rng, n_floors, out_path=None, roof=True):
     """Gera uma torre oca e enterável com `n_floors` andares (ver
     `_generate_tower`) e salva como .obj em `out_path` (padrão:
     `examples/output/torre.obj`). Retorna `(out_path, skeleton)` — um
     segmento (o eixo) por andar, mesma convenção de `generate_plant`; `r0`
-    é o raio do piso daquele andar e o primeiro segmento traz `porta_angulo`.
+    é o raio do piso daquele andar e o primeiro segmento traz `porta_angulo`,
+    `altura_total` e `raio_topo`. `roof=False` gera a torre destelhada (piso de
+    terra e cornija no topo, sem o telhado cônico).
     `n_floors` deve vir de `ynn.generator.generate_torre_conteudo`, pra a
     malha bater com o número de andares do conteúdo gerado."""
-    parts, skeleton = _generate_tower(rng, n_floors)
+    parts, skeleton = _generate_tower(rng, n_floors, roof)
     out_path = _resolve_out_path(out_path, "torre.obj")
     write_obj(out_path, parts)
     return out_path, skeleton
@@ -270,3 +284,58 @@ def generate_gazebo(rng, out_path=None):
     out_path = _resolve_out_path(out_path, "gazebo.obj")
     write_obj(out_path, parts)
     return out_path, skeleton
+
+
+def generate_tower_vines(rng, skeleton, out_path=None):
+    """Trepadeiras subindo rente à parede externa da torre (`skeleton` é o
+    devolvido por `generate_tower`): de 3 a 6 hastes que sobem do pé até uma
+    altura sorteada, ondulando de lado a lado, com ramos laterais e folhas
+    deitadas sobre a parede — formam manchas, não uma cobertura uniforme.
+    Salva um .obj (padrão: `examples/output/trepadeiras.obj`). Retorna
+    `(out_path, hastes)`, com os pontos (ângulo, altura) de cada haste."""
+    zs = [float(seg["start"][2]) for seg in skeleton] + [float(skeleton[-1]["end"][2])]
+    rs = [float(seg["r0"]) for seg in skeleton] + [float(skeleton[-1]["r1"])]
+    total_h = zs[-1]
+
+    def point(angle, z):
+        r = float(np.interp(z, zs, rs)) + 0.1
+        return np.array([r * np.cos(angle), r * np.sin(angle), z])
+
+    parts = []
+    hastes = []
+
+    def grow(angle, z, steps, wobble, climb):
+        """Anda `steps` passos a partir de (angle, z), emitindo caule e folhas."""
+        trail = [(angle, z)]
+        for _ in range(steps):
+            angle += rng.uniform(-wobble, wobble)
+            z += climb()
+            trail.append((angle, min(z, total_h)))
+        for (a0, z0), (a1, z1) in zip(trail, trail[1:]):
+            stem = dict(start=point(a0, z0), end=point(a1, z1), r0=0.035, r1=0.03, depth=0)
+            parts.append(tube_mesh(stem, n_sides=5, cross_section_n=2.0))
+        for a, zz in trail:
+            outward = np.array([np.cos(a), np.sin(a), 0.0])
+            for _ in range(rng.randint(2, 4)):
+                local_v, local_f = leaf_mesh(
+                    shape_power=rng.uniform(1.8, 3.0), length=rng.uniform(0.25, 0.42), width_ratio=0.45, n_points=9
+                )
+                world_v = place_leaf(
+                    local_v, point(a, zz), outward, twist=rng.uniform(0.0, 2 * np.pi), droop_deg=rng.uniform(3.0, 15.0)
+                )
+                parts.append((world_v, local_f))
+        return trail
+
+    for _ in range(rng.randint(3, 6)):
+        target = rng.uniform(0.35, 1.0) * total_h
+        steps = max(2, int(target / 0.4))
+        trail = grow(rng.uniform(0.0, 2 * np.pi), 0.1, steps, 0.18, lambda: rng.uniform(0.3, 0.5))
+        hastes.append(trail)
+        for index in range(3, len(trail)):
+            if rng.random() < 0.3:
+                a, z = trail[index]
+                grow(a, z, rng.randint(3, 6), 0.35, lambda: rng.uniform(0.0, 0.25))
+
+    out_path = _resolve_out_path(out_path, "trepadeiras.obj")
+    write_obj(out_path, parts)
+    return out_path, hastes

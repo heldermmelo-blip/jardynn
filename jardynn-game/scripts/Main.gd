@@ -164,12 +164,45 @@ func _spawn_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
 			if creature != null:
 				print("  Criatura: %s (CA %s, DV %s, PV %s)" % [creature.get("nome"), _n(creature.get("ca")), creature.get("dv"), _n(creature.get("pontos_de_vida"))])
 
-	_spawn_structure(plot.get("obj", ""), x, z, terreno, COLOR_TORRE, false, true)
+	# Tudo da torre (malha, trepadeiras, plantas do topo, objetos dos andares,
+	# rótulos e luzes) vai debaixo de um nó na base dela: se ela for uma das
+	# torres inclinadas, basta girar esse nó e nada se desalinha.
+	var geo = plot.get("geometria", {})
+	var base_y: float = _height_at(terreno, x, z) if terreno != null else 0.0
+	var torre = Node3D.new()
+	torre.position = Vector3(x, base_y, z)
+	var inclinacao = plot.get("inclinacao")
+	if inclinacao != null:
+		var azimute: float = inclinacao.get("azimute", 0.0)
+		var graus: float = inclinacao.get("graus", 0.0)
+		var eixo = Vector3.UP.cross(Vector3(cos(azimute), 0.0, sin(azimute))).normalized()
+		torre.basis = Basis(eixo, deg_to_rad(graus))
+		print("  A torre está inclinada %.1f graus." % graus)
+	add_child(torre)
+
+	_spawn_structure(plot.get("obj", ""), 0.0, 0.0, null, COLOR_TORRE, false, true, torre)
+
+	var trepadeiras = plot.get("trepadeiras_obj")
+	if trepadeiras != null and trepadeiras != "":
+		print("  Trepadeiras sobem pelas paredes.")
+		_spawn_structure(trepadeiras, 0.0, 0.0, null, COLOR_HERA, false, true, torre)
 
 	for ivy_path in plot.get("hera_obj", []):
-		_spawn_plant_cluster(ivy_path, x, z, terreno, ivy_radius, COLOR_HERA, ivy_inner_radius)
+		_spawn_plant_cluster(ivy_path, 0.0, 0.0, null, ivy_radius, COLOR_HERA, ivy_inner_radius, 0.0, torre)
 
-	_spawn_props_torre(plot, x, z, terreno)
+	var topo = conteudo.get("topo_brotado")
+	if topo != null:
+		print("  No topo, sem telhado: %s" % topo.get("texto", ""))
+		var especie = str(topo.get("especie"))
+		var cor_topo = COLOR_FLOR if especie == "flor" else COLOR_PLANTA
+		var raio_topo: float = geo.get("raio_topo", 2.5)
+		var altura_total: float = geo.get("altura_total", 0.0)
+		for topo_path in plot.get("topo_obj", []):
+			var instancias = 1 if especie == "arvore" else 2
+			var escala_topo = 2.4 if especie == "arvore" else (1.5 if especie == "arbusto" else 1.3)
+			_spawn_plant_cluster(topo_path, 0.0, 0.0, null, raio_topo * 0.7, cor_topo, 0.0, altura_total, torre, instancias, escala_topo)
+
+	_spawn_props_torre(plot, torre)
 
 
 ## Posiciona, dentro da torre, o conteúdo sorteado de cada andar: um objeto
@@ -178,7 +211,7 @@ func _spawn_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
 ## `conteudo`): cada uma tem seu número de andares, o raio de cada piso e a
 ## posição da porta. Os ângulos do JSON estão no plano de construção (z pra
 ## cima); no Godot (Y pra cima) o z vira -z.
-func _spawn_props_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
+func _spawn_props_torre(plot: Dictionary, torre: Node3D) -> void:
 	var geo = plot.get("geometria", {})
 	var raios = geo.get("raios_andar", [])
 	if raios.is_empty():
@@ -186,7 +219,6 @@ func _spawn_props_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
 	var altura_andar: float = geo.get("altura_andar", 3.4)
 	var raio_vao: float = geo.get("raio_vao", 1.3)
 	var porta: float = geo.get("porta_angulo", 0.0)
-	var base_y: float = _height_at(terreno, x, z) if terreno != null else 0.0
 
 	for andar in plot.get("conteudo", {}).get("andares", []):
 		var indice = int(andar.get("numero")) - 1
@@ -196,21 +228,21 @@ func _spawn_props_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
 		var raio_andar: float = raios[indice]
 		var raio_meio = (raio_vao + raio_andar) / 2.0
 		var angulo = porta + PI + indice * 2.4  # longe da porta, girando a cada andar
-		var piso_y = base_y + indice * altura_andar + 0.05
+		var piso_y = indice * altura_andar + 0.05
 
 		var luz = OmniLight3D.new()
-		luz.position = Vector3(x, piso_y + altura_andar * 0.65, z)
+		luz.position = Vector3(0.0, piso_y + altura_andar * 0.65, 0.0)
 		luz.omni_range = 6.0
 		luz.light_energy = 0.7
 		luz.light_color = Color(1.0, 0.85, 0.6)
-		add_child(luz)
+		torre.add_child(luz)
 
 		var raiz = Node3D.new()
-		raiz.position = Vector3(x + cos(angulo) * raio_meio, piso_y, z - sin(angulo) * raio_meio)
+		raiz.position = Vector3(cos(angulo) * raio_meio, piso_y, -sin(angulo) * raio_meio)
 		raiz.rotation.y = angulo - PI / 2.0
 		var escala = clamp((raio_andar - raio_vao) / 1.4, 0.55, 1.0)
 		raiz.scale = Vector3.ONE * escala
-		add_child(raiz)
+		torre.add_child(raiz)
 
 		var prop = andar.get("prop")
 		var altura_prop = 0.0
@@ -229,7 +261,7 @@ func _spawn_props_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
 		rotulo.pixel_size = 0.005
 		rotulo.outline_size = 10
 		rotulo.position = raiz.position + Vector3(0, altura_prop + 0.4, 0)
-		add_child(rotulo)
+		torre.add_child(rotulo)
 
 
 func _spawn_area(area: Dictionary, base_x: float, base_z: float, terreno) -> void:
@@ -255,7 +287,7 @@ func _spawn_area(area: Dictionary, base_x: float, base_z: float, terreno) -> voi
 ## `plantas_obj`) ao redor de (base_x, base_z), num raio `radius`, cada
 ## uma com rotação e escala levemente diferentes — um jardim de verdade
 ## não tem uma única planta isolada por canteiro.
-func _spawn_plant_cluster(source_path: String, base_x: float, base_z: float, terreno, radius: float, color: Color, inner_radius: float = 0.0) -> void:
+func _spawn_plant_cluster(source_path: String, base_x: float, base_z: float, terreno, radius: float, color: Color, inner_radius: float = 0.0, y_extra: float = 0.0, parent: Node3D = null, instancias: int = -1, escala: float = 1.0) -> void:
 	# `source_path` vem do JSON como um caminho de arquivo do lado Python
 	# (pode usar "\" no Windows); só o nome do arquivo importa aqui, pois a
 	# malha já foi gerada dentro de `plants_dir` por este mesmo pipeline.
@@ -267,7 +299,7 @@ func _spawn_plant_cluster(source_path: String, base_x: float, base_z: float, ter
 		push_warning("Malha não encontrada (reimporte o projeto no editor após gerar os .obj): %s" % res_path)
 		return
 
-	var instance_count = randi_range(min_instances_per_variant, max_instances_per_variant)
+	var instance_count = instancias if instancias > 0 else randi_range(min_instances_per_variant, max_instances_per_variant)
 
 	var multimesh = MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
@@ -279,15 +311,15 @@ func _spawn_plant_cluster(source_path: String, base_x: float, base_z: float, ter
 		var dist = sqrt(randf_range(inner_radius * inner_radius, radius * radius))
 		var x = base_x + cos(angle) * dist
 		var z = base_z + sin(angle) * dist
-		var y = _height_at(terreno, x, z) if terreno != null else 0.0
+		var y = (_height_at(terreno, x, z) if terreno != null else 0.0) + y_extra
 
-		var basis = Basis(Vector3.UP, randf_range(0.0, TAU)).scaled(Vector3.ONE * randf_range(0.8, 1.2))
+		var basis = Basis(Vector3.UP, randf_range(0.0, TAU)).scaled(Vector3.ONE * randf_range(0.8, 1.2) * escala)
 		multimesh.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
 
 	var multimesh_instance = MultiMeshInstance3D.new()
 	multimesh_instance.multimesh = multimesh
 	multimesh_instance.material_override = _material(color)
-	add_child(multimesh_instance)
+	(parent if parent != null else self).add_child(multimesh_instance)
 
 
 ## Instancia um galho/tronco caído (`galhos_caidos_obj`, ~1 em 6 áreas) —
@@ -369,7 +401,7 @@ func _n(value) -> String:
 ## estruturas que devam manter uma orientação fixa (torre e galho).
 ## `double_sided` desliga o descarte de faces de trás: necessário pras
 ## paredes sem espessura da torre e do gazebo, que se vê por dentro.
-func _spawn_structure(source_path: String, x: float, z: float, terreno, color: Color, random_rotation: bool = true, double_sided: bool = false) -> void:
+func _spawn_structure(source_path: String, x: float, z: float, terreno, color: Color, random_rotation: bool = true, double_sided: bool = false, parent: Node3D = null) -> void:
 	if source_path == null or source_path == "":
 		return
 
@@ -389,7 +421,7 @@ func _spawn_structure(source_path: String, x: float, z: float, terreno, color: C
 	mesh_instance.material_override = _material(color, double_sided)
 	if random_rotation:
 		mesh_instance.rotation.y = randf_range(0.0, TAU)
-	add_child(mesh_instance)
+	(parent if parent != null else self).add_child(mesh_instance)
 
 
 ## Monta a malha triangulada do relevo a partir da grade de alturas
