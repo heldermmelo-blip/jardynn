@@ -12,9 +12,12 @@ O resultado é uma grade de pontos (heightmap), não uma malha triangulada
 `SurfaceTool`).
 """
 
+import math
+
 from . import tables
 
 AMPLITUDE_POR_TIPO = {"plano": 0.0, "leve": 0.5, "acentuado": 1.2, "irregular": 2.0}
+RELEVO_ORDEM = ["plano", "leve", "acentuado", "irregular"]
 RUGOSIDADE_POR_TIPO = {"plano": 0.5, "leve": 0.55, "acentuado": 0.6, "irregular": 0.75}
 
 
@@ -94,4 +97,47 @@ def generate_terrain(rng, band, resolution=65, cell_size=2.0):
         "resolucao": size,
         "tamanho_celula": cell_size,
         "alturas": alturas,
+    }
+
+
+def generate_terrain_localizado(rng, pontos, resolution=65, cell_size=2.0, raio_influencia=18.0):
+    """Relevo que varia só ao redor de cada local, conforme o detalhe dele.
+
+    `pontos` é uma lista de `(x, z, tipo_relevo)` em coordenadas de mundo.
+    Uma única grade de ruído diamond-square é multiplicada, em cada ponto
+    da grade, pela maior "influência" entre os locais: a amplitude do
+    `tipo_relevo` do local vezes uma gaussiana da distância até ele
+    (`raio_influencia` em metros). Longe de qualquer local de relevo
+    variável, o chão é plano."""
+    size = _nearest_valid_size(resolution)
+    base = _diamond_square(rng, size, 2.5, 0.6)
+    meia = (size - 1) / 2
+    ativos = [(x, z, AMPLITUDE_POR_TIPO[tipo]) for x, z, tipo in pontos if AMPLITUDE_POR_TIPO[tipo] > 0.0]
+
+    alturas = []
+    for j in range(size):
+        z = (j - meia) * cell_size
+        linha = []
+        for i in range(size):
+            x = (i - meia) * cell_size
+            peso = 0.0
+            for px, pz, amplitude in ativos:
+                d2 = (x - px) ** 2 + (z - pz) ** 2
+                peso = max(peso, amplitude * math.exp(-d2 / (raio_influencia**2)))
+            linha.append(base[j][i] * peso)
+        alturas.append(linha)
+
+    mais_forte = max((tipo for _, _, tipo in pontos), key=RELEVO_ORDEM.index, default="plano")
+    descricao = (
+        "O relevo varia ao redor de cada local, conforme o detalhe dele."
+        if ativos
+        else "Terreno nivelado em todo o nível."
+    )
+    return {
+        "descricao": descricao,
+        "tipo_relevo": mais_forte,
+        "resolucao": size,
+        "tamanho_celula": cell_size,
+        "alturas": alturas,
+        "localizado": True,
     }

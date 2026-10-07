@@ -1,5 +1,5 @@
-"""Estruturas arquitetônicas simples (torre, estufa, gazebo) para o layout
-do jardim — não são plantas, mas reaproveitam os mesmos utilitários de
+"""Estruturas arquitetônicas simples (torre enterável, estufa, gazebo) para o
+layout do jardim — não são plantas, mas reaproveitam os mesmos utilitários de
 `gielis.plants`: o tubo com seção de Lamé (`mesh_utils.tube_mesh`) para
 postes/vigas/torre, e o domo da Superfórmula (`foliage.cap_mesh`,
 originalmente o chapéu de cogumelo) para os telhados.
@@ -51,39 +51,111 @@ def _polygon_fan(radius, sides, z):
     return vertices, np.array(faces, dtype=int)
 
 
+TOWER_SIDES = 16
+TOWER_FLOOR_HEIGHT = 3.4
+TOWER_DOOR_HEIGHT = 2.4
+TOWER_WINDOW_SILL = 1.0
+TOWER_WINDOW_TOP = 2.3
+TOWER_STAIR_STEPS_PER_TURN = 14
+TOWER_STAIRWELL_RADIUS = 1.3
+
+
+def _annulus(radius_out, radius_in, sides, z):
+    """Piso em anel (dupla face) com um vão central — o poço da escada."""
+    angles = 2 * np.pi * np.arange(sides) / sides
+    outer = np.column_stack([radius_out * np.cos(angles), radius_out * np.sin(angles), np.full(sides, z)])
+    inner = np.column_stack([radius_in * np.cos(angles), radius_in * np.sin(angles), np.full(sides, z)])
+    vertices = np.vstack([outer, inner])
+    faces = []
+    for i in range(sides):
+        j = (i + 1) % sides
+        for tri in ([i, j, sides + j], [i, sides + j, sides + i]):
+            faces.append(tri)
+            faces.append(tri[::-1])
+    return vertices, np.array(faces, dtype=int)
+
+
 def _generate_tower(rng, n_floors):
-    floor_height = rng.uniform(3.2, 4.0)
-    base_radius = rng.uniform(1.0, 1.6)
-    taper_per_floor = rng.uniform(0.04, 0.08)
+    """Torre oca, para os aventureiros entrarem: paredes de um polígono de
+    16 lados (~6 m de largura, como os andares do livro), porta no térreo,
+    janelas nos andares de cima, piso em cada andar (os de cima em anel,
+    com um vão central) e uma escada em espiral em torno de um mastro
+    central, que atravessa os vãos. As paredes têm espessura zero — o
+    material deve ser de dupla face."""
+    sides = TOWER_SIDES
+    floor_h = TOWER_FLOOR_HEIGHT
+    radius0 = rng.uniform(2.8, 3.4)
+    taper = rng.uniform(0.02, 0.04)
+    total_h = n_floors * floor_h
+    door = rng.randrange(sides)
+    stair_phase = rng.uniform(0.0, 2 * np.pi)
+
+    def radius_at(z):
+        return radius0 * (1.0 - taper * z / floor_h)
+
+    def ring_point(i, z):
+        angle = 2 * np.pi * (i % sides) / sides
+        return [radius_at(z) * np.cos(angle), radius_at(z) * np.sin(angle), z]
 
     parts = []
     skeleton = []
-    radius = base_radius
-    z = 0.0
-    for _ in range(n_floors):
-        next_radius = max(radius * (1.0 - taper_per_floor), base_radius * 0.35)
-        segment = dict(
-            start=np.array([0.0, 0.0, z]), end=np.array([0.0, 0.0, z + floor_height]), r0=radius, r1=next_radius, depth=0
+
+    def wall_panel(i, z_lo, z_hi):
+        vertices = np.array([ring_point(i, z_lo), ring_point(i + 1, z_lo), ring_point(i + 1, z_hi), ring_point(i, z_hi)])
+        parts.append((vertices, np.array([[0, 1, 2], [0, 2, 3]])))
+
+    for floor in range(n_floors):
+        z0 = floor * floor_h
+        z1 = z0 + floor_h
+        for i in range(sides):
+            if floor == 0 and i == door:
+                wall_panel(i, TOWER_DOOR_HEIGHT, z1)
+            elif floor >= 1 and (i - floor) % 4 == 0:
+                wall_panel(i, z0, z0 + TOWER_WINDOW_SILL)
+                wall_panel(i, z0 + TOWER_WINDOW_TOP, z1)
+            else:
+                wall_panel(i, z0, z1)
+
+        parts.append(
+            _polygon_fan(radius_at(z0), sides, 0.02)
+            if floor == 0
+            else _annulus(radius_at(z0), TOWER_STAIRWELL_RADIUS, sides, z0)
         )
-        parts.append(tube_mesh(segment, n_sides=12, cross_section_n=2.0))
-        skeleton.append(segment)
-        radius = next_radius
-        z += floor_height
+        skeleton.append(
+            dict(start=np.array([0.0, 0.0, z0]), end=np.array([0.0, 0.0, z1]), r0=radius_at(z0), r1=radius_at(z1), depth=0)
+        )
+
+    pole_top = (n_floors - 1) * floor_h + 1.0
+    pole = dict(start=np.array([0.0, 0.0, 0.0]), end=np.array([0.0, 0.0, pole_top]), r0=0.12, r1=0.12, depth=1)
+    parts.append(tube_mesh(pole, n_sides=8, cross_section_n=2.0))
+
+    steps = (n_floors - 1) * TOWER_STAIR_STEPS_PER_TURN
+    for k in range(1, steps + 1):
+        angle = stair_phase + 2 * np.pi * k / TOWER_STAIR_STEPS_PER_TURN
+        z = k * floor_h / TOWER_STAIR_STEPS_PER_TURN
+        direction = np.array([np.cos(angle), np.sin(angle), 0.0])
+        step = dict(
+            start=direction * 0.12 + np.array([0.0, 0.0, z]),
+            end=direction * (TOWER_STAIRWELL_RADIUS - 0.15) + np.array([0.0, 0.0, z]),
+            r0=0.1,
+            r1=0.1,
+            depth=2,
+        )
+        parts.append(tube_mesh(step, n_sides=4, cross_section_n=4.0))
 
     roof_v, roof_f = cap_mesh(
-        radius=radius * 1.2, height=rng.uniform(2.5, 4.0), n_sides=12, cross_section_n=rng.uniform(1.6, 2.2)
+        radius=radius_at(total_h) * 1.25, height=rng.uniform(2.8, 4.0), n_sides=sides, cross_section_n=2.0
     )
-    roof_v = roof_v + np.array([0.0, 0.0, z])
-    parts.append((roof_v, roof_f))
+    parts.append((roof_v + np.array([0.0, 0.0, total_h]), roof_f))
 
     return parts, skeleton
 
 
 def generate_tower(rng, n_floors, out_path=None):
-    """Gera uma torre com `n_floors` andares (um segmento afunilado por
-    andar, mais o telhado cônico) e salva como .obj em `out_path` (padrão:
+    """Gera uma torre oca e enterável com `n_floors` andares (ver
+    `_generate_tower`) e salva como .obj em `out_path` (padrão:
     `examples/output/torre.obj`). Retorna `(out_path, skeleton)` — um
-    segmento por andar, mesma convenção de `gielis.plants.generate_plant`.
+    segmento (o eixo) por andar, mesma convenção de `generate_plant`.
     `n_floors` deve vir de `ynn.generator.generate_torre_conteudo`, pra a
     malha bater com o número de andares do conteúdo gerado."""
     parts, skeleton = _generate_tower(rng, n_floors)

@@ -12,12 +12,12 @@ lê o que já foi gerado.
 ```
 jardynn-game/
   assets/
-	plants/   ← malhas .obj geradas por gielis.plants (via ynn-generator)
-	data/     ← camadas de jardim exportadas em JSON
+    plants/   ← malhas .obj geradas por gielis.plants (via ynn-generator)
+    data/     ← camadas de jardim exportadas em JSON
   scenes/
-	Main.tscn ← cena de exemplo: instancia as plantas de uma camada
+    Main.tscn ← cena de exemplo: instancia as plantas de uma camada
   scripts/
-	Main.gd   ← lê o JSON e monta a cena (ver comentário no topo do arquivo)
+    Main.gd   ← lê o JSON e monta a cena (ver comentário no topo do arquivo)
 ```
 
 ## Gerando novos assets
@@ -26,9 +26,9 @@ A partir da raiz do repositório (`Claude workspace/`):
 
 ```bash
 cd ynn-generator
-python -m ynn.cli --layer 1 --areas 5 --seed 42 --json \
-	--output ../jardynn-game/assets/data/camada1.json \
-	--plant-output-dir ../jardynn-game/assets/plants
+python -m ynn.cli --modo livro --profundidade 4 --seed 42 --json \
+    --output ../jardynn-game/assets/data/camada1.json \
+    --plant-output-dir ../jardynn-game/assets/plants
 ```
 
 - `--json` faz o gerador emitir dados estruturados (camada, terreno, áreas,
@@ -48,6 +48,22 @@ Cerca de 1 em 6 áreas também ganha galhos ou troncos caídos/cortados
 (`galhos_caidos_obj` no JSON, via `gielis.plants.generate_fallen_branch`)
 — sinal de um jardim sem cuidado. A malha já vem deitada da própria
 geração; `Main.gd` só posiciona e gira em Y.
+
+## Mapa de pontos (modo livro)
+
+O JSON padrão agora é um **mapa de pontos** como o do livro (ver README do
+`ynn-generator`): a entrada no topo (profundidade 0), cada camada numa
+fileira mais abaixo, locais sorteados por `d20 + profundidade` e ligados
+por trilhas. `Main.gd` desenha cada ligação (`layout.arestas`) como uma
+fita rente ao terreno: **marrom** = trilha normal entre camadas, **azul** =
+atalho para um local já explorado, **vermelho** = descida para um local bem
+mais fundo. O console imprime, de cada local, a profundidade, o nome e o
+detalhe. O relevo varia só ao redor dos locais cujo detalhe pede.
+
+As **torres são prédios onde os aventureiros entram**: paredes ocas de
+~6 m de largura, porta no térreo, janelas nos andares de cima, piso em
+cada andar e uma escada em espiral (material de dupla face, já que as
+paredes não têm espessura).
 
 ## Layout 2D
 

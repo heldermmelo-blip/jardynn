@@ -39,6 +39,11 @@ tipo, criatura)`: `tipo` é `"valor"` (rola um valor em ouro, crescente com
 a profundidade), `"criatura"` (instancia a ficha `criatura` de
 `ynn.creatures.CREATURES`) ou `None` (só atmosfera/regra no próprio texto).
 
+`LOCAIS` e `DETALHES` são as tabelas do modo livro (`ynn.pointcrawl`),
+sorteadas por `d20 + profundidade`: `LOCAIS` traz `(nome, tipo_de_lote)` e
+`DETALHES` traz `(texto, tipo_relevo, efeito)`. Ambas vão do ameno ao
+estranho conforme o índice, então quanto mais fundo, mais estranho.
+
 `GAZEBO_ESTADO` (como o pavilhão está) e `GAZEBO_BIBELOS` (o que ficou
 largado dentro) são sorteados por `ynn.generator.generate_gazebo_conteudo`,
 formato `(texto, bandas)` como as demais.
@@ -521,4 +526,90 @@ ESTUFA_CONTEUDO = [
     ("Esporos densos no ar: respirar causa 1 de dano por turno, e quem falhar numa resistência a veneno continua sofrendo ao sair.", ("jardim_profundo", "nucleo_selvagem"), None, None),
     ("Sob a folhagem, esqueletos humanos com trepadeiras saindo das costelas se levantam quando alguém se aproxima.", ("jardim_profundo", "nucleo_selvagem"), "criatura", "esqueleto_vegetal"),
     ("A estufa está lacrada por fora, as portas pregadas; lá dentro, a folhagem empurra o vidro tentando sair.", ("nucleo_selvagem",), None, None),
+]
+
+LOCAIS = [
+    # (nome, tipo_de_lote) — sorteada por d20 + profundidade (`ynn.pointcrawl`):
+    # as primeiras entradas são amenas, as do fim são estranhas e industriais.
+    # `tipo_de_lote` é um tipo de `ynn.layout` ("area", "canteiro", "estufa",
+    # "gazebo" ou "torre"); resultados acima do tamanho da lista caem na última.
+    ("Gramado de croquet, os arcos tortos e as bolas espalhadas", "area"),
+    ("Alameda de tílias", "area"),
+    ("Canteiro de lavanda zumbindo de abelhas", "canteiro"),
+    ("Pérgula de glicínias", "area"),
+    ("Pomar de marmeleiros", "area"),
+    ("Tanque de nenúfares", "area"),
+    ("Coreto de música", "gazebo"),
+    ("Estufa de samambaias", "estufa"),
+    ("Canteiro de dálias", "canteiro"),
+    ("Bosque de bétulas", "area"),
+    ("Quiosque de chá", "gazebo"),
+    ("Estufa de laranjeiras", "estufa"),
+    ("Terraço de estátuas de mármore", "area"),
+    ("Torre do relógio", "torre"),
+    ("Canteiro de ervas de boticário", "canteiro"),
+    ("Fonte seca de três bacias", "area"),
+    ("Biblioteca a céu aberto", "area"),
+    ("Observatório de latão", "torre"),
+    ("Viveiro de borboletas de vidro", "estufa"),
+    ("Barracão de ferramentas gigantes", "area"),
+    ("Cemitério de bonecas", "area"),
+    ("Lago congelado fora de estação", "area"),
+    ("Salão de baile sem teto", "area"),
+    ("Ponte sobre um vale de névoa", "area"),
+    ("Canteiro de flores que se mexem", "canteiro"),
+    ("Câmara de espelhos cobertos de hera", "area"),
+    ("Estufa de pulmões vegetais", "estufa"),
+    ("Praça dos relógios derretidos", "area"),
+    ("Cozinha abandonada de um banquete", "area"),
+    ("Orquestra de espantalhos", "area"),
+    ("Torre sem topo", "torre"),
+    ("Cisterna de memórias", "area"),
+    ("Jardim de ponta-cabeça", "area"),
+    ("Trono de espinhos", "area"),
+    ("Ruínas do Primeiro Jardim", "area"),
+]
+
+DETALHES = [
+    # (texto, tipo_relevo, efeito) — também sorteada por d20 + profundidade.
+    # `tipo_relevo` ("plano", "leve", "acentuado" ou "irregular") dita o
+    # quanto o terreno ao redor do local varia (`ynn.terrain.
+    # generate_terrain_localizado`). `efeito`: "vazio" (sem habitantes),
+    # "tesouro" (um achado extra), "saida" (uma porta de volta ao mundo
+    # real), "duplo" (rola mais dois detalhes) ou None.
+    ("Quietude fora do comum: nada se mexe, nada canta, como se o lugar tivesse sido esvaziado.", "plano", "vazio"),
+    ("Um tapete de pétalas recém-caídas cobre o chão, embora não haja flores acima.", "plano", None),
+    ("Cada pedra do caminho tem um número pintado em tinta branca.", "plano", None),
+    ("Uma mesa posta para o chá, a fumaça ainda saindo das xícaras, sem ninguém sentado.", "plano", None),
+    ("Pegadas minúsculas, descalças, fazem círculos no chão úmido.", "plano", None),
+    ("O chão ondula de leve, como respirando devagar.", "leve", None),
+    ("Algo brilha entre as raízes: alguém enterrou isto às pressas.", "plano", "tesouro"),
+    ("Varais de roupa branca secando, sem vento e sem dono.", "plano", None),
+    ("Montes de terra revirada em intervalos regulares demais para ser natural.", "leve", None),
+    ("Uma cerca-viva aparada em letras de um alfabeto desconhecido.", "plano", None),
+    ("Sinos de vento por todo lado tocam uma melodia que nunca termina.", "plano", None),
+    ("Terraços baixos de pedra dividem o terreno em patamares desalinhados.", "leve", None),
+    ("Poças de água parada refletem um céu mais escuro que o de cima.", "plano", None),
+    ("Cheiro de bolo assando, vindo de lugar nenhum.", "plano", None),
+    ("Colinas abruptas se erguem sem aviso, como se o chão tivesse sido amassado.", "acentuado", None),
+    ("Cada árvore tem uma portinha pequena e fechada no tronco.", "plano", None),
+    ("Rastros de tinta colorida levam sempre para o mesmo ponto.", "plano", None),
+    ("Uma ravina corta o lugar, as bordas cobertas de raízes expostas.", "acentuado", None),
+    ("Estátuas viradas de costas para o centro, como em castigo.", "plano", None),
+    ("Neblina baixa e morna, com gosto de hortelã.", "plano", None),
+    ("Poeira dourada suspensa no ar, caindo devagar demais.", "plano", "tesouro"),
+    ("O solo sobe e desce em ondas fundas demais para as árvores que crescem nele.", "acentuado", None),
+    ("Relógios de sol que giram: as sombras andam para trás.", "plano", None),
+    ("Uma segunda lua, pequena, paira baixa sobre o lugar.", "plano", None),
+    ("O chão se curva para cima contra a lógica, e as plantas crescem apontando para baixo.", "irregular", None),
+    ("Pedaços inteiros de terra flutuam a pouca altura, presos por raízes esticadas.", "irregular", None),
+    ("O peso não vale aqui: tudo que está solto sobe devagar.", "irregular", None),
+    ("Crateras rasas sobrepostas, como bolhas de algo que ferveu e endureceu.", "irregular", None),
+    ("Uma voz repete baixinho os pensamentos de quem chega.", "plano", None),
+    ("Cada passo muda a altura do chão de um jeito que a vista não acompanha.", "irregular", None),
+    ("Os rostos das estátuas mudam de expressão quando ninguém olha.", "plano", None),
+    ("Sombras sem dono caminham em direções opostas.", "plano", None),
+    ("Uma porta de madeira simples, pintada de verde, entre dois arbustos: leva para fora de Ynn.", "plano", "saida"),
+    ("Dois detalhes se enroscam e valem ao mesmo tempo.", "plano", "duplo"),
+    ("Emaranhado total: dois detalhes aplicam-se juntos.", "plano", "duplo"),
 ]

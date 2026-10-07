@@ -1,6 +1,7 @@
 import os
 import random
 
+import numpy as np
 import pytest
 
 from gielis.structures import generate_greenhouse, generate_gazebo, generate_tower
@@ -16,6 +17,50 @@ def test_tower_has_one_segment_per_floor(tmp_path):
         path, skeleton = generate_tower(random.Random(1), n_floors, out_path=os.path.join(tmp_path, f"t{n_floors}.obj"))
         assert len(skeleton) == n_floors
         assert os.path.getsize(path) > 0
+
+
+def _vertices(path):
+    with open(path) as f:
+        return np.array([[float(c) for c in line.split()[1:4]] for line in f if line.startswith("v ")])
+
+
+def test_tower_is_hollow_and_wide_enough_to_enter(tmp_path):
+    path, _ = generate_tower(random.Random(2), 5, out_path=os.path.join(tmp_path, "t.obj"))
+    v = _vertices(path)  # .obj é Y-up: o plano horizontal é (x, z)
+    radii = np.hypot(v[:, 0], v[:, 2])
+    assert radii.max() >= 2.5  # ~6 m de largura: cabe um aventureiro com folga
+    assert (radii < 1.3).any()  # escada e mastro no vão central
+    # Paredes só na borda: não há vértices de parede entre o poço e a parede.
+    assert not ((radii > 1.9) & (radii < 2.5) & (v[:, 1] > 0.5) & (v[:, 1] < 2.0)).any()
+
+
+def _faces_centroids(path):
+    with open(path) as f:
+        lines = f.read().splitlines()
+    verts = np.array([[float(c) for c in line.split()[1:4]] for line in lines if line.startswith("v ")])
+    faces = [[int(t) - 1 for t in line.split()[1:4]] for line in lines if line.startswith("f ")]
+    return np.array([verts[face].mean(axis=0) for face in faces])
+
+
+def test_tower_ground_floor_has_exactly_one_door_opening(tmp_path):
+    path, _ = generate_tower(random.Random(3), 3, out_path=os.path.join(tmp_path, "t.obj"))
+    c = _faces_centroids(path)  # .obj é Y-up: horizontal = (x, z), altura = y
+    radii = np.hypot(c[:, 0], c[:, 2])
+    angles = np.arctan2(c[:, 2], c[:, 0]) % (2 * np.pi)
+    setor = np.floor(angles / (2 * np.pi) * 16).astype(int) % 16
+    parede_baixa = (radii > 2.5) & (c[:, 1] < 1.2)  # faces de parede junto ao chão do térreo
+    assert len(set(setor[parede_baixa])) == 15  # 16 setores menos o da porta
+
+
+def test_tower_upper_floors_have_window_openings(tmp_path):
+    path, _ = generate_tower(random.Random(4), 4, out_path=os.path.join(tmp_path, "t.obj"))
+    c = _faces_centroids(path)
+    radii = np.hypot(c[:, 0], c[:, 2])
+    angles = np.arctan2(c[:, 2], c[:, 0]) % (2 * np.pi)
+    setor = np.floor(angles / (2 * np.pi) * 16).astype(int) % 16
+    # No meio do 2º andar (y ~ 3.4 + 1.65), as janelas deixam setores sem parede.
+    meio = (radii > 2.5) & (c[:, 1] > 3.4 + 1.2) & (c[:, 1] < 3.4 + 2.2)
+    assert len(set(setor[meio])) < 16
 
 
 def test_taller_tower_has_more_vertices(tmp_path):

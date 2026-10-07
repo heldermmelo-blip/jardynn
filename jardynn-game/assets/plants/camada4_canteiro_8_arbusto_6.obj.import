@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://b5nmoploja10l"
+path="res://.godot/imported/camada4_canteiro_8_arbusto_6.obj-78c28bd0f6abe6dbf43bf64084fec8eb.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada4_canteiro_8_arbusto_6.obj-78c28bd0f6abe6dbf43bf64084fec8eb.mesh"]
+
+source_file="res://assets/plants/camada4_canteiro_8_arbusto_6.obj"
+dest_files=["res://.godot/imported/camada4_canteiro_8_arbusto_6.obj-78c28bd0f6abe6dbf43bf64084fec8eb.mesh", "res://.godot/imported/camada4_canteiro_8_arbusto_6.obj-78c28bd0f6abe6dbf43bf64084fec8eb.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

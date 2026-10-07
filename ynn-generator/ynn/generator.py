@@ -3,7 +3,7 @@
 import os
 import sys
 
-from . import layout, tables, terrain
+from . import layout, pointcrawl, tables, terrain
 
 _YNN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _WORKSPACE_ROOT = os.path.dirname(_YNN_ROOT)
@@ -127,10 +127,14 @@ def _pick_vegetation(rng, band):
     return rng.choice(_vegetation_for_band(band))
 
 
-def generate_area(rng, layer, index, plant_output_dir=None):
+def generate_area(rng, layer, index, plant_output_dir=None, local=None, sem_habitantes=False):
+    """`local` (opcional) é o nome do local sorteado no mapa de pontos
+    (`ynn.pointcrawl`): abre o texto e substitui o elemento notável sorteado
+    em FEATURES. `sem_habitantes` suprime o sorteio de denizens (detalhe
+    "vazio")."""
     band = band_for_layer(layer)
     vegetation_text, vegetation_species = _pick_vegetation(rng, band)
-    parts = [vegetation_text]
+    parts = [f"{local}.", vegetation_text] if local else [vegetation_text]
 
     plant_obj_paths = []
     if vegetation_species is not None:
@@ -156,10 +160,11 @@ def generate_area(rng, layer, index, plant_output_dir=None):
     if rng.random() < ATMOSPHERE_CHANCE:
         parts.append(_pick(rng, tables.ATMOSPHERE, band))
 
-    parts.append(f"Aqui há {_pick(rng, tables.FEATURES, band)}.")
+    if local is None:
+        parts.append(f"Aqui há {_pick(rng, tables.FEATURES, band)}.")
 
     denizen, denizen_class, denizen_creature, npc, creature = None, None, None, None, None
-    if rng.random() < DENIZEN_CHANCE[band]:
+    if not sem_habitantes and rng.random() < DENIZEN_CHANCE[band]:
         denizen, denizen_class, denizen_creature = _pick_denizen(rng, band)
         parts.append(f"Você nota {denizen}.")
         if denizen_class is not None:
@@ -260,6 +265,50 @@ def generate_gazebo_conteudo(rng, layer):
     }
 
 
+def _preencher_lote(rng, layer, plot, i, out_dir):
+    """Gera a malha e o conteúdo de um lote não-narrativo (torre, estufa,
+    gazebo ou canteiro), gravando os resultados no próprio `plot`. `i` só
+    entra no nome dos arquivos."""
+    if plot["tipo"] == "torre":
+        conteudo = generate_torre_conteudo(rng, layer)
+        out_path = os.path.join(out_dir, f"camada{layer}_torre_{i}.obj")
+        path, _ = _generate_tower_mesh(rng, conteudo["n_andares"], out_path=out_path)
+        plot["obj"] = path
+        plot["conteudo"] = conteudo
+
+        n_ivy = rng.randint(*IVY_VARIANT_RANGE)
+        ivy_paths = []
+        for variant in range(1, n_ivy + 1):
+            ivy_path = os.path.join(out_dir, f"camada{layer}_torre_{i}_hera_{variant}.obj")
+            path, _ = _generate_plant_mesh(rng, "videira", out_path=ivy_path)
+            ivy_paths.append(path)
+        plot["hera_obj"] = ivy_paths
+    elif plot["tipo"] == "estufa":
+        planta = generate_estufa_planta(rng)
+        out_path = os.path.join(out_dir, f"camada{layer}_estufa_{i}.obj")
+        path, _ = _generate_greenhouse_mesh(
+            rng, sides=planta["lados"], n_floors=planta["andares"], radius=planta["raio"], out_path=out_path
+        )
+        plot["obj"] = path
+        plot["planta"] = planta
+        plot["conteudo"] = generate_estufa_conteudo(rng, layer)
+    elif plot["tipo"] == "gazebo":
+        out_path = os.path.join(out_dir, f"camada{layer}_gazebo_{i}.obj")
+        path, _ = _generate_gazebo_mesh(rng, out_path=out_path)
+        plot["obj"] = path
+        plot["conteudo"] = generate_gazebo_conteudo(rng, layer)
+    elif plot["tipo"] == "canteiro":
+        especie = rng.choice(CANTEIRO_SPECIES)
+        n_variants = rng.randint(*CANTEIRO_VARIANT_RANGE)
+        paths = []
+        for variant in range(1, n_variants + 1):
+            out_path = os.path.join(out_dir, f"camada{layer}_canteiro_{i}_{especie}_{variant}.obj")
+            path, _ = _generate_plant_mesh(rng, especie, out_path=out_path)
+            paths.append(path)
+        plot["especie"] = especie
+        plot["plantas_obj"] = paths
+
+
 def generate_layout_camada(rng, layer, n_areas, plant_output_dir=None, **layout_kwargs):
     """Gera o layout 2D da camada (`ynn.layout.generate_layout`) e já
     preenche as malhas de cada estrutura não-narrativa (torre, estufa,
@@ -270,43 +319,72 @@ def generate_layout_camada(rng, layer, n_areas, plant_output_dir=None, **layout_
     out_dir = plant_output_dir or PLANT_OUTPUT_DIR
 
     for i, plot in enumerate(camada_layout["plots"], start=1):
-        if plot["tipo"] == "torre":
-            conteudo = generate_torre_conteudo(rng, layer)
-            out_path = os.path.join(out_dir, f"camada{layer}_torre_{i}.obj")
-            path, _ = _generate_tower_mesh(rng, conteudo["n_andares"], out_path=out_path)
-            plot["obj"] = path
-            plot["conteudo"] = conteudo
-
-            n_ivy = rng.randint(*IVY_VARIANT_RANGE)
-            ivy_paths = []
-            for variant in range(1, n_ivy + 1):
-                ivy_path = os.path.join(out_dir, f"camada{layer}_torre_{i}_hera_{variant}.obj")
-                path, _ = _generate_plant_mesh(rng, "videira", out_path=ivy_path)
-                ivy_paths.append(path)
-            plot["hera_obj"] = ivy_paths
-        elif plot["tipo"] == "estufa":
-            planta = generate_estufa_planta(rng)
-            out_path = os.path.join(out_dir, f"camada{layer}_estufa_{i}.obj")
-            path, _ = _generate_greenhouse_mesh(
-                rng, sides=planta["lados"], n_floors=planta["andares"], radius=planta["raio"], out_path=out_path
-            )
-            plot["obj"] = path
-            plot["planta"] = planta
-            plot["conteudo"] = generate_estufa_conteudo(rng, layer)
-        elif plot["tipo"] == "gazebo":
-            out_path = os.path.join(out_dir, f"camada{layer}_gazebo_{i}.obj")
-            path, _ = _generate_gazebo_mesh(rng, out_path=out_path)
-            plot["obj"] = path
-            plot["conteudo"] = generate_gazebo_conteudo(rng, layer)
-        elif plot["tipo"] == "canteiro":
-            especie = rng.choice(CANTEIRO_SPECIES)
-            n_variants = rng.randint(*CANTEIRO_VARIANT_RANGE)
-            paths = []
-            for variant in range(1, n_variants + 1):
-                out_path = os.path.join(out_dir, f"camada{layer}_canteiro_{i}_{especie}_{variant}.obj")
-                path, _ = _generate_plant_mesh(rng, especie, out_path=out_path)
-                paths.append(path)
-            plot["especie"] = especie
-            plot["plantas_obj"] = paths
+        _preencher_lote(rng, layer, plot, i, out_dir)
 
     return camada_layout
+
+
+def generate_nivel(
+    rng,
+    profundidade_max=4,
+    max_nos=14,
+    plant_output_dir=None,
+    field_width=layout.FIELD_WIDTH,
+    field_depth=layout.FIELD_DEPTH,
+    resolution=65,
+    cell_size=2.0,
+):
+    """Produtor de níveis no estilo do livro: um mapa de pontos
+    (`ynn.pointcrawl`) com a entrada na camada 0 e locais cada vez mais
+    estranhos até `profundidade_max`, cada um sorteado em `d20 +
+    profundidade` (Local e Detalhe). Os nós viram lotes posicionados no
+    campo; a profundidade de um nó (+1) faz o papel do número da camada
+    para escolher a banda de conteúdo. O relevo varia só ao redor dos
+    locais cujo detalhe pede (`generate_terrain_localizado`).
+
+    Devolve um dict pronto para virar JSON: `terreno`, `layout` (com
+    `plots` e `arestas`) e `areas` (o conteúdo narrativo dos nós do tipo
+    "area", cruzado por `area_index`)."""
+    grafo = pointcrawl.generate_pointcrawl(rng, profundidade_max, max_nos)
+    plots = pointcrawl.layout_grafo(rng, grafo, field_width, field_depth)
+    out_dir = plant_output_dir or PLANT_OUTPUT_DIR
+
+    areas = []
+    for i, plot in enumerate(plots, start=1):
+        camada = plot["profundidade"] + 1
+        efeitos = plot["detalhe"]["efeitos"]
+        if plot["tipo"] == "area":
+            area = generate_area(
+                rng,
+                camada,
+                len(areas) + 1,
+                plant_output_dir=plant_output_dir,
+                local=plot["local"],
+                sem_habitantes="vazio" in efeitos,
+            )
+            area["no_id"] = plot["no_id"]
+            areas.append(area)
+            plot["area_index"] = area["index"]
+        else:
+            _preencher_lote(rng, camada, plot, i, out_dir)
+        if "tesouro" in efeitos:
+            plot["detalhe"]["tesouro"] = _pick(rng, tables.TREASURE, band_for_layer(camada))
+
+    terreno = terrain.generate_terrain_localizado(
+        rng,
+        [(p["x"], p["z"], p["detalhe"]["tipo_relevo"]) for p in plots],
+        resolution=resolution,
+        cell_size=cell_size,
+    )
+    return {
+        "modo": "livro",
+        "profundidade_maxima": profundidade_max,
+        "terreno": terreno,
+        "layout": {
+            "field_width": field_width,
+            "field_depth": field_depth,
+            "plots": plots,
+            "arestas": grafo["arestas"],
+        },
+        "areas": areas,
+    }

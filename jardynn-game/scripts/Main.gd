@@ -24,7 +24,8 @@ extends Node3D
 @export var area_spacing: float = 4.0  ## só usado no fallback sem `layout` (camadas antigas)
 @export var scatter_radius: float = 1.5
 @export var canteiro_radius: float = 3.0
-@export var ivy_radius: float = 2.0
+@export var ivy_radius: float = 4.6
+@export var ivy_inner_radius: float = 3.6
 @export var min_instances_per_variant: int = 2
 @export var max_instances_per_variant: int = 5
 
@@ -38,6 +39,9 @@ const COLOR_GALHO := Color(0.38, 0.26, 0.16)
 const COLOR_TORRE := Color(0.62, 0.36, 0.28)
 const COLOR_ESTUFA := Color(0.7, 0.88, 0.92)
 const COLOR_GAZEBO := Color(0.93, 0.88, 0.74)
+const COLOR_TRILHA := Color(0.62, 0.52, 0.36)
+const COLOR_ATALHO := Color(0.55, 0.5, 0.78)
+const COLOR_DESCIDA := Color(0.78, 0.45, 0.35)
 
 func _ready() -> void:
 	var layer_data = _load_json(layer_json_path)
@@ -45,7 +49,10 @@ func _ready() -> void:
 		push_error("Não foi possível carregar %s" % layer_json_path)
 		return
 
-	print("== Camada %s ==" % _n(layer_data.get("layer", "?")))
+	if layer_data.has("profundidade_maxima"):
+		print("== Nível (profundidade máxima %s) ==" % _n(layer_data.get("profundidade_maxima")))
+	else:
+		print("== Camada %s ==" % _n(layer_data.get("layer", "?")))
 
 	var terreno = layer_data.get("terreno")
 	if terreno != null:
@@ -59,8 +66,16 @@ func _ready() -> void:
 		var areas_by_index = {}
 		for area in areas:
 			areas_by_index[area.get("index")] = area
+		var posicoes = {}
 		for plot in camada_layout.get("plots", []):
+			if plot.has("no_id"):
+				posicoes[int(plot.get("no_id"))] = Vector2(plot.get("x", 0.0), plot.get("z", 0.0))
 			_spawn_plot(plot, areas_by_index, terreno)
+		for aresta in camada_layout.get("arestas", []):
+			var de = int(aresta.get("de"))
+			var para = int(aresta.get("para"))
+			if posicoes.has(de) and posicoes.has(para):
+				_spawn_path(posicoes[de], posicoes[para], aresta.get("tipo", "trilha"), terreno)
 	else:
 		# Compatibilidade com JSON gerado antes do layout 2D: enfileira as
 		# áreas numa linha reta, como o script fazia originalmente.
@@ -80,6 +95,15 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 	var tipo = plot.get("tipo")
 	var x: float = plot.get("x", 0.0)
 	var z: float = plot.get("z", 0.0)
+
+	if plot.has("local"):
+		print("[profundidade %s] %s" % [_n(plot.get("profundidade")), plot.get("local")])
+		var detalhe = plot.get("detalhe", {})
+		print("  Detalhe (%s): %s" % [detalhe.get("tipo_relevo", "?"), detalhe.get("texto", "")])
+		if detalhe.get("tesouro") != null:
+			print("  Achado extra: %s" % detalhe.get("tesouro"))
+		if "saida" in detalhe.get("efeitos", []):
+			print("  Há uma porta de volta ao mundo real aqui.")
 
 	match tipo:
 		"area":
@@ -106,7 +130,7 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 			print("  Bibelô: %s" % gazebo.get("bibelo", ""))
 			print("  Tesouro: %s" % gazebo.get("tesouro", ""))
 			print("  %s" % gazebo.get("refugio", ""))
-			_spawn_structure(plot.get("obj", ""), x, z, terreno, COLOR_GAZEBO)
+			_spawn_structure(plot.get("obj", ""), x, z, terreno, COLOR_GAZEBO, true, true)
 		"canteiro":
 			print("--- Canteiro de %s em (%.1f, %.1f) ---" % [plot.get("especie", "?"), x, z])
 			var cor_canteiro = COLOR_FLOR if plot.get("especie") == "flor" else COLOR_PLANTA
@@ -138,10 +162,10 @@ func _spawn_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
 			if creature != null:
 				print("  Criatura: %s (CA %s, DV %s, PV %s)" % [creature.get("nome"), _n(creature.get("ca")), creature.get("dv"), _n(creature.get("pontos_de_vida"))])
 
-	_spawn_structure(plot.get("obj", ""), x, z, terreno, COLOR_TORRE, false)
+	_spawn_structure(plot.get("obj", ""), x, z, terreno, COLOR_TORRE, false, true)
 
 	for ivy_path in plot.get("hera_obj", []):
-		_spawn_plant_cluster(ivy_path, x, z, terreno, ivy_radius, COLOR_HERA)
+		_spawn_plant_cluster(ivy_path, x, z, terreno, ivy_radius, COLOR_HERA, ivy_inner_radius)
 
 
 func _spawn_area(area: Dictionary, base_x: float, base_z: float, terreno) -> void:
@@ -167,7 +191,7 @@ func _spawn_area(area: Dictionary, base_x: float, base_z: float, terreno) -> voi
 ## `plantas_obj`) ao redor de (base_x, base_z), num raio `radius`, cada
 ## uma com rotação e escala levemente diferentes — um jardim de verdade
 ## não tem uma única planta isolada por canteiro.
-func _spawn_plant_cluster(source_path: String, base_x: float, base_z: float, terreno, radius: float, color: Color) -> void:
+func _spawn_plant_cluster(source_path: String, base_x: float, base_z: float, terreno, radius: float, color: Color, inner_radius: float = 0.0) -> void:
 	# `source_path` vem do JSON como um caminho de arquivo do lado Python
 	# (pode usar "\" no Windows); só o nome do arquivo importa aqui, pois a
 	# malha já foi gerada dentro de `plants_dir` por este mesmo pipeline.
@@ -187,8 +211,10 @@ func _spawn_plant_cluster(source_path: String, base_x: float, base_z: float, ter
 	multimesh.instance_count = instance_count
 
 	for i in instance_count:
-		var x = base_x + randf_range(-radius, radius)
-		var z = base_z + randf_range(-radius, radius)
+		var angle = randf_range(0.0, TAU)
+		var dist = sqrt(randf_range(inner_radius * inner_radius, radius * radius))
+		var x = base_x + cos(angle) * dist
+		var z = base_z + sin(angle) * dist
 		var y = _height_at(terreno, x, z) if terreno != null else 0.0
 
 		var basis = Basis(Vector3.UP, randf_range(0.0, TAU)).scaled(Vector3.ONE * randf_range(0.8, 1.2))
@@ -209,10 +235,61 @@ func _spawn_fallen_branch(source_path: String, base_x: float, base_z: float, ter
 	_spawn_structure(source_path, x, z, terreno, COLOR_GALHO, false)
 
 
+## Desenha uma trilha do mapa de pontos entre dois locais (as arestas de
+## `layout.arestas`): uma fita rente ao terreno. Trilha = ligação normal
+## entre camadas; atalho = liga a um local já explorado, mais raso; descida
+## = leva a um local bem mais fundo.
+func _spawn_path(a: Vector2, b: Vector2, tipo: String, terreno) -> void:
+	var cor = COLOR_TRILHA
+	var largura = 1.4
+	if tipo == "atalho":
+		cor = COLOR_ATALHO
+		largura = 0.9
+	elif tipo == "descida":
+		cor = COLOR_DESCIDA
+		largura = 0.9
+
+	var comprimento = a.distance_to(b)
+	if comprimento < 0.01:
+		return
+	var passos = max(2, int(comprimento / 1.5))
+	var direcao = (b - a).normalized()
+	var lado = Vector2(-direcao.y, direcao.x) * (largura / 2.0)
+
+	var st = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in range(passos):
+		var p0 = a.lerp(b, float(i) / passos)
+		var p1 = a.lerp(b, float(i + 1) / passos)
+		var l0 = _ponto_trilha(p0 + lado, terreno)
+		var r0 = _ponto_trilha(p0 - lado, terreno)
+		var l1 = _ponto_trilha(p1 + lado, terreno)
+		var r1 = _ponto_trilha(p1 - lado, terreno)
+		st.add_vertex(l0)
+		st.add_vertex(r0)
+		st.add_vertex(l1)
+		st.add_vertex(r0)
+		st.add_vertex(r1)
+		st.add_vertex(l1)
+	st.generate_normals()
+
+	var mesh_instance = MeshInstance3D.new()
+	mesh_instance.mesh = st.commit()
+	mesh_instance.material_override = _material(cor, true)
+	add_child(mesh_instance)
+
+
+func _ponto_trilha(p: Vector2, terreno) -> Vector3:
+	var y = _height_at(terreno, p.x, p.y) if terreno != null else 0.0
+	return Vector3(p.x, y + 0.1, p.y)
+
+
 ## Cria um material liso da cor dada (ver as constantes COLOR_*).
-func _material(color: Color) -> StandardMaterial3D:
+func _material(color: Color, double_sided: bool = false) -> StandardMaterial3D:
 	var material = StandardMaterial3D.new()
 	material.albedo_color = color
+	if double_sided:
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return material
 
 
@@ -226,7 +303,9 @@ func _n(value) -> String:
 ## caído acima) em (x, z), apoiada na altura do terreno, com a cor dada.
 ## `random_rotation` gira em Y pra variar a orientação; desligue pra
 ## estruturas que devam manter uma orientação fixa (torre e galho).
-func _spawn_structure(source_path: String, x: float, z: float, terreno, color: Color, random_rotation: bool = true) -> void:
+## `double_sided` desliga o descarte de faces de trás: necessário pras
+## paredes sem espessura da torre e do gazebo, que se vê por dentro.
+func _spawn_structure(source_path: String, x: float, z: float, terreno, color: Color, random_rotation: bool = true, double_sided: bool = false) -> void:
 	if source_path == null or source_path == "":
 		return
 
@@ -243,7 +322,7 @@ func _spawn_structure(source_path: String, x: float, z: float, terreno, color: C
 	var mesh_instance = MeshInstance3D.new()
 	mesh_instance.mesh = mesh
 	mesh_instance.position = Vector3(x, y, z)
-	mesh_instance.material_override = _material(color)
+	mesh_instance.material_override = _material(color, double_sided)
 	if random_rotation:
 		mesh_instance.rotation.y = randf_range(0.0, TAU)
 	add_child(mesh_instance)

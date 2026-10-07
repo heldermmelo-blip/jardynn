@@ -26,7 +26,36 @@ ganha de 1 a 3 galhos/troncos caídos ou cortados, via
 `gielis.plants.generate_fallen_branch` — um detrito de jardim sem cuidado,
 não uma espécie viva; os caminhos aparecem em `galhos_caidos_obj`.
 
-## Layout 2D (escala de campo de futebol)
+## Modo livro: o mapa de pontos (padrão)
+
+`python -m ynn.cli --seed 42` (ou `--modo livro`) produz um nível como o
+livro descreve: um **mapa de pontos** (point-crawl) montado do zero a cada
+visita, em [`ynn/pointcrawl.py`](ynn/pointcrawl.py).
+
+- A **entrada** é a camada 0. A cada passo "mais fundo" o mapa ganha um
+  novo local na camada seguinte, ligado ao anterior, e cada local pode se
+  ramificar (`--profundidade`, padrão 4 camadas; `--max-nos`, padrão 14).
+- Cada local é um sorteio de **`d20 + profundidade`** em duas tabelas
+  originais: o **Local** (`tables.LOCAIS`, o núcleo: uma pérgula, uma
+  torre, uma estufa, um gazebo...) e o **Detalhe** (`tables.DETALHES`, o
+  modificador). Passou do fim da tabela, cai na última entrada. Por isso o
+  fundo do mapa é mais estranho que a entrada.
+- Eventos do livro que ligam lugares distantes viram arestas extras: o
+  **atalho** (para um local já explorado, mais raso) e a **descida** (para
+  um local bem mais fundo).
+- O **Detalhe** tem efeito mecânico: `vazio` (sem habitantes), `tesouro`
+  (achado extra), `saida` (uma porta de volta ao mundo real) e `duplo`
+  ("emaranhado": dois detalhes ao mesmo tempo). E dita o **relevo**: o
+  terreno varia só ao redor dos locais cujo detalhe pede
+  (`terrain.generate_terrain_localizado`), e o chão fica plano no resto.
+- A **profundidade** do nó (+1) faz o papel do número da camada: escolhe a
+  banda de conteúdo (jardim externo, profundo, núcleo selvagem).
+- O mapa é posicionado no campo como o desenho em papel do livro: entrada
+  no topo, cada camada numa fileira mais abaixo (`layout_grafo`).
+
+O modo antigo (`--modo grade`, `--layer`/`--areas`) continua disponível.
+
+## Layout 2D em grade (`--modo grade`; escala de campo de futebol)
 
 [`ynn/layout.py`](ynn/layout.py) substitui a antiga linha reta de áreas por
 um layout espacial de verdade: um campo do tamanho de um campo de futebol
@@ -44,9 +73,12 @@ o tubo de seção de Lamé e o domo da Superfórmula de `gielis.plants`):
   (`N_ANDARES_TORRE_RANGE`), cada um com conteúdo original de
   `tables.TORRE_ANDARES` (o último de `tables.TORRE_TOPO`, mais raro),
   podendo incluir um tesouro (`TREASURE`) ou um encontro (`DENIZENS`,
-  igual às áreas). A malha (fuste segmentado, um afunilamento por andar,
-  telhado cônico) recebe o mesmo `n_andares`, e ganha "hera" — algumas
-  variantes de `videira` (`hera_obj`) pra cobrir a base.
+  igual às áreas). A malha é um **prédio oco onde os aventureiros
+  entram**: paredes de ~6 m de largura (como os andares do livro), porta
+  no térreo, janelas nos andares de cima, piso em cada andar (em anel, com
+  um vão no centro) e uma escada em espiral em volta de um mastro central.
+  Recebe o mesmo `n_andares` do conteúdo e ganha "hera" — algumas variantes
+  de `videira` (`hera_obj`) em coroa ao redor da base.
 - **estufa**: esqueleto de postes nos cantos + vigas por andar + telhado
   (sem vidro/painéis ainda). Tamanho e forma vêm de um "dado" sorteado
   (`ESTUFA_DADOS`, `generate_estufa_planta`), seguindo o mecanismo do livro
