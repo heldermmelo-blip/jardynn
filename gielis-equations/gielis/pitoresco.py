@@ -18,6 +18,7 @@ import os
 
 import numpy as np
 
+from .plants import flowers
 from .plants.generator import _uv_sphere
 from .plants.mesh_utils import tube_mesh, write_obj
 
@@ -327,6 +328,11 @@ def generate_pond(rng, out_path=None, gelado=False):
         for _ in range(rng.randint(8, 18)):
             a, d = rng.uniform(0, 2 * math.pi), math.sqrt(rng.uniform(0, 1)) * (raio - 0.6)
             p.disc("folha", d * math.cos(a), d * math.sin(a), 0.16, rng.uniform(0.22, 0.42), lados=10)
+        for _ in range(rng.randint(2, 6)):  # flores de nenúfar sobre a água
+            a, d = rng.uniform(0, 2 * math.pi), math.sqrt(rng.uniform(0, 1)) * (raio - 1.0)
+            camadas = flowers._camadas(3, rng.uniform(0.14, 0.2), rng.choice([8, 10]), 0.22, 1.4, 1.4, 0.07, passo=0.72, fecha=0.4)
+            for v, f in flowers.corola_sem_cor([d * math.cos(a), d * math.sin(a), 0.18], [0, 0, 1], camadas):
+                p.add("flor", v, f)
         for _ in range(rng.randint(4, 9)):  # juncos na margem
             a = rng.uniform(0, 2 * math.pi)
             base = np.array([(raio - 0.2) * math.cos(a), (raio - 0.2) * math.sin(a), 0.05])

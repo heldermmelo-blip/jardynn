@@ -95,7 +95,10 @@ leva até ela. Cada uma imprime seu conteúdo (`plot.conteudo`: texto, valor em
 ouro ou criatura). Uma minúscula pode estar no meio de um espelho d'água
 (disco translúcido + calçada até a porta), e a estufa colossal
 (`estufa_colossal`) cobre o nível inteiro, com um aro luminoso verde na
-entrada e um âmbar na saída, ligados por trilhas aos nós extremos. As estufas trazem a flora de dentro (`plot.flora_interna`: tema, densidade e
+entrada e um âmbar na saída, ligados por trilhas aos nós extremos. As flores vêm com cor de vértice no `.obj` (haste verde, corola e miolo
+coloridos, uma cor por flor); `Main.gd` detecta isso (`_material_planta`) e liga
+`vertex_color_use_as_albedo`, e as demais plantas seguem com a cor fixa por
+espécie. As estufas trazem a flora de dentro (`plot.flora_interna`: tema, densidade e
 um exemplar por planta, com posição, escala e giro; as mortas ficam marrons).
 Sob a estufa
 colossal só há alas de vidro (vidraças e orquidários, com o valor das

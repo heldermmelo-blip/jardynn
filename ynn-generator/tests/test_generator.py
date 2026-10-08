@@ -3,6 +3,8 @@ import random
 
 from ynn.generator import band_for_layer, generate_area, generate_layer, generate_layout_camada, generate_torre_conteudo
 
+from ynn.generator import CANTEIRO_SPECIES
+
 
 def test_band_for_layer():
     assert band_for_layer(1) == "jardim_externo"
@@ -167,7 +169,7 @@ def test_generate_layout_camada_populates_structure_meshes():
         assert gazebo["conteudo"][chave]
 
     canteiro = by_tipo["canteiro"][0]
-    assert canteiro["especie"] in ("flor", "arbusto")
+    assert canteiro["especie"] in CANTEIRO_SPECIES
     assert len(canteiro["plantas_obj"]) >= 4  # CANTEIRO_VARIANT_RANGE mínimo
     for path in canteiro["plantas_obj"]:
         assert os.path.exists(path)

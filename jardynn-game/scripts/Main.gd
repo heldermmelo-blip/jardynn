@@ -77,6 +77,7 @@ const COR_PITORESCO := {
 	"porta": Color(0.04, 0.03, 0.03),
 	"agua": Color(0.28, 0.48, 0.56, 0.78),
 	"gelo": Color(0.78, 0.9, 0.96, 0.88),
+	"flor": Color(0.97, 0.8, 0.88),
 }
 const COR_MOLDURA := {
 	"verde": Color(0.16, 0.36, 0.24),
@@ -277,7 +278,7 @@ func _spawn_flora_interna(flora, pai: Node3D) -> void:
 		var especie = str(planta.get("especie"))
 		var chave = "morta" if morta else especie
 		if not materiais.has(chave):
-			materiais[chave] = _material(COLOR_PLANTA_MORTA if morta else COR_FLORA_ESTUFA.get(especie, COLOR_PLANTA), true)
+			materiais[chave] = _material(COLOR_PLANTA_MORTA, true) if morta else _material_planta(mesh, COR_FLORA_ESTUFA.get(especie, COLOR_PLANTA), true)
 		var mi = MeshInstance3D.new()
 		mi.mesh = mesh
 		mi.material_override = materiais[chave]
@@ -634,7 +635,7 @@ func _spawn_plant_cluster(source_path: String, base_x: float, base_z: float, ter
 
 	var multimesh_instance = MultiMeshInstance3D.new()
 	multimesh_instance.multimesh = multimesh
-	multimesh_instance.material_override = _material(color)
+	multimesh_instance.material_override = _material_planta(mesh, color)
 	(parent if parent != null else self).add_child(multimesh_instance)
 
 
@@ -694,6 +695,30 @@ func _spawn_path(a: Vector2, b: Vector2, tipo: String, terreno) -> void:
 func _ponto_trilha(p: Vector2, terreno) -> Vector3:
 	var y = _height_at(terreno, p.x, p.y) if terreno != null else 0.0
 	return Vector3(p.x, y + 0.1, p.y)
+
+
+## Material de uma planta: se a malha traz cor de vértice (as flores têm haste
+## verde, corola e miolo coloridos, e cada flor uma cor), usa essa cor; senão
+## a cor fixa `cor`.
+var _malhas_coloridas := {}
+
+func _material_planta(mesh, cor: Color, double_sided: bool = false) -> StandardMaterial3D:
+	var colorida: bool = _malhas_coloridas.get(mesh, null) if _malhas_coloridas.has(mesh) else _tem_cor_de_vertice(mesh)
+	_malhas_coloridas[mesh] = colorida
+	if not colorida:
+		return _material(cor, double_sided)
+	var material = StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.roughness = 0.8
+	return material
+
+
+func _tem_cor_de_vertice(mesh) -> bool:
+	if mesh == null or mesh.get_surface_count() == 0:
+		return false
+	var arrays = mesh.surface_get_arrays(0)
+	return arrays.size() > Mesh.ARRAY_COLOR and arrays[Mesh.ARRAY_COLOR] != null
 
 
 ## Cria um material liso da cor dada (ver as constantes COLOR_*).

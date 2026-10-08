@@ -83,3 +83,56 @@ def test_the_colossal_level_has_no_picturesque_structures(tmp_path):
         random.Random(8), profundidade_max=5, max_nos=14, plant_output_dir=str(tmp_path), estufa_colossal="sempre"
     )
     assert not any(p["tipo"] in PITORESCOS for p in nivel["layout"]["plots"])
+
+
+# --- flores -----------------------------------------------------------------------
+
+
+def test_vegetation_and_canteiro_species_exist_and_include_the_flower_family():
+    from gielis.plants import ESPECIES_FLORES, SPECIES
+
+    especies = {e for _, _, e in tables.VEGETATION if e}
+    assert especies <= set(SPECIES)
+    assert {"tulipa", "girassol", "rosa", "lavanda", "margarida", "dalia"} <= especies
+    assert set(generator.CANTEIRO_SPECIES) <= set(SPECIES)
+    assert len(set(generator.CANTEIRO_SPECIES) & set(ESPECIES_FLORES)) >= 5
+    assert set(tables.CANTEIRO_ESPECIE_POR_LOCAL.values()) <= set(SPECIES)
+    assert set(tables.CANTEIRO_ESPECIE_POR_LOCAL) <= {nome for nome, _ in tables.LOCAIS}
+
+
+def test_flower_beds_named_after_a_flower_grow_that_flower(tmp_path):
+    for nome, esperada in tables.CANTEIRO_ESPECIE_POR_LOCAL.items():
+        plot = {"tipo": "canteiro", "x": 0.0, "z": 0.0, "local": nome}
+        generator._preencher_lote(random.Random(1), 2, plot, 1, str(tmp_path))
+        assert plot["especie"] == esperada
+        assert all(f"_{esperada}_" in p for p in plot["plantas_obj"])
+
+
+def test_areas_report_their_vegetation_species(tmp_path):
+    for nivel in _niveis(range(4), plant_output_dir=str(tmp_path)):
+        for area in nivel["areas"]:
+            assert "especie_vegetacao" in area
+            assert (area["especie_vegetacao"] is None) == (not area["plantas_obj"])
+
+
+def test_orchid_wings_under_the_colossal_greenhouse_grow_orchids(tmp_path):
+    achados = 0
+    for seed in range(1, 9):
+        nivel = generator.generate_nivel(
+            random.Random(seed), profundidade_max=3, max_nos=10, plant_output_dir=str(tmp_path), estufa_colossal="sempre"
+        )
+        for plot in nivel["layout"]["plots"]:
+            if plot["ala"] == "orquidario":
+                achados += 1
+                assert plot["flora_interna"]["tema"] == "orquidario"
+                assert "orquidea" in plot["flora_interna"]["especies"] or not plot["flora_interna"]["plantas"]
+    assert achados >= 3
+
+
+def test_pond_has_water_lily_flowers_unless_frozen(tmp_path):
+    from gielis import pitoresco
+    import os
+
+    com_flor = sum("flor" in pitoresco.generate_pond(random.Random(s), os.path.join(tmp_path, "l.obj"))[1]["malhas"] for s in range(20))
+    assert com_flor == 20
+    assert "flor" not in pitoresco.generate_pond(random.Random(1), os.path.join(tmp_path, "g.obj"), gelado=True)[1]["malhas"]

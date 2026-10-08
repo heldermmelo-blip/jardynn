@@ -72,17 +72,29 @@ def write_obj(path, parts):
     motores de jogo como o Godot) via rotação de -90° em X: (x, y, z) ->
     (x, z, -y) — uma rotação própria, preserva o sentido das faces.
 
+    Uma parte pode ser (vertices, faces, (r, g, b)): a cor (0..1) vai como
+    cor de vértice (`v x y z r g b`), que o Godot importa e usa com
+    `vertex_color_use_as_albedo`. Se alguma parte tem cor, as sem cor saem
+    cinza-claro, pra todos os vértices terem cor. Sem nenhuma cor, o arquivo
+    é o de sempre (`v x y z`).
+
     Tudo vai num único objeto (`o`): o importador de .obj do Godot cria uma
     superfície por objeto, e o limite é 256 — uma árvore com folhas passa
     disso e perdia partes na importação."""
+    coloridas = any(len(parte) > 2 and parte[2] is not None for parte in parts)
     with open(path, "w") as f:
         f.write("o mesh\n")
         offset = 0
-        for vertices, faces in parts:
+        for parte in parts:
+            vertices, faces = parte[0], parte[1]
             if len(vertices) == 0:
                 continue
+            cor = None
+            if coloridas:
+                cor = parte[2] if len(parte) > 2 and parte[2] is not None else (0.8, 0.8, 0.8)
             for vx, vy, vz in vertices:
-                f.write(f"v {vx:.6f} {vz:.6f} {-vy:.6f}\n")
+                sufixo = f" {cor[0]:.3f} {cor[1]:.3f} {cor[2]:.3f}" if cor is not None else ""
+                f.write(f"v {vx:.6f} {vz:.6f} {-vy:.6f}{sufixo}\n")
             for face in faces:
                 a, b, c = face + offset + 1  # .obj é indexado a partir de 1
                 f.write(f"f {a} {b} {c}\n")

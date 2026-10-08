@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://cywdqgru4q5qq"
+path="res://.godot/imported/camada3_estufa_7_flora_samambaia_2.obj-56588fc699aff9810cc69ce7a2e2e3ef.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada3_estufa_7_flora_samambaia_2.obj-56588fc699aff9810cc69ce7a2e2e3ef.mesh"]
+
+source_file="res://assets/plants/camada3_estufa_7_flora_samambaia_2.obj"
+dest_files=["res://.godot/imported/camada3_estufa_7_flora_samambaia_2.obj-56588fc699aff9810cc69ce7a2e2e3ef.mesh", "res://.godot/imported/camada3_estufa_7_flora_samambaia_2.obj-56588fc699aff9810cc69ce7a2e2e3ef.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

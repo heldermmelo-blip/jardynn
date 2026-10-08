@@ -47,7 +47,7 @@ FALLEN_BRANCH_COUNT_RANGE = (1, 3)
 
 # Espécie e densidade dos canteiros do layout (ver `ynn.layout`) — uma
 # única espécie por canteiro, em quantidade parecida com PLANT_VARIANT_RANGE.
-CANTEIRO_SPECIES = ("flor", "arbusto")
+CANTEIRO_SPECIES = ("flor", "rosa", "dalia", "margarida", "tulipa", "lavanda", "arbusto")
 CANTEIRO_VARIANT_RANGE = (4, 8)
 
 # A torre é uma mini-masmorra vertical, não só decoração: cada andar (menos
@@ -102,8 +102,9 @@ ESTUFA_MOLDURAS = ("verde", "verdete", "branca", "preta")
 # parte delas morta. Espécies são de `gielis.plants`.
 ESTUFA_TEMAS = {
     "deserto": ("cacto_coluna", "cacto_barril", "agave"),
-    "tropical": ("palmeira", "folha_larga", "samambaia", "videira"),
-    "formal": ("topiaria", "cipreste", "flor", "arbusto"),
+    "tropical": ("palmeira", "folha_larga", "samambaia", "videira", "orquidea"),
+    "formal": ("topiaria", "cipreste", "rosa", "dalia", "tulipa", "arbusto"),
+    "orquidario": ("orquidea", "samambaia", "folha_larga"),
     "sombra": ("samambaia", "cogumelo", "videira", "arbusto"),
 }
 ESTUFA_TEMA_MISTO_CHANCE = 0.3
@@ -255,6 +256,7 @@ def generate_area(rng, layer, index, plant_output_dir=None, local=None, sem_habi
         "has_treasure": treasure is not None,
         "npc": npc,
         "criatura": creature,
+        "especie_vegetacao": vegetation_species,
         "plantas_obj": plant_obj_paths,
         "galhos_caidos_obj": fallen_branch_paths,
     }
@@ -395,7 +397,7 @@ def sortear_flora_interna(
         if rng.random() < ESTUFA_TEMA_MISTO_CHANCE:
             tema = "misto"
         else:
-            tema = rng.choice(sorted(ESTUFA_TEMAS))
+            tema = rng.choice([t for t in sorted(ESTUFA_TEMAS) if t != "orquidario"])  # o orquidário é das alas de orquídea
     if tema == "misto":
         todas = sorted({e for lista in ESTUFA_TEMAS.values() for e in lista})
     else:
@@ -450,7 +452,7 @@ def sortear_flora_interna(
     return {"tema": tema, "densidade": densidade, "mortas": round(mortas, 2), "especies": especies, "plantas": plantas}
 
 
-def _montar_estufa(rng, layer, i, out_dir, porte=None, espelho_permitido=True):
+def _montar_estufa(rng, layer, i, out_dir, porte=None, espelho_permitido=True, tema_flora=None):
     """Sorteia a planta de uma estufa e gera suas malhas (uma por material).
     Devolve os campos que vão no lote: `planta`, `obj` (a moldura), `malhas`,
     `pegadas` (polígonos no plano (x, z) do Godot, pra espalhar a flora),
@@ -493,6 +495,7 @@ def _montar_estufa(rng, layer, i, out_dir, porte=None, espelho_permitido=True):
         planta["estado"] == "lastimavel",
         out_dir,
         f"camada{layer}_estufa_{i}",
+        tema=tema_flora,
     )
     if espelho is not None:
         campos["espelho_dagua"] = espelho
@@ -686,7 +689,7 @@ def _preencher_lote(rng, layer, plot, i, out_dir):
         plot["obj"] = path
         plot["conteudo"] = generate_gazebo_conteudo(rng, layer)
     elif plot["tipo"] == "canteiro":
-        especie = rng.choice(CANTEIRO_SPECIES)
+        especie = tables.CANTEIRO_ESPECIE_POR_LOCAL.get(plot.get("local")) or rng.choice(CANTEIRO_SPECIES)
         n_variants = rng.randint(*CANTEIRO_VARIANT_RANGE)
         paths = []
         for variant in range(1, n_variants + 1):
@@ -759,7 +762,10 @@ def generate_nivel(
         camada = no["profundidade"] + 1
         if colossal:
             porte = rng.choices(["minuscula", "normal"], weights=ESTUFA_COLOSSAL_ALAS_PESOS)[0]
-            campos = _montar_estufa(rng, camada, no["id"] + 1, out_dir, porte=porte, espelho_permitido=False)
+            campos = _montar_estufa(
+                rng, camada, no["id"] + 1, out_dir, porte=porte, espelho_permitido=False,
+                tema_flora="orquidario" if no["ala"] == "orquidario" else None,
+            )
             if no["ala"] == "orquidario":
                 campos["conteudo"] = generate_orquidario_conteudo(rng, camada)
             campos["ala"] = no["ala"]

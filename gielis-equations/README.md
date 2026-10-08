@@ -76,9 +76,21 @@ pela Superfórmula (Eq. 5.8).
 import random
 from gielis.plants import SPECIES, generate_plant
 
-print(SPECIES)  # ['arbusto', 'arvore', 'bambu', 'cogumelo', 'espinheiro', 'flor', 'samambaia', 'videira']
+print(len(SPECIES), SPECIES)  # 23 espécies
 path, skeleton = generate_plant(random.Random(42), "arvore")
 ```
+
+São 23 espécies: ramificadas (`arvore`, `arbusto`, `espinheiro`, `bambu`, `videira`),
+de geometria própria (`cogumelo`, `samambaia`, `cacto_coluna`, `cacto_barril`, `agave`,
+`palmeira`, `folha_larga`, `cipreste`, `topiaria`) e nove **flores**
+(`flor`, `rosa`, `dalia`, `margarida`, `girassol`, `tulipa`, `lavanda`, `nenufar`,
+`orquidea`, em `gielis.plants.flowers`). Cada anel de pétalas vem da Superfórmula
+(Eq. 5.8), com a borda elevada em taça e empilhado em camadas (rosa e dália têm
+várias, margarida duas); cada flor sorteia uma cor da paleta da espécie e o `.obj`
+sai com **cor de vértice** (`v x y z r g b`: haste e folhas verdes, corola e miolo
+coloridos), que o Godot importa e usa com `vertex_color_use_as_albedo`. Espécies sem
+cor continuam com o `.obj` de sempre. As ramificadas usam uma recursão estocástica
+(`skeleton.py`), não um L-system.
 
 ```bash
 python examples/rpg_plant.py                # árvore única (exemplo original)

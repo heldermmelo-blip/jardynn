@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://bb1tw26ottf0d"
+path="res://.godot/imported/camada1_area1_dalia_3.obj-fb91930488cc1d603abd94bbe1e73feb.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada1_area1_dalia_3.obj-fb91930488cc1d603abd94bbe1e73feb.mesh"]
+
+source_file="res://assets/plants/camada1_area1_dalia_3.obj"
+dest_files=["res://.godot/imported/camada1_area1_dalia_3.obj-fb91930488cc1d603abd94bbe1e73feb.mesh", "res://.godot/imported/camada1_area1_dalia_3.obj-fb91930488cc1d603abd94bbe1e73feb.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

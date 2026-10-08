@@ -12,6 +12,7 @@ import os
 import numpy as np
 
 from . import foliage
+from .flowers import ESPECIES_FLORES, GERADORES_FLOR
 from .mesh_utils import orthonormal_basis, rotate_around_axis, tube_mesh, write_obj
 from .skeleton import generate_skeleton
 
@@ -115,26 +116,6 @@ def _generate_branching_plant(rng, params):
                 )
                 parts.append((world_v, local_f))
     return parts, skeleton
-
-
-def _generate_flower(rng):
-    stem_length = rng.uniform(0.35, 0.55)
-    stem = dict(
-        start=np.array([0.0, 0.0, 0.0]), end=np.array([0.0, 0.0, stem_length]), r0=0.012, r1=0.008, depth=0
-    )
-    parts = [tube_mesh(stem, n_sides=8, cross_section_n=2.0)]
-
-    n_petals = rng.choice([5, 6, 8, 13])
-    bloom_v, bloom_f = foliage.flower_bloom_mesh(
-        n_petals=n_petals,
-        radius=rng.uniform(0.08, 0.16),
-        n1=rng.uniform(0.2, 0.5),
-        n2=rng.uniform(1.2, 2.2),
-        n3=rng.uniform(1.2, 2.2),
-    )
-    bloom_v = bloom_v + np.array([0.0, 0.0, stem_length])
-    parts.append((bloom_v, bloom_f))
-    return parts, [stem]
 
 
 def _generate_mushroom(rng):
@@ -328,7 +309,7 @@ def _generate_topiary(rng):
 
 
 SPECIAL_SPECIES = {
-    "flor": _generate_flower,
+    **GERADORES_FLOR,
     "cogumelo": _generate_mushroom,
     "samambaia": _generate_fern,
     "cacto_coluna": _generate_columnar_cactus,

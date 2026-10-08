@@ -74,7 +74,11 @@ VEGETATION = [
         "all",
         "bambu",
     ),
-    ("Um campo de tulipas em cores que não deveriam existir juntas.", "all", "flor"),
+    ("Um campo de tulipas em cores que não deveriam existir juntas.", "all", "tulipa"),
+    ("Roseiras bem cuidadas demais: cada rosa de uma cor, nenhuma com um só espinho fora do lugar.", "all", "rosa"),
+    ("Canteiros de lavanda zumbindo de abelhas, o perfume forte demais para o ar parado.", "all", "lavanda"),
+    ("Margaridas até onde a vista alcança, todas viradas para o mesmo lado.", "all", "margarida"),
+    ("Dálias do tamanho de pratos, em cores que ninguém lembra de ter plantado.", ("jardim_externo", "jardim_profundo"), "dalia"),
     (
         "Cercas-vivas aparadas em formas que quase lembram animais, e que parecem ter se movido "
         "desde a última vez que alguém olhou.",
@@ -84,7 +88,7 @@ VEGETATION = [
     (
         "Fileiras de girassóis voltados para um sol que não está no céu.",
         ("jardim_profundo", "nucleo_selvagem"),
-        "flor",
+        "girassol",
     ),
     (
         "Musgo espesso cobre tudo, macio demais, como se quisesse ser tocado.",
@@ -135,6 +139,14 @@ VEGETATION = [
         "arvore",
     ),
 ]
+
+CANTEIRO_ESPECIE_POR_LOCAL = {
+    # nome do local (`LOCAIS`) -> espécie de flor do canteiro; sem entrada, sorteia
+    "Canteiro de lavanda zumbindo de abelhas": "lavanda",
+    "Canteiro de dálias": "dalia",
+    "Canteiro de ervas de boticário": "arbusto",
+    "Canteiro de flores que se mexem": "flor",
+}
 
 FEATURES = [
     ("uma fonte de pedra, seca há muito tempo, com uma estátua no centro que já não se sabe representar o quê", "all"),

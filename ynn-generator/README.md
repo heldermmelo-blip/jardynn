@@ -10,8 +10,10 @@ conteúdo do livro é reproduzido.
 
 Um punhado de entradas em `VEGETATION` (`ynn/tables.py`) têm uma espécie
 de [`gielis.plants`](../gielis-equations/gielis/plants) associada
-(`arvore`, `arbusto`, `espinheiro`, `bambu`, `videira`, `flor`, `cogumelo`
-ou `samambaia`). Quando uma dessas é sorteada, o gerador chama
+(`arvore`, `arbusto`, `espinheiro`, `bambu`, `videira`, `cogumelo`,
+`samambaia` ou uma das flores: `flor`, `rosa`, `dalia`, `margarida`,
+`girassol`, `tulipa`, `lavanda`; as áreas guardam a espécie em
+`especie_vegetacao`). Quando uma dessas é sorteada, o gerador chama
 `gielis.plants.generate_plant` de 3 a 6 vezes (`PLANT_VARIANT_RANGE` em
 `ynn/generator.py`) — mesma espécie, formas diferentes a cada chamada —
 e salva cada malha em `output/plantas/camada{N}_area{i}_{especie}_{n}.obj`;
@@ -152,8 +154,12 @@ o tubo de seção de Lamé e o domo da Superfórmula de `gielis.plants`):
   (`GAZEBO_BIBELOS`), um tesouro (`TREASURE`) e a regra de abrigo noturno
   (`REFUGIO_GAZEBO`: com uma chama acesa lá dentro, as criaturas não
   atacam).
-- **canteiro**: um leito denso de uma única espécie (`flor` ou `arbusto`,
-  `CANTEIRO_SPECIES`), como as plantas por área mas mais compacto.
+- **canteiro**: um leito denso de uma única espécie (uma das flores ou
+  `arbusto`, `CANTEIRO_SPECIES`), como as plantas por área mas mais compacto;
+  um canteiro com nome de flor cultiva essa flor (`tables.CANTEIRO_ESPECIE_POR_LOCAL`:
+  lavanda, dálias...). As flores têm cor própria (cor de vértice no `.obj`).
+  O lago ganha flores de nenúfar, e as alas de orquidário sob a estufa colossal
+  têm o tema de flora `orquidario` (orquídeas, samambaias, folhas largas).
 
 A torre reaproveita o sistema de denizens/tesouro das áreas por
 simplicidade — o texto de alguns encontros ainda soa como jardim aberto
