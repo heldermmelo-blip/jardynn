@@ -5,9 +5,8 @@ um número limitado de magias; lançar gasta a vaga até o dia seguinte) —
 implementada como código original. Nomes, descrições e efeitos dos
 feitiços abaixo são meus, não uma transcrição do livro.
 
-⚠ SPELL_SLOTS_LEVEL_1 (quantas vagas de magia de nível 1 um Magic-User ou
-Cleric de nível 1 tem) é minha melhor estimativa — confira contra o livro.
-Ver NOTES.md.
+SPELL_SLOTS_LEVEL_1 (vagas de magia de nível 1 de um Magic-User ou Cleric de
+nível 1) foi conferido contra a tabela da classe: 1 para cada. Ver NOTES.md.
 """
 
 SPELL_SLOTS_LEVEL_1 = {

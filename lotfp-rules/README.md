@@ -8,8 +8,9 @@ feitiços em `lotfp/spells.py` (nomes e descrições) e as categorias/valores
 de `lotfp/saves.py` também são conteúdo original, não uma transcrição do
 livro.
 
-Alguns valores numéricos são estimativas — ver [`NOTES.md`](NOTES.md) para
-a lista completa do que conferir contra o livro.
+Os valores numéricos foram conferidos contra o PDF de regras — ver
+[`NOTES.md`](NOTES.md) para a tabela do que foi verificado e do que ainda não
+é modelado.
 
 ## Uso
 

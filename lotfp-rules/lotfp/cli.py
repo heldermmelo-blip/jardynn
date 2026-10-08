@@ -10,6 +10,7 @@ import random
 
 from .character import create_character
 from .classes import CLASSES
+from .equipment import movement
 
 
 def render_character(character):
@@ -30,7 +31,7 @@ def render_character(character):
         lines.append("")
         lines.append("**Perícias**")
         for skill, rating in character["pericias"].items():
-            lines.append(f"- {skill}: {rating}-em-6")
+            lines.append(f"- {skill}: ×{rating} no dano" if skill == "Sneak Attack" else f"- {skill}: {rating}-em-6")
     if "magias_preparadas" in character:
         lines.append("")
         lines.append("**Magias preparadas**")
@@ -40,9 +41,12 @@ def render_character(character):
             lines.append("")
             lines.append("**Grimório:** " + ", ".join(spell["nome"] for spell in character["grimorio"]))
     lines.append("")
+    lines.append(f"**Prata inicial:** {character['prata']} sp (3d6 × 10; o equipamento abaixo é um kit genérico)")
     lines.append("**Equipamento inicial**")
-    for item, slots in character["equipamento"]:
-        lines.append(f"- {item} ({slots} slot{'s' if slots != 1 else ''})")
+    for item in character["equipamento"]:
+        lines.append(f"- {item}")
+    estado, pes = movement(character["pontos_de_carga"])
+    lines.append(f"**Carga:** {character['pontos_de_carga']} ponto(s) — {estado}, {pes}' por turno de exploração")
     return "\n".join(lines)
 
 

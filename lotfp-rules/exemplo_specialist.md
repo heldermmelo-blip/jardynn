@@ -1,32 +1,40 @@
 ## Specialist (nível 1)
 
 **Atributos**
-- Força: 9 (+0)
-- Destreza: 8 (-1)
-- Constituição: 9 (+0)
-- Inteligência: 11 (+0)
-- Sabedoria: 4 (-2)
-- Carisma: 9 (+0)
+- Força: 8 (-1)
+- Destreza: 11 (+0)
+- Constituição: 10 (+0)
+- Inteligência: 13 (+1)
+- Sabedoria: 11 (+0)
+- Carisma: 6 (-1)
 
-**Pontos de vida:** 2
-**Bônus de ataque:** +0
+**Pontos de vida:** 4
+**Bônus de ataque:** +1
+
+**Testes de Resistência** (rola 1d20, sucesso se >= alvo)
+- Paralisia: 14+
+- Veneno: 16+
+- Sopro: 15+
+- Dispositivos Mágicos: 14+
+- Magia: 14+
 
 **Perícias**
-- Architecture: 3-em-6
-- Bushcraft: 3-em-6
-- Climbing: 2-em-6
-- Concealment: 2-em-6
+- Architecture: 2-em-6
+- Bushcraft: 1-em-6
+- Climb: 1-em-6
 - Languages: 2-em-6
-- Search: 2-em-6
-- Sleight of Hand: 3-em-6
-- Sneak Attack: 2-em-6
-- Stealth: 3-em-6
-- Tinkering: 2-em-6
+- Search: 1-em-6
+- Sleight of Hand: 1-em-6
+- Sneak Attack: ×1 no dano
+- Stealth: 1-em-6
+- Tinker: 3-em-6
 
+**Prata inicial:** 90 sp (3d6 × 10; o equipamento abaixo é um kit genérico)
 **Equipamento inicial**
-- Mochila (1 slot)
-- Ração de viagem (1 semana) (1 slot)
-- Cantil de água (1 slot)
-- Corda (15m) (1 slot)
-- Pederneira e isqueiro (1 slot)
-- Tocha (3) (1 slot)
+- Mochila
+- Ração de viagem (1 semana)
+- Cantil de água
+- Corda (15m)
+- Pederneira e isqueiro
+- Tocha (3)
+**Carga:** 1 ponto(s) — sem carga excessiva, 120' por turno de exploração

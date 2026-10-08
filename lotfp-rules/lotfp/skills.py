@@ -1,36 +1,39 @@
 """Perícias do Specialist: lista base e alocação de pontos de nível 1.
 
-⚠ A lista de perícias e os valores-base (1-em-6 geral, 2-em-6 para o
-Specialist) são minha melhor estimativa — confira contra o livro.
-Ver NOTES.md.
+Conferido contra o livro: toda perícia "x-em-6" começa em 1-em-6 para todos
+os personagens e cada ponto do Specialist soma 1 (teto 6-em-6). Ataque
+Furtivo é diferente: é um multiplicador de dano (começa em ×1; cada ponto
+soma +1, sem teto). Ver NOTES.md.
 """
+
+SNEAK_ATTACK = "Sneak Attack"
 
 SPECIALIST_SKILLS = [
     "Architecture",
     "Bushcraft",
-    "Climbing",
-    "Concealment",
+    "Climb",
     "Languages",
     "Search",
     "Sleight of Hand",
-    "Sneak Attack",
+    SNEAK_ATTACK,
     "Stealth",
-    "Tinkering",
+    "Tinker",
 ]
 
 BASE_RATING = 1
-SPECIALIST_BASE_RATING = 2
+SPECIALIST_BASE_RATING = 1
 MAX_RATING = 6
 
 
 def allocate_skill_points(rng, points, base_ratings=None):
     """Distribui `points` aleatoriamente entre as perícias do Specialist,
-    respeitando o teto de `MAX_RATING`-em-6."""
+    respeitando o teto de `MAX_RATING`-em-6 (menos no Ataque Furtivo, que é
+    um multiplicador de dano e não tem teto)."""
     ratings = dict(base_ratings or {skill: SPECIALIST_BASE_RATING for skill in SPECIALIST_SKILLS})
     remaining = points
-    while remaining > 0 and any(r < MAX_RATING for r in ratings.values()):
+    while remaining > 0:
         skill = rng.choice(list(ratings.keys()))
-        if ratings[skill] < MAX_RATING:
+        if skill == SNEAK_ATTACK or ratings[skill] < MAX_RATING:
             ratings[skill] += 1
             remaining -= 1
     return ratings

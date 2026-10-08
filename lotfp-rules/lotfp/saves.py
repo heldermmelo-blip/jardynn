@@ -5,18 +5,17 @@ categoria (quanto menor o alvo, mais fácil passar). Categorias e a
 estrutura de "cada classe é melhor em algumas" são clássicas do gênero,
 implementadas aqui como código original.
 
-⚠ SAVES_LEVEL_1 (o valor-alvo de cada categoria, por classe, no nível 1)
-é minha melhor estimativa, não uma transcrição do livro — confira contra
-sua cópia de LotFP. Ver NOTES.md.
+SAVES_LEVEL_1 são os valores-alvo do nível 1 de cada classe, conferidos contra
+as tabelas do livro. Ver NOTES.md.
 """
 
 SAVE_CATEGORIES = ["Paralisia", "Veneno", "Sopro", "Dispositivos Mágicos", "Magia"]
 
 SAVES_LEVEL_1 = {
-    "fighter": {"Paralisia": 13, "Veneno": 14, "Sopro": 13, "Dispositivos Mágicos": 15, "Magia": 16},
-    "specialist": {"Paralisia": 14, "Veneno": 14, "Sopro": 13, "Dispositivos Mágicos": 13, "Magia": 15},
-    "magic_user": {"Paralisia": 14, "Veneno": 15, "Sopro": 15, "Dispositivos Mágicos": 13, "Magia": 12},
-    "cleric": {"Paralisia": 14, "Veneno": 12, "Sopro": 15, "Dispositivos Mágicos": 14, "Magia": 13},
+    "fighter": {"Paralisia": 14, "Veneno": 12, "Sopro": 15, "Dispositivos Mágicos": 13, "Magia": 16},
+    "specialist": {"Paralisia": 14, "Veneno": 16, "Sopro": 15, "Dispositivos Mágicos": 14, "Magia": 14},
+    "magic_user": {"Paralisia": 13, "Veneno": 13, "Sopro": 16, "Dispositivos Mágicos": 13, "Magia": 14},
+    "cleric": {"Paralisia": 14, "Veneno": 11, "Sopro": 16, "Dispositivos Mágicos": 12, "Magia": 15},
 }
 
 

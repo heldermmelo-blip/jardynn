@@ -1,27 +1,29 @@
 ## Fighter (nível 1)
 
 **Atributos**
-- Força: 12 (+0)
-- Destreza: 10 (+0)
-- Constituição: 15 (+1)
-- Inteligência: 7 (-1)
-- Sabedoria: 12 (+0)
-- Carisma: 10 (+0)
+- Força: 8 (-1)
+- Destreza: 11 (+0)
+- Constituição: 10 (+0)
+- Inteligência: 13 (+1)
+- Sabedoria: 11 (+0)
+- Carisma: 6 (-1)
 
-**Pontos de vida:** 9
-**Bônus de ataque:** +1
+**Pontos de vida:** 8
+**Bônus de ataque:** +2
 
 **Testes de Resistência** (rola 1d20, sucesso se >= alvo)
-- Paralisia: 13+
-- Veneno: 14+
-- Sopro: 13+
-- Dispositivos Mágicos: 15+
+- Paralisia: 14+
+- Veneno: 12+
+- Sopro: 15+
+- Dispositivos Mágicos: 13+
 - Magia: 16+
 
+**Prata inicial:** 90 sp (3d6 × 10; o equipamento abaixo é um kit genérico)
 **Equipamento inicial**
-- Mochila (1 slot)
-- Ração de viagem (1 semana) (1 slot)
-- Cantil de água (1 slot)
-- Corda (15m) (1 slot)
-- Pederneira e isqueiro (1 slot)
-- Tocha (3) (1 slot)
+- Mochila
+- Ração de viagem (1 semana)
+- Cantil de água
+- Corda (15m)
+- Pederneira e isqueiro
+- Tocha (3)
+**Carga:** 1 ponto(s) — sem carga excessiva, 120' por turno de exploração
