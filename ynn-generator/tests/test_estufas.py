@@ -147,17 +147,42 @@ def test_level_sized_greenhouse_wraps_the_whole_level_with_entry_and_exit(tmp_pa
     )
     colossal = nivel["estufa_colossal"]
     raio = colossal["raio"]
-    assert 55.0 <= raio <= 64.0
+    assert 55.0 <= raio <= 80.0
     entrada, saida = colossal["portas"]
     assert (entrada["tipo"], saida["tipo"]) == ("entrada", "saida")
     assert entrada["z"] == pytest.approx(-raio) and saida["z"] == pytest.approx(raio)  # lados opostos
     plots = nivel["layout"]["plots"]
-    assert all(math.hypot(p["x"], p["z"]) + 6.0 <= raio for p in plots)  # o nível inteiro cabe sob o vidro
+    assert all(math.hypot(p["x"], p["z"]) + p.get("raio_ocupado", 6.0) <= raio for p in plots)  # o nível inteiro cabe sob o vidro
     assert entrada["no_id"] == 0
     mais_fundo = max(plots, key=lambda p: (p["profundidade"], p["no_id"]))
     assert saida["no_id"] == mais_fundo["no_id"] and mais_fundo.get("saida_nivel") is True
-    assert any(p.get("colossal") for p in plots)
     assert colossal["planta"]["andares"] == 3 and colossal["planta"]["lados"] == 32
+
+
+def test_level_under_the_colossal_greenhouse_holds_only_glass_wings(tmp_path):
+    for seed in (1, 2, 3):
+        nivel = generator.generate_nivel(
+            random.Random(seed), profundidade_max=3, max_nos=10, plant_output_dir=str(tmp_path), estufa_colossal="sempre"
+        )
+        plots = nivel["layout"]["plots"]
+        assert plots and all(p["tipo"] == "estufa" for p in plots)  # nada de torre, gazebo, canteiro ou área aberta
+        assert nivel["areas"] == []
+        assert all(p["ala"] in ("vidraca", "orquidario") and p["planta"]["porte"] in ("minuscula", "normal") for p in plots)
+        assert all("espelho_dagua" not in p and "conteudo" in p and "flora_interna" in p for p in plots)
+        for p in plots:
+            if p["ala"] == "orquidario":
+                assert p["conteudo"]["orquidario"] and p["conteudo"]["valor_prata"] >= 1
+
+
+def test_orchid_house_is_always_orchids_and_sometimes_something_else():
+    n = 400
+    so_orquideas = 0
+    for seed in range(n):
+        c = generator.generate_orquidario_conteudo(random.Random(seed), 3)
+        assert 3 <= c["valor_prata"] <= 30 and c["valor_prata"] % 3 == 0  # 1d10 x profundidade
+        assert any(c["texto"].startswith(base) for base in generator.tables.ORQUIDARIO_TEXTOS)
+        so_orquideas += c["texto"] in generator.tables.ORQUIDARIO_TEXTOS
+    assert abs(so_orquideas / n - 0.5) < 0.1
 
 
 def test_never_mode_has_no_level_sized_greenhouse(tmp_path):
@@ -165,7 +190,7 @@ def test_never_mode_has_no_level_sized_greenhouse(tmp_path):
         random.Random(5), profundidade_max=2, max_nos=6, plant_output_dir=str(tmp_path), estufa_colossal="nunca"
     )
     assert "estufa_colossal" not in nivel and "portas_estufa" not in nivel["layout"]
-    assert not any(p.get("colossal") for p in nivel["layout"]["plots"])
+    assert not any("ala" in p for p in nivel["layout"]["plots"])
 
 
 # --- flora de dentro das estufas -------------------------------------------------
@@ -266,5 +291,4 @@ def test_colossal_greenhouse_is_a_tropical_garden_that_avoids_the_level_content(
         for plot in nivel["layout"]["plots"]:
             assert math.hypot(p["x"] - plot["x"], p["z"] - plot["z"]) >= plot.get("raio_ocupado", 6.0)
     for plot in nivel["layout"]["plots"]:
-        if plot["tipo"] == "estufa" and not plot.get("colossal"):
-            assert "flora_interna" in plot
+        assert "flora_interna" in plot

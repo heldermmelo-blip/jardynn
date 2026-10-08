@@ -538,30 +538,32 @@ ESTUFA_CONTEUDO = [
 LOCAIS = [
     # (nome, tipo_de_lote) — sorteada por d20 + profundidade (`ynn.pointcrawl`):
     # as primeiras entradas são amenas, as do fim são estranhas e industriais.
-    # `tipo_de_lote` é um tipo de `ynn.layout` ("area", "canteiro", "estufa",
-    # "gazebo" ou "torre"); resultados acima do tamanho da lista caem na última.
+    # `tipo_de_lote` é "area", "canteiro", "estufa", "gazebo", "torre" ou uma
+    # estrutura pitoresca de `gielis.pitoresco` ("fonte", "estatuas",
+    # "labirinto", "mausoleu", "lago", "lago_gelado" ou "xadrez");
+    # resultados acima do tamanho da lista caem na última.
     ("Gramado de croquet, os arcos tortos e as bolas espalhadas", "area"),
     ("Alameda de tílias", "area"),
     ("Canteiro de lavanda zumbindo de abelhas", "canteiro"),
     ("Pérgula de glicínias", "area"),
     ("Pomar de marmeleiros", "area"),
-    ("Tanque de nenúfares", "area"),
+    ("Tanque de nenúfares", "lago"),
     ("Coreto de música", "gazebo"),
     ("Estufa de samambaias", "estufa"),
     ("Canteiro de dálias", "canteiro"),
-    ("Bosque de bétulas", "area"),
+    ("Labirinto de sebes aparadas", "labirinto"),
     ("Quiosque de chá", "gazebo"),
     ("Estufa de laranjeiras", "estufa"),
-    ("Terraço de estátuas de mármore", "area"),
+    ("Terraço de estátuas de mármore", "estatuas"),
     ("Torre do relógio", "torre"),
     ("Canteiro de ervas de boticário", "canteiro"),
-    ("Fonte seca de três bacias", "area"),
-    ("Biblioteca a céu aberto", "area"),
+    ("Fonte de três bacias", "fonte"),
+    ("Mausoléu coberto de hera", "mausoleu"),
     ("Observatório de latão", "torre"),
     ("Viveiro de borboletas de vidro", "estufa"),
-    ("Barracão de ferramentas gigantes", "area"),
+    ("Gramado de xadrez de peças gigantes", "xadrez"),
     ("Cemitério de bonecas", "area"),
-    ("Lago congelado fora de estação", "area"),
+    ("Lago congelado fora de estação", "lago_gelado"),
     ("Salão de baile sem teto", "area"),
     ("Ponte sobre um vale de névoa", "area"),
     ("Canteiro de flores que se mexem", "canteiro"),
@@ -575,6 +577,47 @@ LOCAIS = [
     ("Jardim de ponta-cabeça", "area"),
     ("Trono de espinhos", "area"),
     ("Ruínas do Primeiro Jardim", "area"),
+]
+
+ALAS_VIDRO = [
+    # (nome, subtipo) — os locais de um nível sob uma estufa colossal: todos
+    # são alas de vidro (nada de torre, gazebo ou jardim aberto). Sorteada por
+    # d20 + profundidade como LOCAIS (`ynn.pointcrawl.roll_tabela`); `subtipo`
+    # é "vidraca" (conteúdo de `ESTUFA_CONTEUDO`) ou "orquidario"
+    # (`ORQUIDARIO_TEXTOS`). Do ameno ao estranho.
+    ("Vidraça das samambaias de pé de rendas", "vidraca"),
+    ("Orquidário de pétalas de cera", "orquidario"),
+    ("Galeria das laranjeiras em vasos", "vidraca"),
+    ("Vidraça das begônias de veludo", "vidraca"),
+    ("Orquidário do chá das cinco", "orquidario"),
+    ("Pavilhão das palmeiras-leque", "vidraca"),
+    ("Vidraça dos cactos de salão", "vidraca"),
+    ("Orquidário de hastes pálidas", "orquidario"),
+    ("Galeria das trepadeiras de ferro", "vidraca"),
+    ("Vidraça dos bambus que rangem", "vidraca"),
+    ("Orquidário dos espelhos de orvalho", "orquidario"),
+    ("Pavilhão das figueiras estranguladoras", "vidraca"),
+    ("Vidraça dos jarros de seda", "vidraca"),
+    ("Orquidário de raízes aéreas", "orquidario"),
+    ("Galeria dos nenúfares de vidro", "vidraca"),
+    ("Vidraça das plantas que respiram", "vidraca"),
+    ("Orquidário das flores de carne", "orquidario"),
+    ("Pavilhão das gaiolas enferrujadas", "vidraca"),
+    ("Vidraça das raízes sem terra", "vidraca"),
+    ("Orquidário do último verão", "orquidario"),
+    ("Galeria das folhagens que se lembram de você", "vidraca"),
+    ("Vidraça das sementes cantantes", "vidraca"),
+    ("Orquidário dos suspiros", "orquidario"),
+    ("Pavilhão do coração de vidro", "vidraca"),
+]
+
+ORQUIDARIO_TEXTOS = [
+    # texto-base de um orquidário: sempre orquídeas raras, que um colecionador
+    # compra por 1d10 x profundidade de prata (`generate_orquidario_conteudo`).
+    "Fileiras de orquídeas raras em vasos de musgo, cada uma com a etiqueta de um colecionador.",
+    "Orquídeas penduradas em cestos de arame, as raízes brancas balançando no ar morno.",
+    "Mesas de orquídeas em floração, de cores que não existem lá fora.",
+    "Uma coleção de orquídeas minúsculas sob campânulas de vidro, cada uma num pires.",
 ]
 
 DETALHES = [

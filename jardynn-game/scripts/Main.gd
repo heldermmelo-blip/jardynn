@@ -64,6 +64,20 @@ const COR_FLORA_ESTUFA := {
 	"topiaria": Color(0.2, 0.46, 0.2),
 	"cogumelo": Color(0.75, 0.35, 0.3),
 }
+const COR_PITORESCO := {
+	"pedra": Color(0.66, 0.64, 0.6),
+	"marmore": Color(0.8, 0.79, 0.76),
+	"obsidiana": Color(0.06, 0.06, 0.08),
+	"pedra_preta": Color(0.1, 0.1, 0.12),
+	"gramado": Color(0.24, 0.46, 0.2),
+	"sebe": Color(0.1, 0.32, 0.13),
+	"piso": Color(0.55, 0.5, 0.4),
+	"hera": Color(0.16, 0.4, 0.18),
+	"folha": Color(0.2, 0.52, 0.26),
+	"porta": Color(0.04, 0.03, 0.03),
+	"agua": Color(0.28, 0.48, 0.56, 0.78),
+	"gelo": Color(0.78, 0.9, 0.96, 0.88),
+}
 const COR_MOLDURA := {
 	"verde": Color(0.16, 0.36, 0.24),
 	"verdete": Color(0.3, 0.55, 0.5),
@@ -153,6 +167,8 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 			_spawn_torre(plot, x, z, terreno)
 		"estufa":
 			_spawn_estufa(plot, x, z, terreno)
+		"fonte", "estatuas", "labirinto", "mausoleu", "lago", "lago_gelado", "xadrez":
+			_spawn_pitoresco(plot, x, z)
 		"gazebo":
 			var gazebo = plot.get("conteudo", {})
 			print("--- Gazebo em (%.1f, %.1f) ---" % [x, z])
@@ -175,8 +191,6 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 ## material. `rotacao_y` vira a porta pro caminho que leva até ela; se ela
 ## está num espelho d'água, desenha a água e a calçada até a porta.
 func _spawn_estufa(plot: Dictionary, x: float, z: float, terreno) -> void:
-	if plot.get("colossal"):
-		return  # o vidro dela é desenhado por _spawn_estufa_colossal
 	var planta = plot.get("planta", {})
 	var estado = "em estado lastimável" if planta.get("estado") == "lastimavel" else "conservada"
 	print("--- Estufa %s em (%.1f, %.1f): %s lados, %s andar(es), %s ala(s), %s ---" % [planta.get("porte", "?"), x, z, _n(planta.get("lados", "?")), _n(planta.get("andares", "?")), _n(planta.get("alas", 0)), estado])
@@ -186,6 +200,8 @@ func _spawn_estufa(plot: Dictionary, x: float, z: float, terreno) -> void:
 	print(conteudo.get("texto", ""))
 	if conteudo.get("valor_ouro") != null:
 		print("  Vale %s de ouro" % _n(conteudo.get("valor_ouro")))
+	if conteudo.get("valor_prata") != null:
+		print("  As orquídeas valem %s de prata a um colecionador" % _n(conteudo.get("valor_prata")))
 	var criatura = conteudo.get("criatura")
 	if criatura != null:
 		print("  Criatura: %s (CA %s, DV %s, PV %s)" % [criatura.get("nome"), _n(criatura.get("ca")), criatura.get("dv"), _n(criatura.get("pontos_de_vida"))])
@@ -269,6 +285,49 @@ func _spawn_flora_interna(flora, pai: Node3D) -> void:
 		mi.rotation.y = planta.get("rot", 0.0)
 		mi.scale = Vector3.ONE * float(planta.get("escala", 1.0))
 		pai.add_child(mi)
+
+
+## Estrutura pitoresca do livro (fonte, estátuas, labirinto, mausoléu, lago,
+## gramado de xadrez): uma malha por material, sobre o chão aplainado pelo
+## gerador (y = 0). `rotacao_y` já vem calculada (ou vira a porta pro caminho).
+func _spawn_pitoresco(plot: Dictionary, x: float, z: float) -> void:
+	var tipo = str(plot.get("tipo"))
+	print("--- %s em (%.1f, %.1f), raio %.1f m ---" % [tipo.capitalize(), x, z, float(plot.get("raio_ocupado", 0.0))])
+	var extra = plot.get("pitoresco", {})
+	if tipo == "fonte":
+		print("  A fonte está %s." % ("seca" if extra.get("seca") else "cheia d'água"))
+	elif tipo == "estatuas":
+		print("  %s estátuas%s." % [_n(extra.get("estatuas", 0)), ", viradas de costas para o centro" if extra.get("de_costas") else ""])
+	elif tipo == "labirinto":
+		print("  Labirinto de %sx%s células, com um vão de entrada." % [_n(extra.get("n", 0)), _n(extra.get("n", 0))])
+	elif tipo == "xadrez":
+		print("  %s peças gigantes espalhadas pelo tabuleiro." % str(extra.get("pecas", []).size()))
+
+	var raiz = Node3D.new()
+	raiz.position = Vector3(x, 0.0, z)
+	raiz.rotation.y = plot.get("rotacao_y", 0.0)
+	add_child(raiz)
+	var malhas: Dictionary = plot.get("malhas", {})
+	for grupo in malhas:
+		var filename = str(malhas[grupo]).replace("\\", "/").get_file()
+		var mesh = load(plants_dir.path_join(filename))
+		if mesh == null:
+			push_warning("Malha não encontrada (reimporte o projeto no editor após gerar os .obj): %s" % filename)
+			continue
+		var cor: Color = COR_PITORESCO.get(grupo, COLOR_TORRE)
+		var mi = MeshInstance3D.new()
+		mi.mesh = mesh
+		if cor.a < 1.0:
+			var material = StandardMaterial3D.new()
+			material.albedo_color = cor
+			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			material.cull_mode = BaseMaterial3D.CULL_DISABLED
+			material.roughness = 0.1
+			mi.material_override = material
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		else:
+			mi.material_override = _material(cor, true)
+		raiz.add_child(mi)
 
 
 func _material_vidro() -> StandardMaterial3D:

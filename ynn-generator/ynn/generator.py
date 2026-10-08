@@ -18,6 +18,7 @@ for _sibling in ("lotfp-rules", "gielis-equations"):
 from lotfp.character import create_character  # noqa: E402
 from gielis.plants import generate_fallen_branch as _generate_fallen_branch_mesh  # noqa: E402
 from gielis.plants import generate_plant as _generate_plant_mesh  # noqa: E402
+from gielis import pitoresco as _pitoresco  # noqa: E402
 from gielis.structures import generate_gazebo as _generate_gazebo_mesh  # noqa: E402
 from gielis.greenhouse import generate_greenhouse as _generate_greenhouse_mesh  # noqa: E402
 from gielis.structures import TOWER_FLOOR_HEIGHT, TOWER_STAIRWELL_RADIUS  # noqa: E402
@@ -120,6 +121,8 @@ ESTUFA_FLORA_VARIANTES = (2, 3)
 ESTUFA_FLORA_MAX_PLANTAS = 260
 ESTUFA_FLORA_MARGEM = 0.35  # folga da parede, em metros
 ESTUFA_MORTAS_RUINA = (0.4, 0.9)
+# alas dentro da colossal: só minúsculas e normais (as imensas não cabem sob o vidro junto com as outras)
+ESTUFA_COLOSSAL_ALAS_PESOS = (3, 6)
 ESTUFA_COLOSSAL_FLORA_MAX = 500
 ESTUFA_COLOSSAL_FLORA_ESCALA = 2.5  # o vidro dela é enorme: plantas maiores
 
@@ -447,15 +450,15 @@ def sortear_flora_interna(
     return {"tema": tema, "densidade": densidade, "mortas": round(mortas, 2), "especies": especies, "plantas": plantas}
 
 
-def _montar_estufa(rng, layer, i, out_dir):
+def _montar_estufa(rng, layer, i, out_dir, porte=None, espelho_permitido=True):
     """Sorteia a planta de uma estufa e gera suas malhas (uma por material).
     Devolve os campos que vão no lote: `planta`, `obj` (a moldura), `malhas`,
     `pegadas` (polígonos no plano (x, z) do Godot, pra espalhar a flora),
     `raio_ocupado`, `conteudo` e, se tiver porta, `porta_angulo_godot`. Uma
     minúscula, uma vez em dez, ganha um `espelho_dagua` ao redor."""
-    planta = generate_estufa_planta(rng)
+    planta = generate_estufa_planta(rng, porte)
     espelho = None
-    if planta["porte"] == "minuscula" and rng.random() < ESTUFA_ESPELHO_CHANCE:
+    if espelho_permitido and planta["porte"] == "minuscula" and rng.random() < ESTUFA_ESPELHO_CHANCE:
         planta["raio"] = rng.uniform(2.2, 2.5)  # ainda a menor classe, mas com porta
         espelho = {"raio": rng.uniform(5.5, 8.0)}
     out_path = os.path.join(out_dir, f"camada{layer}_estufa_{i}.obj")
@@ -569,6 +572,49 @@ def generate_estufa_conteudo(rng, layer):
         conteudo["valor_ouro"] = rng.randint(1, 6) + layer
     elif tipo == "criatura":
         conteudo["criatura"] = instantiate_creature(rng, criatura_key)
+    return conteudo
+
+
+PITORESCOS = tuple(_pitoresco.GERADORES)  # tipos de lote que são estruturas pitorescas do livro
+PITORESCO_MARGEM_TERRENO = 3.0
+
+
+def _montar_pitoresco(rng, tipo, layer, i, out_dir):
+    """Gera a malha de uma estrutura pitoresca (fonte, estátuas, labirinto,
+    mausoléu, lago ou gramado de xadrez) e devolve os campos do lote: `obj`
+    (grupo principal), `malhas` (uma por material), `raio_ocupado`,
+    `rotacao_y` (sorteada; ou, se a estrutura tem porta, a que a vira pro
+    caminho, ajustada depois) e os dados extras da própria estrutura."""
+    out_path = os.path.join(out_dir, f"camada{layer}_{tipo}_{i}.obj")
+    path, info = _pitoresco.GERADORES[tipo](rng, out_path=out_path)
+    campos = {
+        "obj": path,
+        "malhas": info["malhas"],
+        "raio_ocupado": info["raio_ocupado"],
+        "pitoresco": {k: v for k, v in info.items() if k not in ("malhas", "raio_ocupado", "porta_angulo")},
+    }
+    if "porta_angulo" in info:
+        campos["porta_angulo_godot"] = -info["porta_angulo"]
+    else:
+        campos["rotacao_y"] = round(rng.uniform(0.0, math.tau), 3)
+    return campos
+
+
+def generate_orquidario_conteudo(rng, layer):
+    """Conteúdo de um orquidário: sempre orquídeas raras, que um colecionador
+    compra por `1d10 x profundidade` de prata (`valor_prata`). Em metade das
+    vezes não há mais nada; na outra metade, algo mais de `ESTUFA_CONTEUDO`
+    (menos o que dispensa plantas, que aqui não faz sentido) divide o lugar
+    com as orquídeas."""
+    texto = rng.choice(tables.ORQUIDARIO_TEXTOS)
+    conteudo = {"texto": texto, "valor_prata": rng.randint(1, 10) * layer, "orquidario": True}
+    if rng.random() < 0.5:
+        return conteudo
+    extra = generate_estufa_conteudo(rng, layer)
+    conteudo["texto"] = f"{texto} {extra['texto']}"
+    for chave in ("valor_ouro", "criatura"):
+        if extra.get(chave) is not None:
+            conteudo[chave] = extra[chave]
     return conteudo
 
 
@@ -699,23 +745,42 @@ def generate_nivel(
     out_dir = plant_output_dir or PLANT_OUTPUT_DIR
 
     nos_estufa = [no for no in grafo["nos"] if no["tipo"] == "estufa"]
-    if estufa_colossal == "sempre" and not nos_estufa:
-        no = rng.choice(grafo["nos"])
-        no["tipo"], no["local"] = "estufa", "Estufa de ferro e vidro do tamanho do nível"
-        nos_estufa = [no]
+    # "sempre" força o nível colossal; em "auto" cada estufa do mapa tem 1 em
+    # 30 de ser a colossal. Quando sai, o nível inteiro é só de alas de vidro.
+    colossal = estufa_colossal == "sempre" or any(_sorteou_colossal(rng, estufa_colossal) for _ in nos_estufa)
+    if colossal:
+        for no in grafo["nos"]:
+            (nome, subtipo), _ = pointcrawl.roll_tabela(rng, tables.ALAS_VIDRO, no["profundidade"])
+            no["tipo"], no["local"], no["ala"] = "estufa", nome, subtipo
+        nos_estufa = list(grafo["nos"])
 
     estufas = {}
-    colossal_no = None
     for no in nos_estufa:
         camada = no["profundidade"] + 1
-        if _sorteou_colossal(rng, estufa_colossal) and colossal_no is None:
-            colossal_no = no["id"]
-            estufas[no["id"]] = {"planta": {"porte": "colossal"}, "raio_ocupado": 3.0, "colossal": True}
+        if colossal:
+            porte = rng.choices(["minuscula", "normal"], weights=ESTUFA_COLOSSAL_ALAS_PESOS)[0]
+            campos = _montar_estufa(rng, camada, no["id"] + 1, out_dir, porte=porte, espelho_permitido=False)
+            if no["ala"] == "orquidario":
+                campos["conteudo"] = generate_orquidario_conteudo(rng, camada)
+            campos["ala"] = no["ala"]
+            estufas[no["id"]] = campos
         else:
             estufas[no["id"]] = _montar_estufa(rng, camada, no["id"] + 1, out_dir)
 
-    raios = {id_: campos["raio_ocupado"] for id_, campos in estufas.items()}
-    grupos = {id_: "minuscula" for id_, campos in estufas.items() if campos["planta"].get("porte") == "minuscula"}
+    pitorescos = {}
+    if not colossal:
+        for no in grafo["nos"]:
+            if no["tipo"] in PITORESCOS:
+                pitorescos[no["id"]] = _montar_pitoresco(rng, no["tipo"], no["profundidade"] + 1, no["id"] + 1, out_dir)
+
+    raios = {id_: campos["raio_ocupado"] for id_, campos in {**estufas, **pitorescos}.items()}
+    # dentro da colossal as alas não precisam se afastar umas das outras como
+    # as minúsculas do jardim aberto
+    grupos = (
+        {}
+        if colossal
+        else {id_: "minuscula" for id_, campos in estufas.items() if campos["planta"].get("porte") == "minuscula"}
+    )
     plots = pointcrawl.layout_grafo(rng, grafo, field_width, field_depth, raios=raios, grupos=grupos)
     posicao = {p["no_id"]: p for p in plots}
 
@@ -744,6 +809,13 @@ def generate_nivel(
                 plot["rotacao_y"] = plot["porta_angulo_godot"] - direcao
                 if "espelho_dagua" in plot:
                     plot["espelho_dagua"]["caminho_angulo"] = direcao
+        elif plot["tipo"] in PITORESCOS:
+            plot.update(pitorescos[plot["no_id"]])
+            if "porta_angulo_godot" in plot:
+                pai = grafo["nos"][plot["no_id"]]["pai"]
+                alvo = posicao[pai] if pai is not None else None
+                direcao = math.atan2(alvo["z"] - plot["z"], alvo["x"] - plot["x"]) if alvo else math.pi / 2
+                plot["rotacao_y"] = plot["porta_angulo_godot"] - direcao
         else:
             _preencher_lote(rng, camada, plot, i, out_dir)
         if "tesouro" in efeitos:
@@ -758,6 +830,8 @@ def generate_nivel(
     for plot in plots:
         if "espelho_dagua" in plot:
             terrain.achatar_circulo(terreno, plot["x"], plot["z"], plot["espelho_dagua"]["raio"], 3.0)
+        elif plot["tipo"] in PITORESCOS:  # labirinto, lago, mausoléu... não ficam em terreno ondulado
+            terrain.achatar_circulo(terreno, plot["x"], plot["z"], plot["raio_ocupado"], PITORESCO_MARGEM_TERRENO)
 
     nivel = {
         "modo": "livro",
@@ -771,10 +845,10 @@ def generate_nivel(
         },
         "areas": areas,
     }
-    if colossal_no is not None:
-        afastamento = max(math.hypot(p["x"], p["z"]) for p in plots)
+    if colossal:
+        afastamento = max(math.hypot(p["x"], p["z"]) + p.get("raio_ocupado", 6.0) for p in plots)
         evitar = [(p["x"], p["z"], p.get("raio_ocupado", 6.0) + 1.5) for p in plots]
-        colossal = _montar_estufa_colossal(rng, out_dir, min(64.0, max(55.0, afastamento + 12.0)), evitar=evitar)
+        colossal = _montar_estufa_colossal(rng, out_dir, min(80.0, max(55.0, afastamento + 6.0)), evitar=evitar)
         mais_fundo = max(grafo["nos"], key=lambda no: (no["profundidade"], no["id"]))["id"]
         entrada, saida = colossal["portas"]
         entrada["no_id"], saida["no_id"] = 0, mais_fundo

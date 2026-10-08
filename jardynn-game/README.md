@@ -97,7 +97,12 @@ ouro ou criatura). Uma minúscula pode estar no meio de um espelho d'água
 (`estufa_colossal`) cobre o nível inteiro, com um aro luminoso verde na
 entrada e um âmbar na saída, ligados por trilhas aos nós extremos. As estufas trazem a flora de dentro (`plot.flora_interna`: tema, densidade e
 um exemplar por planta, com posição, escala e giro; as mortas ficam marrons).
-Gazebos
+Sob a estufa
+colossal só há alas de vidro (vidraças e orquidários, com o valor das
+orquídeas impresso). As estruturas pitorescas (fonte, estátuas, labirinto,
+mausoléu, lago, lago congelado e gramado de xadrez) vêm em uma malha por
+material (`COR_PITORESCO` em `Main.gd`), sobre o chão aplainado, e imprimem
+seus detalhes. Gazebos
 imprimem estado, bibelô, tesouro e a regra de abrigo noturno.
 
 A torre é tratada à parte: além da malha, imprime no console o conteúdo

@@ -128,7 +128,24 @@ o tubo de seção de Lamé e o domo da Superfórmula de `gielis.plants`):
   vidro dela cobre o nível inteiro (`estufa_colossal`, raio 55–64 m, 32
   lados, 3 andares); entra-se por um portal num lado (`layout.portas_estufa`,
   tipo `entrada`, junto ao nó 0) e só se sai pelo portal do lado oposto
-  (tipo `saida`, junto ao local mais fundo).
+  (tipo `saida`, junto ao local mais fundo). **Sob a colossal só há alas de
+  vidro**: todos os locais do nível viram vidraças ou orquidários
+  (`tables.ALAS_VIDRO`, `plot.ala`), minúsculos ou normais, cada um com
+  conteúdo de estufa — nada de torre, gazebo, canteiro ou jardim aberto. O
+  orquidário (`generate_orquidario_conteudo`) sempre tem orquídeas que um
+  colecionador compra por 1d10 × profundidade de prata (`valor_prata`), e em
+  metade das vezes mais alguma coisa do conteúdo de estufa.
+- **estruturas pitorescas** (`gielis.pitoresco`, tipos em
+  `generator.PITORESCOS`; uma malha por material em `plot.malhas`, com
+  `raio_ocupado`, `rotacao_y` e o terreno aplainado debaixo): **fonte** de três
+  bacias (às vezes seca), **estátuas** de mármore em terraço (às vezes de costas
+  pro centro), **labirinto** de sebes (perfeito, com vão de entrada virado
+  pro caminho), **mausoléu** de mármore coberto de hera com porta escura,
+  **lago** com nenúfares e juncos ou **lago congelado**, e **gramado de xadrez**
+  com peças gigantes. Entram na tabela de locais (`tables.LOCAIS`) no lugar de
+  áreas genéricas: Labirinto de sebes aparadas, Mausoléu coberto de hera,
+  Gramado de xadrez de peças gigantes, Tanque de nenúfares, Terraço de estátuas de
+  mármore, Fonte de três bacias e Lago congelado fora de estação.
 - **gazebo**: pavilhão aberto (plataforma, 6 ou 8 postes, grade baixa com
   uma abertura de entrada, telhado em cúpula e pináculo). Em
   `plot.conteudo`: estado do pavilhão (`GAZEBO_ESTADO`), um bibelô largado

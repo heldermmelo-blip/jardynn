@@ -6,11 +6,15 @@ from ynn import pointcrawl, tables
 from ynn.generator import generate_area, generate_nivel
 from ynn.pointcrawl import generate_pointcrawl, layout_grafo, roll_detalhe, roll_tabela
 
+from ynn.generator import PITORESCOS
+
+TIPOS_DE_LOTE = ("area", "canteiro", "estufa", "gazebo", "torre", *PITORESCOS)
+
 
 def test_tables_are_well_formed():
     assert len(tables.LOCAIS) == 35 and len(tables.DETALHES) == 35
     for nome, tipo in tables.LOCAIS:
-        assert nome and tipo in ("area", "canteiro", "estufa", "gazebo", "torre")
+        assert nome and tipo in TIPOS_DE_LOTE
     for texto, relevo, efeito in tables.DETALHES:
         assert texto and relevo in pointcrawl.RELEVO_ORDEM
         assert efeito in (None, "vazio", "tesouro", "saida", "duplo")
@@ -84,7 +88,7 @@ def test_extra_links_follow_their_rules():
 def test_nodes_get_location_and_detail_rolled_at_their_depth():
     grafo = generate_pointcrawl(random.Random(3))
     for no in grafo["nos"]:
-        assert no["local"] and no["tipo"] in ("area", "canteiro", "estufa", "gazebo", "torre")
+        assert no["local"] and no["tipo"] in TIPOS_DE_LOTE
         assert no["detalhe"]["texto"]
 
 

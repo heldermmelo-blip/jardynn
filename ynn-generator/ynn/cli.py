@@ -17,6 +17,7 @@ from .generator import (  # importa antes: garante lotfp-rules no sys.path
     generate_nivel,
     generate_terreno,
 )
+from .generator import PITORESCOS
 from .tables import BAND_LABELS
 
 from lotfp.cli import render_character
@@ -49,13 +50,11 @@ def _render_estrutura(plot):
                 lines.append(f"    - tesouro: {andar['tesouro']}")
             if andar.get("denizen") is not None:
                 lines.append(f"    - encontro: {andar['denizen']}")
-    elif plot["tipo"] == "estufa" and plot.get("colossal"):
-        lines.append(f"- estufa em {pos}: a colossal — o nível inteiro está sob o vidro dela")
     elif plot["tipo"] == "estufa":
         planta = plot["planta"]
         dado = f"d{planta['dado']}, " if planta.get("dado") else ""
         lines.append(
-            f"- estufa {planta['porte']} em {pos}: {dado}{planta['lados']} lados, "
+            f"- {'ala de vidro (' + plot['ala'] + ')' if plot.get('ala') else 'estufa'} {planta['porte']} em {pos}: {dado}{planta['lados']} lados, "
             f"{planta['andares']} andar(es), raio {planta['raio']:.1f} m, {planta['alas']} ala(s), "
             f"{'em estado lastimável' if planta['estado'] == 'lastimavel' else 'conservada'}"
             f"{', piso em xadrez' if planta['piso_xadrez'] else ''}"
@@ -72,8 +71,22 @@ def _render_estrutura(plot):
         lines.append(f"  - {conteudo['texto']}")
         if conteudo.get("valor_ouro") is not None:
             lines.append(f"    - vale {conteudo['valor_ouro']} de ouro")
+        if conteudo.get("valor_prata") is not None:
+            lines.append(f"    - as orquídeas valem {conteudo['valor_prata']} de prata a um colecionador")
         if conteudo.get("criatura") is not None:
             lines.append(f"    - criatura: {conteudo['criatura']['nome']}")
+    elif plot["tipo"] in PITORESCOS:
+        extra = plot.get("pitoresco", {})
+        detalhes = []
+        if plot["tipo"] == "labirinto":
+            detalhes.append(f"{extra.get('n')}x{extra.get('n')} células")
+        elif plot["tipo"] == "estatuas":
+            detalhes.append(f"{extra.get('estatuas')} estátuas{', viradas de costas' if extra.get('de_costas') else ''}")
+        elif plot["tipo"] == "fonte":
+            detalhes.append("seca" if extra.get("seca") else "com água")
+        elif plot["tipo"] == "xadrez":
+            detalhes.append(f"{len(extra.get('pecas', []))} peças gigantes")
+        lines.append(f"- {plot['tipo']} em {pos}, raio {plot['raio_ocupado']:.1f} m" + (f" ({', '.join(detalhes)})" if detalhes else ""))
     elif plot["tipo"] == "gazebo":
         conteudo = plot["conteudo"]
         lines.append(f"- gazebo em {pos}: {conteudo['texto']}")
