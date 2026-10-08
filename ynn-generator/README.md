@@ -96,20 +96,30 @@ o tubo de seção de Lamé e o domo da Superfórmula de `gielis.plants`):
   mato, flores, samambaias, cogumelos; `topo_obj` e `conteudo.topo_brotado`),
   com a malha destelhada (piso de terra e cornija no topo); e **uma em cada
   dez fica inclinada** (`inclinacao`: 4 a 12 graus, azimute sorteado).
-- **estufa**: esqueleto de postes nos cantos + vigas por andar + telhado
-  (sem vidro/painéis ainda). Tamanho e forma vêm de um "dado" sorteado
-  (`ESTUFA_DADOS`, `generate_estufa_planta`), seguindo o mecanismo do livro
-  de usar a face do dado como planta baixa: d4/d8/d20 = triângulo,
-  d6/d10 = retângulo, d12 = pentágono, e o número de lados é também o de
-  portas. Dados maiores dão estufas maiores; o d12 tem 2 andares e o d20,
-  3 (os maiores são mais raros). Vem em `plot.planta`. Cada estufa também
-  sorteia um conteúdo em `ESTUFA_CONTEUDO` (`generate_estufa_conteudo`,
-  em `plot.conteudo`), como no livro: plantas raras ou gaiolas de ouro
-  (valor em ouro crescente com a profundidade), ervas medicinais, frutos
-  seguros, flores venenosas, esporos, limo no teto, ou uma criatura —
-  `Jarro Carnívoro` e `Esqueleto Vegetal` (`ynn/creatures.py`), só do
-  jardim profundo em diante, assim como a estufa lacrada (só no núcleo
-  selvagem).
+- **estufa**: de ferro pintado e vidro, com soco de pedra e portas em arco
+  (módulo `gielis.greenhouse`; uma malha `.obj` por material em
+  `plot.malhas`: moldura, vidro, soco, piso xadrez, trepadeiras mortas).
+  Tem **porte** (`generate_estufa_planta`): minúscula (20%, raio ~1,5 m,
+  sem porta), normal (60%) ou imensa (20%, várias alas). Telhado de domo
+  (planta poligonal, até 3 pavimentos com galeria e, às vezes, tambor e
+  pináculo), de abóbada ou de duas águas. As alas seguem um padrão:
+  *palácio* (2), *cruz* (4) ou *muitas alas* (alas saindo de alas); nunca
+  mais de 3 andares. **4 em 10 estão em estado lastimável** (vidros
+  faltando, ferrugem, trepadeiras mortas) e **3 em 10 têm o piso em xadrez
+  preto-e-branco**. Cada estufa sorteia um conteúdo em `ESTUFA_CONTEUDO`
+  (`generate_estufa_conteudo`, em `plot.conteudo`): plantas raras ou gaiolas
+  de ouro, ervas, frutos, flores venenosas, esporos, limo no teto, ou uma
+  criatura — `Jarro Carnívoro` e `Esqueleto Vegetal` (`ynn/creatures.py`),
+  só do jardim profundo em diante, assim como a estufa lacrada.
+  Duas estufas minúsculas nunca ficam coladas (`DISTANCIA_MESMO_GRUPO`), e
+  **1 minúscula em 10** fica no meio de um **espelho d'água**
+  (`plot.espelho_dagua`: raio e `caminho_angulo`; o relevo é aplainado sob
+  a água e há uma calçada até a porta). A **estufa colossal** é a mais rara
+  de todas (1 em 30 por estufa, `--estufa-colossal auto|sempre|nunca`): o
+  vidro dela cobre o nível inteiro (`estufa_colossal`, raio 55–64 m, 32
+  lados, 3 andares); entra-se por um portal num lado (`layout.portas_estufa`,
+  tipo `entrada`, junto ao nó 0) e só se sai pelo portal do lado oposto
+  (tipo `saida`, junto ao local mais fundo).
 - **gazebo**: pavilhão aberto (plataforma, 6 ou 8 postes, grade baixa com
   uma abertura de entrada, telhado em cúpula e pináculo). Em
   `plot.conteudo`: estado do pavilhão (`GAZEBO_ESTADO`), um bibelô largado

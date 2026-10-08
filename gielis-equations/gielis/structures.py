@@ -1,4 +1,4 @@
-"""Estruturas arquitetônicas simples (torre enterável, estufa, gazebo) para o
+"""Estruturas arquitetônicas simples (torre enterável, gazebo) para o
 layout do jardim — não são plantas, mas reaproveitam os mesmos utilitários de
 `gielis.plants`: o tubo com seção de Lamé (`mesh_utils.tube_mesh`) para
 postes/vigas/torre, e o domo da Superfórmula (`foliage.cap_mesh`,
@@ -13,8 +13,6 @@ from .plants.foliage import cap_mesh, leaf_mesh, place_leaf
 from .plants.mesh_utils import tube_mesh, write_obj
 
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "examples", "output")
-
-STORY_HEIGHT = 2.6
 
 
 def _resolve_out_path(out_path, default_name):
@@ -179,63 +177,6 @@ def generate_tower(rng, n_floors, out_path=None, roof=True):
     malha bater com o número de andares do conteúdo gerado."""
     parts, skeleton = _generate_tower(rng, n_floors, roof)
     out_path = _resolve_out_path(out_path, "torre.obj")
-    write_obj(out_path, parts)
-    return out_path, skeleton
-
-
-def _generate_greenhouse(rng, sides, n_floors, radius):
-    wall_height = STORY_HEIGHT * n_floors
-    post_radius = 0.06 + 0.02 * (n_floors - 1)
-
-    if sides == 4:
-        width = radius * 1.4
-        depth = width * rng.uniform(1.0, 1.5)
-        corners = [
-            np.array([-width / 2, -depth / 2, 0.0]),
-            np.array([width / 2, -depth / 2, 0.0]),
-            np.array([width / 2, depth / 2, 0.0]),
-            np.array([-width / 2, depth / 2, 0.0]),
-        ]
-    else:
-        corners = _polygon_corners(radius, sides, phase=rng.uniform(0.0, 2 * np.pi))
-
-    parts = []
-    skeleton = []
-    up = np.array([0.0, 0.0, 1.0])
-
-    for corner in corners:
-        _add_beam(parts, skeleton, corner, corner + up * wall_height, post_radius, depth=0)
-
-    for level in range(1, n_floors + 1):
-        for i, corner in enumerate(corners):
-            nxt = corners[(i + 1) % len(corners)]
-            _add_beam(parts, skeleton, corner + up * STORY_HEIGHT * level, nxt + up * STORY_HEIGHT * level, post_radius, depth=1)
-
-    top_corners = [corner + up * wall_height for corner in corners]
-    if sides == 4:
-        ridge_height = wall_height + rng.uniform(1.5, 2.5)
-        ridge_a = np.array([0.0, -depth / 2, ridge_height])
-        ridge_b = np.array([0.0, depth / 2, ridge_height])
-        _add_beam(parts, skeleton, ridge_a, ridge_b, post_radius, depth=1)
-        for top_corner, ridge_end in zip(top_corners, [ridge_a, ridge_a, ridge_b, ridge_b]):
-            _add_beam(parts, skeleton, top_corner, ridge_end, post_radius, depth=1)
-    else:
-        apex = np.array([0.0, 0.0, wall_height + radius * rng.uniform(0.5, 0.8)])
-        for top_corner in top_corners:
-            _add_beam(parts, skeleton, top_corner, apex, post_radius, depth=1)
-
-    return parts, skeleton
-
-
-def generate_greenhouse(rng, sides=4, n_floors=1, radius=3.6, out_path=None):
-    """Gera o esqueleto de uma estufa (postes nos cantos, vigas por andar e
-    águas do telhado, sem vidro/painéis) e salva como .obj em `out_path`
-    (padrão: `examples/output/estufa.obj`). `sides` é o número de cantos da
-    planta baixa (4 = retangular com cumeeira; os demais, polígono regular
-    com telhado em pirâmide), `n_floors` o número de andares e `radius` o
-    raio circunscrito da planta (m). Retorna `(out_path, skeleton)`."""
-    parts, skeleton = _generate_greenhouse(rng, sides, n_floors, radius)
-    out_path = _resolve_out_path(out_path, "estufa.obj")
     write_obj(out_path, parts)
     return out_path, skeleton
 

@@ -87,10 +87,16 @@ como cluster denso, igual às plantas de área mas com `canteiro_radius`
 menor). JSON gerado antes dessa mudança (sem `layout`) ainda funciona —
 cai de volta na linha reta antiga (`area_spacing`).
 
-Estufas variam de tamanho e forma (`plot.planta`: dado, lados/portas,
-andares) e cada uma imprime seu conteúdo (`plot.conteudo`: texto, valor em
-ouro ou criatura). Gazebos imprimem estado, bibelô, tesouro e a regra de
-abrigo noturno.
+Estufas (`plot.planta`: porte, lados, andares, alas, estado, piso xadrez)
+vêm em várias malhas, uma por material (`plot.malhas`: moldura pintada
+conforme `planta.moldura`, vidro translúcido, soco, piso preto/branco e
+trepadeiras mortas) e giradas (`rotacao_y`) para a porta olhar o caminho que
+leva até ela. Cada uma imprime seu conteúdo (`plot.conteudo`: texto, valor em
+ouro ou criatura). Uma minúscula pode estar no meio de um espelho d'água
+(disco translúcido + calçada até a porta), e a estufa colossal
+(`estufa_colossal`) cobre o nível inteiro, com um aro luminoso verde na
+entrada e um âmbar na saída, ligados por trilhas aos nós extremos. Gazebos
+imprimem estado, bibelô, tesouro e a regra de abrigo noturno.
 
 A torre é tratada à parte: além da malha, imprime no console o conteúdo
 de cada andar (`plot.conteudo`, ver README do `ynn-generator`) e espalha

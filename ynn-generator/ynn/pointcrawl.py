@@ -102,11 +102,13 @@ def generate_pointcrawl(rng, profundidade_max=4, max_nos=14, max_por_camada=6, c
     return {"profundidade_max": profundidade_max, "nos": nos, "arestas": arestas}
 
 
-def layout_grafo(rng, grafo, field_width=105.0, field_depth=68.0, margem=9.0, folga=16.0):
+def layout_grafo(rng, grafo, field_width=105.0, field_depth=68.0, margem=9.0, folga=16.0, raios=None, grupos=None):
     """Posiciona os nós no campo como o mapa de papel do livro: a entrada
     no topo (z menor) e cada camada numa fileira mais abaixo. Dentro da
-    fileira os nós ficam perto do pai, separados por `folga` metros.
+    fileira os nós ficam perto do pai, separados por `folga` metros — ou pelo que couber os dois, se `raios` (id do nó -> raio que ele ocupa, ex. uma estufa imensa) pedir mais. `grupos` (id -> rótulo) afasta nós do mesmo grupo (ex. várias estufas minúsculas) por pelo menos `DISTANCIA_MESMO_GRUPO`. No fim, um relaxamento afasta qualquer par que ainda se sobreponha, mesmo de fileiras diferentes.
     Devolve a lista de lotes (`tipo`, `x`, `z` e os dados do nó)."""
+    raios = raios or {}
+    grupos = grupos or {}
     profundidade_max = max(grafo["profundidade_max"], 1)
     passo_z = (field_depth - 2 * margem) / profundidade_max
     limite_x = field_width / 2 - 8.0
@@ -125,8 +127,15 @@ def layout_grafo(rng, grafo, field_width=105.0, field_depth=68.0, margem=9.0, fo
             irmaos = [m for m in camada if m["pai"] == no["pai"]]
             alvos.append(x_de[no["pai"]] + (irmaos.index(no) - (len(irmaos) - 1) / 2) * folga)
         xs = []
-        for alvo in alvos:
-            xs.append(alvo if not xs else max(alvo, xs[-1] + folga))
+        for alvo, no in zip(alvos, camada):
+            if not xs:
+                xs.append(alvo)
+            else:
+                anterior = camada[len(xs) - 1]
+                gap = max(folga, raios.get(anterior["id"], 6.0) + raios.get(no["id"], 6.0) + 3.0)
+                if grupos.get(anterior["id"]) is not None and grupos.get(anterior["id"]) == grupos.get(no["id"]):
+                    gap = max(gap, DISTANCIA_MESMO_GRUPO)
+                xs.append(max(alvo, xs[-1] + gap))
         if xs[-1] - xs[0] > 2 * limite_x:
             largura = xs[-1] - xs[0]
             xs = [-limite_x + (x - xs[0]) * 2 * limite_x / largura for x in xs]
@@ -152,4 +161,42 @@ def layout_grafo(rng, grafo, field_width=105.0, field_depth=68.0, margem=9.0, fo
                 "detalhe": no["detalhe"],
             }
         )
+    _separar(plots, raios, grupos, field_width, field_depth)
     return plots
+
+
+DISTANCIA_MESMO_GRUPO = 24.0
+
+
+def _separar(plots, raios, grupos, field_width, field_depth, passos=160):
+    """Relaxamento: afasta, ao longo da reta que os une, todo par de lotes
+    cujos raios ocupados se sobrepõem (ou, no mesmo grupo, que estejam mais
+    perto que `DISTANCIA_MESMO_GRUPO`), e mantém cada centro dentro do campo."""
+    r = [raios.get(p["no_id"], 6.0) for p in plots]
+    g = [grupos.get(p["no_id"]) for p in plots]
+    meio_x, meio_z = field_width / 2, field_depth / 2
+    for _ in range(passos):
+        moveu = False
+        for i in range(len(plots)):
+            for j in range(i + 1, len(plots)):
+                dx = plots[j]["x"] - plots[i]["x"]
+                dz = plots[j]["z"] - plots[i]["z"]
+                dist = (dx * dx + dz * dz) ** 0.5
+                minimo = r[i] + r[j] + 2.0
+                if g[i] is not None and g[i] == g[j]:
+                    minimo = max(minimo, DISTANCIA_MESMO_GRUPO)
+                if dist < minimo:
+                    moveu = True
+                    if dist < 1e-6:
+                        dx, dz, dist = 1.0, 0.0, 1.0
+                    empurra = (minimo - dist) / 2.0
+                    ux, uz = dx / dist, dz / dist
+                    plots[i]["x"] -= ux * empurra
+                    plots[i]["z"] -= uz * empurra
+                    plots[j]["x"] += ux * empurra
+                    plots[j]["z"] += uz * empurra
+        for p in plots:
+            p["x"] = max(-meio_x, min(meio_x, p["x"]))
+            p["z"] = max(-meio_z, min(meio_z, p["z"]))
+        if not moveu:
+            break

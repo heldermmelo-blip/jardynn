@@ -5,8 +5,10 @@ extends Node3D
 ## JSON) e o layout 2D (`layout` — lotes de área/torre/estufa/canteiro
 ## espalhados por um campo do tamanho de um campo de futebol, ver
 ## `ynn.layout`), além de imprimir no console o texto descritivo e as
-## fichas de NPCs/criaturas de cada área. Estufas variam de tamanho/forma
-## (planta baixa sorteada por "dado") e gazebos trazem bibelô, tesouro e a
+## fichas de NPCs/criaturas de cada área. Estufas têm porte, alas, estado
+## (às vezes em ruínas) e uma malha por material; uma minúscula pode ficar
+## num espelho d'água e a colossal cobre o nível inteiro, com portal de
+## entrada e de saída. Gazebos trazem bibelô, tesouro e a
 ## regra de abrigo noturno. A torre é uma mini-masmorra
 ## vertical (ver `ynn.generator.generate_torre_conteudo`): o console
 ## imprime o conteúdo de cada andar, e a malha vem cercada de hera.
@@ -40,10 +42,27 @@ const COLOR_HERA := Color(0.16, 0.38, 0.18)
 const COLOR_GALHO := Color(0.38, 0.26, 0.16)
 const COLOR_TORRE := Color(0.62, 0.36, 0.28)
 const COLOR_ESTUFA := Color(0.7, 0.88, 0.92)
+const COLOR_VIDRO := Color(0.72, 0.9, 0.95, 0.28)
+const COLOR_SOCO := Color(0.55, 0.53, 0.5)
+const COLOR_MORTO := Color(0.3, 0.22, 0.14)
+const COLOR_PISO_PRETO := Color(0.06, 0.06, 0.07)
+const COLOR_PISO_BRANCO := Color(0.88, 0.87, 0.82)
+const COLOR_AGUA := Color(0.32, 0.5, 0.58, 0.72)
+const COLOR_CALCADA := Color(0.7, 0.68, 0.62)
+const COR_MOLDURA := {
+	"verde": Color(0.16, 0.36, 0.24),
+	"verdete": Color(0.3, 0.55, 0.5),
+	"branca": Color(0.92, 0.92, 0.9),
+	"preta": Color(0.08, 0.08, 0.09),
+	"ferrugem": Color(0.5, 0.26, 0.14),
+}
 const COLOR_GAZEBO := Color(0.93, 0.88, 0.74)
 const COLOR_TRILHA := Color(0.62, 0.52, 0.36)
 const COLOR_ATALHO := Color(0.55, 0.5, 0.78)
 const COLOR_DESCIDA := Color(0.78, 0.45, 0.35)
+
+var _terreno_atual = null
+
 
 func _ready() -> void:
 	var layer_data = _load_json(layer_json_path)
@@ -57,6 +76,7 @@ func _ready() -> void:
 		print("== Camada %s ==" % _n(layer_data.get("layer", "?")))
 
 	var terreno = layer_data.get("terreno")
+	_terreno_atual = terreno
 	if terreno != null:
 		print("Relevo (%s): %s" % [terreno.get("tipo_relevo"), terreno.get("descricao")])
 		add_child(_build_terrain(terreno))
@@ -73,6 +93,8 @@ func _ready() -> void:
 			if plot.has("no_id"):
 				posicoes[int(plot.get("no_id"))] = Vector2(plot.get("x", 0.0), plot.get("z", 0.0))
 			_spawn_plot(plot, areas_by_index, terreno)
+		if layer_data.has("estufa_colossal"):
+			_spawn_estufa_colossal(layer_data.get("estufa_colossal"), posicoes)
 		for aresta in camada_layout.get("arestas", []):
 			var de = int(aresta.get("de"))
 			var para = int(aresta.get("para"))
@@ -115,16 +137,7 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 		"torre":
 			_spawn_torre(plot, x, z, terreno)
 		"estufa":
-			var planta = plot.get("planta", {})
-			print("--- Estufa em (%.1f, %.1f): d%s, %s portas, %s andar(es) ---" % [x, z, _n(planta.get("dado", "?")), _n(planta.get("portas", "?")), _n(planta.get("andares", "?"))])
-			var estufa = plot.get("conteudo", {})
-			print(estufa.get("texto", ""))
-			if estufa.get("valor_ouro") != null:
-				print("  Vale %s de ouro" % _n(estufa.get("valor_ouro")))
-			var estufa_criatura = estufa.get("criatura")
-			if estufa_criatura != null:
-				print("  Criatura: %s (CA %s, DV %s, PV %s)" % [estufa_criatura.get("nome"), _n(estufa_criatura.get("ca")), estufa_criatura.get("dv"), _n(estufa_criatura.get("pontos_de_vida"))])
-			_spawn_structure(plot.get("obj", ""), x, z, terreno, COLOR_ESTUFA)
+			_spawn_estufa(plot, x, z, terreno)
 		"gazebo":
 			var gazebo = plot.get("conteudo", {})
 			print("--- Gazebo em (%.1f, %.1f) ---" % [x, z])
@@ -140,6 +153,197 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 				_spawn_plant_cluster(plant_path, x, z, terreno, canteiro_radius, cor_canteiro)
 		_:
 			push_warning("Tipo de lote desconhecido no layout: %s" % tipo)
+
+
+## Estufa comum: moldura de ferro pintada, vidro (às vezes quebrado), soco de
+## pedra, piso xadrez e trepadeiras mortas, cada grupo de malha com seu
+## material. `rotacao_y` vira a porta pro caminho que leva até ela; se ela
+## está num espelho d'água, desenha a água e a calçada até a porta.
+func _spawn_estufa(plot: Dictionary, x: float, z: float, terreno) -> void:
+	if plot.get("colossal"):
+		return  # o vidro dela é desenhado por _spawn_estufa_colossal
+	var planta = plot.get("planta", {})
+	var estado = "em estado lastimável" if planta.get("estado") == "lastimavel" else "conservada"
+	print("--- Estufa %s em (%.1f, %.1f): %s lados, %s andar(es), %s ala(s), %s ---" % [planta.get("porte", "?"), x, z, _n(planta.get("lados", "?")), _n(planta.get("andares", "?")), _n(planta.get("alas", 0)), estado])
+	if planta.get("piso_xadrez"):
+		print("  Piso em xadrez preto e branco.")
+	var conteudo = plot.get("conteudo", {})
+	print(conteudo.get("texto", ""))
+	if conteudo.get("valor_ouro") != null:
+		print("  Vale %s de ouro" % _n(conteudo.get("valor_ouro")))
+	var criatura = conteudo.get("criatura")
+	if criatura != null:
+		print("  Criatura: %s (CA %s, DV %s, PV %s)" % [criatura.get("nome"), _n(criatura.get("ca")), criatura.get("dv"), _n(criatura.get("pontos_de_vida"))])
+
+	var y = _height_at(terreno, x, z) if terreno != null else 0.0
+	var espelho = plot.get("espelho_dagua")
+	if espelho != null:
+		y = 0.0  # o relevo foi aplainado debaixo da água
+		print("  A estufa fica no meio de um espelho d'água, com uma calçada até a porta.")
+		_spawn_espelho(espelho, planta, x, z, y)
+
+	var raiz = Node3D.new()
+	raiz.position = Vector3(x, y, z)
+	raiz.rotation.y = plot.get("rotacao_y", 0.0)
+	add_child(raiz)
+	_spawn_malhas_estufa(plot.get("malhas", {}), planta, raiz)
+
+
+## Uma malha por material: o .obj da moldura (`malhas.moldura`) mais as
+## variantes `_vidro`, `_soco`, `_morto`, `_piso_preto` e `_piso_branco`.
+func _spawn_malhas_estufa(malhas: Dictionary, planta: Dictionary, pai: Node3D) -> void:
+	var cor_moldura: Color = COR_MOLDURA.get(planta.get("moldura", "verde"), COLOR_ESTUFA)
+	var cores = {
+		"moldura": cor_moldura,
+		"soco": COLOR_SOCO,
+		"morto": COLOR_MORTO,
+		"piso_preto": COLOR_PISO_PRETO,
+		"piso_branco": COLOR_PISO_BRANCO,
+	}
+	for grupo in ["soco", "piso_preto", "piso_branco", "moldura", "morto", "vidro"]:
+		if not malhas.has(grupo):
+			continue
+		var caminho: String = malhas.get(grupo)
+		var filename = caminho.replace("\\", "/").get_file()
+		var mesh = load(plants_dir.path_join(filename))
+		if mesh == null:
+			push_warning("Malha não encontrada (reimporte o projeto no editor após gerar os .obj): %s" % filename)
+			continue
+		var mi = MeshInstance3D.new()
+		mi.mesh = mesh
+		if grupo == "vidro":
+			mi.material_override = _material_vidro()
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		else:
+			mi.material_override = _material(cores[grupo], true)
+		pai.add_child(mi)
+
+
+func _material_vidro() -> StandardMaterial3D:
+	var material = StandardMaterial3D.new()
+	material.albedo_color = COLOR_VIDRO
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.roughness = 0.1
+	return material
+
+
+## Disco de água em volta da estufa minúscula e a calçada de pedra da porta
+## até a margem, na direção do caminho (`caminho_angulo`).
+func _spawn_espelho(espelho: Dictionary, planta: Dictionary, x: float, z: float, y: float) -> void:
+	var raio: float = espelho.get("raio", 6.0)
+	var st = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var n = 40
+	var centro = Vector3(x, y + 0.12, z)
+	for i in range(n):
+		var a0 = TAU * i / n
+		var a1 = TAU * (i + 1) / n
+		st.add_vertex(centro)
+		st.add_vertex(centro + Vector3(cos(a1), 0.0, sin(a1)) * raio)
+		st.add_vertex(centro + Vector3(cos(a0), 0.0, sin(a0)) * raio)
+	st.generate_normals()
+	var agua = MeshInstance3D.new()
+	agua.mesh = st.commit()
+	var material = StandardMaterial3D.new()
+	material.albedo_color = COLOR_AGUA
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.roughness = 0.05
+	material.metallic = 0.4
+	agua.material_override = material
+	add_child(agua)
+
+	var angulo: float = espelho.get("caminho_angulo", 0.0)
+	var dir = Vector2(cos(angulo), sin(angulo))
+	var inicio = Vector2(x, z) + dir * (float(planta.get("raio", 2.3)) + 0.6)
+	var fim = Vector2(x, z) + dir * (raio + 0.6)
+	_spawn_fita(inicio, fim, 1.6, COLOR_CALCADA, y + 0.2)
+
+
+## Fita plana a altura fixa (a calçada do espelho d'água, que fica sobre o
+## chão aplainado).
+func _spawn_fita(a: Vector2, b: Vector2, largura: float, cor: Color, y: float) -> void:
+	var comprimento = a.distance_to(b)
+	if comprimento < 0.01:
+		return
+	var direcao = (b - a).normalized()
+	var lado = Vector2(-direcao.y, direcao.x) * (largura / 2.0)
+	var l0 = a + lado
+	var r0 = a - lado
+	var l1 = b + lado
+	var r1 = b - lado
+	var st = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for p in [l0, r0, l1, r0, r1, l1]:
+		st.add_vertex(Vector3(p.x, y, p.y))
+	st.generate_normals()
+	var mi = MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = _material(cor, true)
+	add_child(mi)
+
+
+## A estufa colossal: o vidro dela cobre o nível inteiro. Entra-se por um
+## portal de um lado (junto ao nó de entrada) e só se sai pelo portal do lado
+## oposto (junto ao local mais fundo). `posicoes` mapeia nó -> (x, z).
+func _spawn_estufa_colossal(colossal: Dictionary, posicoes: Dictionary) -> void:
+	var planta = colossal.get("planta", {})
+	var raio: float = colossal.get("raio", 55.0)
+	print("=== ESTUFA COLOSSAL (raio %.0f m, %s andares, %s) ===" % [raio, _n(planta.get("andares", 3)), "em estado lastimável" if planta.get("estado") == "lastimavel" else "conservada"])
+	print(colossal.get("texto", ""))
+	if planta.get("piso_xadrez"):
+		print("  Piso em xadrez preto e branco.")
+
+	var raiz = Node3D.new()
+	raiz.position = Vector3(0.0, 0.0, 0.0)
+	add_child(raiz)
+	_spawn_malhas_estufa(colossal.get("malhas", {}), planta, raiz)
+
+	for porta in colossal.get("portas", []):
+		var tipo = str(porta.get("tipo"))
+		var pos = Vector2(porta.get("x", 0.0), porta.get("z", 0.0))
+		var entrada = tipo == "entrada"
+		print("  Portal de %s em (%.1f, %.1f), junto ao nó %s" % [tipo, pos.x, pos.y, _n(porta.get("no_id"))])
+		_spawn_portal(pos, entrada)
+		var no_id = int(porta.get("no_id", -1))
+		if posicoes.has(no_id):
+			_spawn_path(pos, posicoes[no_id], "trilha", _terreno_atual)
+
+
+## Aro luminoso de pé na porta da estufa colossal, com rótulo e luz: verde
+## na entrada, âmbar na saída.
+func _spawn_portal(pos: Vector2, entrada: bool) -> void:
+	var cor = Color(0.3, 1.0, 0.5) if entrada else Color(1.0, 0.7, 0.25)
+	var aro = MeshInstance3D.new()
+	var torus = TorusMesh.new()
+	torus.inner_radius = 2.7
+	torus.outer_radius = 3.1
+	aro.mesh = torus
+	aro.rotation.x = PI / 2.0
+	aro.position = Vector3(pos.x, 3.2, pos.y)
+	var material = StandardMaterial3D.new()
+	material.albedo_color = cor
+	material.emission_enabled = true
+	material.emission = cor
+	material.emission_energy_multiplier = 1.6
+	aro.material_override = material
+	add_child(aro)
+
+	var luz = OmniLight3D.new()
+	luz.light_color = cor
+	luz.omni_range = 14.0
+	luz.position = Vector3(pos.x, 3.2, pos.y)
+	add_child(luz)
+
+	var rotulo = Label3D.new()
+	rotulo.text = "ENTRADA" if entrada else "SAÍDA"
+	rotulo.font_size = 96
+	rotulo.pixel_size = 0.02
+	rotulo.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	rotulo.modulate = cor
+	rotulo.position = Vector3(pos.x, 7.2, pos.y)
+	add_child(rotulo)
 
 
 ## Instancia a torre e imprime o conteúdo de cada andar (ver

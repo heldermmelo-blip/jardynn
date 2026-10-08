@@ -49,11 +49,17 @@ def _render_estrutura(plot):
                 lines.append(f"    - tesouro: {andar['tesouro']}")
             if andar.get("denizen") is not None:
                 lines.append(f"    - encontro: {andar['denizen']}")
+    elif plot["tipo"] == "estufa" and plot.get("colossal"):
+        lines.append(f"- estufa em {pos}: a colossal — o nível inteiro está sob o vidro dela")
     elif plot["tipo"] == "estufa":
         planta = plot["planta"]
+        dado = f"d{planta['dado']}, " if planta.get("dado") else ""
         lines.append(
-            f"- estufa em {pos}: d{planta['dado']}, {planta['lados']} lados/portas, "
-            f"{planta['andares']} andar(es), raio {planta['raio']:.1f} m"
+            f"- estufa {planta['porte']} em {pos}: {dado}{planta['lados']} lados, "
+            f"{planta['andares']} andar(es), raio {planta['raio']:.1f} m, {planta['alas']} ala(s), "
+            f"{'em estado lastimável' if planta['estado'] == 'lastimavel' else 'conservada'}"
+            f"{', piso em xadrez' if planta['piso_xadrez'] else ''}"
+            f"{', no meio de um espelho d' + chr(39) + 'água' if plot.get('espelho_dagua') else ''}"
         )
         conteudo = plot["conteudo"]
         lines.append(f"  - {conteudo['texto']}")
@@ -130,6 +136,14 @@ def render_nivel_markdown(nivel):
             lines.extend(_render_estrutura(plot))
         lines.append("")
 
+    colossal = nivel.get("estufa_colossal")
+    if colossal:
+        lines.append("### Estufa colossal")
+        lines.append(colossal["texto"])
+        for porta in layout.get("portas_estufa", []):
+            lines.append(f"- portal de {porta['tipo']} em ({porta['x']:.1f}, {porta['z']:.1f}), junto ao nó {porta['no_id']}")
+        lines.append("")
+
     lines.append("### Ligações")
     for aresta in layout["arestas"]:
         lines.append(f"- {aresta['de']} → {aresta['para']} ({aresta['tipo']})")
@@ -152,6 +166,15 @@ def main(argv=None):
     )
     parser.add_argument("--profundidade", type=int, default=4, help="[livro] Camadas além da entrada (padrão 4)")
     parser.add_argument("--max-nos", type=int, default=14, help="[livro] Máximo de locais no mapa (padrão 14)")
+    parser.add_argument(
+        "--estufa-colossal",
+        choices=["auto", "sempre", "nunca"],
+        default="auto",
+        help=(
+            "[livro] A estufa colossal cobre o nível inteiro, com entrada e saída em lados opostos. "
+            "auto (padrão): é a mais rara de todas, 1 em 30 por estufa; sempre: força uma; nunca: desliga."
+        ),
+    )
     parser.add_argument("--layer", type=int, default=1, help="[grade] Número da camada (profundidade)")
     parser.add_argument("--areas", type=int, default=5, help="[grade] Quantidade de áreas a gerar")
     parser.add_argument("--seed", type=int, default=None, help="Seed para reprodutibilidade")
@@ -204,6 +227,7 @@ def main(argv=None):
             field_depth=args.field_depth,
             resolution=args.terrain_resolution,
             cell_size=args.terrain_cell_size,
+            estufa_colossal=args.estufa_colossal,
         )
         output = json.dumps(nivel, ensure_ascii=False, indent=2) if args.json else render_nivel_markdown(nivel)
     else:

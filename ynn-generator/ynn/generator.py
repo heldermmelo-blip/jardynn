@@ -1,5 +1,6 @@
 """Montagem de áreas e camadas de jardim a partir das tabelas em `tables.py`."""
 
+import math
 import os
 import sys
 
@@ -17,7 +18,7 @@ from lotfp.character import create_character  # noqa: E402
 from gielis.plants import generate_fallen_branch as _generate_fallen_branch_mesh  # noqa: E402
 from gielis.plants import generate_plant as _generate_plant_mesh  # noqa: E402
 from gielis.structures import generate_gazebo as _generate_gazebo_mesh  # noqa: E402
-from gielis.structures import generate_greenhouse as _generate_greenhouse_mesh  # noqa: E402
+from gielis.greenhouse import generate_greenhouse as _generate_greenhouse_mesh  # noqa: E402
 from gielis.structures import TOWER_FLOOR_HEIGHT, TOWER_STAIRWELL_RADIUS  # noqa: E402
 from gielis.structures import generate_tower as _generate_tower_mesh  # noqa: E402
 from gielis.structures import generate_tower_vines as _generate_tower_vines_mesh  # noqa: E402
@@ -76,6 +77,27 @@ ESTUFA_DADOS = {
     12: dict(lados=5, raio=5.3, andares=2, peso=2),
     20: dict(lados=3, raio=5.8, andares=3, peso=1),
 }
+
+# Portes das estufas: minúsculas, normais e imensas (com várias alas). Há
+# ainda a colossal — uma estufa cuja circunferência abarca o nível inteiro,
+# com um portal de entrada e outro de saída em lados opostos —, a mais rara
+# de todas (1 em 30). Cada estufa pode estar em estado lastimável (painéis
+# faltando, moldura enferrujada, trepadeiras mortas) e ter piso em xadrez
+# preto e branco; uma minúscula, uma vez em dez, fica no meio de um espelho
+# d'água, com um caminho até ela.
+ESTUFA_PORTES = ("minuscula", "normal", "imensa")
+ESTUFA_PORTES_PESOS = (2, 6, 2)
+ESTUFA_COLOSSAL_CHANCE = 1 / 30
+ESTUFA_RUINA_CHANCE = 0.4
+ESTUFA_XADREZ_CHANCE = 0.3
+ESTUFA_ESPELHO_CHANCE = 1 / 10
+ESTUFA_MAX_ANDARES = 3
+ESTUFA_MOLDURAS = ("verde", "verdete", "branca", "preta")
+
+ESTUFA_COLOSSAL_TEXTO = (
+    "O nível inteiro está sob o vidro de uma estufa colossal. Os aventureiros entram por um portal "
+    "de ferro e vidro numa ponta e só encontram a saída do outro lado."
+)
 
 REFUGIO_GAZEBO = (
     "Abrigo noturno: com uma chama acesa sob o telhado (vela, lampião ou fogueira), "
@@ -247,18 +269,142 @@ def generate_torre_conteudo(rng, layer, n_andares_range=N_ANDARES_TORRE_RANGE):
     return {"n_andares": n_andares, "andares": andares}
 
 
-def generate_estufa_planta(rng):
-    """Sorteia o "dado" de uma estufa e devolve sua planta: número de lados
-    (= cantos = portas), andares e raio, conforme `ESTUFA_DADOS`."""
+def generate_estufa_planta(rng, porte=None):
+    """Sorteia a planta de uma estufa: o `porte` (minúscula, normal ou
+    imensa), o "dado" que dá a forma e o tamanho (a face do dado é a planta
+    baixa; `lados` = cantos = portas), os andares (no máximo
+    `ESTUFA_MAX_ANDARES`), o raio, as alas e o padrão delas ("palacio": duas
+    alas laterais; "cruz": quatro; "livre": quantas sortear), o estado
+    (conservada ou lastimável), o piso em xadrez e a cor da moldura."""
+    porte = porte or rng.choices(ESTUFA_PORTES, weights=ESTUFA_PORTES_PESOS)[0]
     dados = list(ESTUFA_DADOS)
-    dado = rng.choices(dados, weights=[ESTUFA_DADOS[d]["peso"] for d in dados])[0]
-    info = ESTUFA_DADOS[dado]
+    if porte == "minuscula":
+        dado = rng.choice([4, 6])
+        lados = ESTUFA_DADOS[dado]["lados"]
+        raio = rng.uniform(1.2, 1.9)
+        andares, alas, padrao = 1, 0, "livre"
+    elif porte == "imensa":
+        dado = rng.choice([12, 20])
+        lados = rng.choice([4, 5, 6, 8])
+        raio = rng.uniform(4.5, 6.5)
+        andares = rng.choice([2, 3])
+        padrao = rng.choices(["palacio", "cruz", "livre"], weights=[3, 3, 4])[0]
+        alas = {"palacio": 2 + rng.randint(0, 3), "cruz": 4 + rng.randint(0, 4), "livre": rng.randint(5, 9)}[padrao]
+    else:
+        dado = rng.choices(dados, weights=[ESTUFA_DADOS[d]["peso"] for d in dados])[0]
+        info = ESTUFA_DADOS[dado]
+        lados, raio, andares = info["lados"], info["raio"], info["andares"]
+        padrao = rng.choices(["livre", "palacio"], weights=[8, 2])[0]
+        if padrao == "palacio":
+            alas, andares = 2, max(andares, 2)
+        else:
+            alas = 0 if rng.random() < 0.6 else rng.randint(1, 3)
+    ruina = rng.random() < ESTUFA_RUINA_CHANCE
+    moldura = "ferrugem" if ruina and rng.random() < 0.7 else rng.choice(ESTUFA_MOLDURAS)
     return {
+        "porte": porte,
         "dado": dado,
-        "lados": info["lados"],
-        "portas": info["lados"],
-        "andares": info["andares"],
-        "raio": info["raio"],
+        "lados": lados,
+        "portas": lados,
+        "andares": min(andares, ESTUFA_MAX_ANDARES),
+        "raio": raio,
+        "alas": alas,
+        "padrao": padrao,
+        "estado": "lastimavel" if ruina else "conservada",
+        "piso_xadrez": rng.random() < ESTUFA_XADREZ_CHANCE,
+        "moldura": moldura,
+    }
+
+
+def _sorteou_colossal(rng, modo):
+    """A estufa colossal (a que cobre o nível inteiro) é a mais rara de
+    todas: `modo` "auto" sorteia 1 em 30 por estufa
+    (`ESTUFA_COLOSSAL_CHANCE`), "sempre" sempre sai e "nunca" nunca."""
+    if modo == "sempre":
+        return True
+    if modo == "nunca":
+        return False
+    return rng.random() < ESTUFA_COLOSSAL_CHANCE
+
+
+def _montar_estufa(rng, layer, i, out_dir):
+    """Sorteia a planta de uma estufa e gera suas malhas (uma por material).
+    Devolve os campos que vão no lote: `planta`, `obj` (a moldura), `malhas`,
+    `pegadas` (polígonos no plano (x, z) do Godot, pra espalhar a flora),
+    `raio_ocupado`, `conteudo` e, se tiver porta, `porta_angulo_godot`. Uma
+    minúscula, uma vez em dez, ganha um `espelho_dagua` ao redor."""
+    planta = generate_estufa_planta(rng)
+    espelho = None
+    if planta["porte"] == "minuscula" and rng.random() < ESTUFA_ESPELHO_CHANCE:
+        planta["raio"] = rng.uniform(2.2, 2.5)  # ainda a menor classe, mas com porta
+        espelho = {"raio": rng.uniform(5.5, 8.0)}
+    out_path = os.path.join(out_dir, f"camada{layer}_estufa_{i}.obj")
+    path, info = _generate_greenhouse_mesh(
+        rng,
+        sides=planta["lados"],
+        n_floors=planta["andares"],
+        radius=planta["raio"],
+        n_wings=planta["alas"],
+        ruined=planta["estado"] == "lastimavel",
+        checker=planta["piso_xadrez"],
+        padrao=planta["padrao"],
+        out_path=out_path,
+    )
+    planta["alas"] = info["n_alas"]
+    campos = {
+        "planta": planta,
+        "obj": path,
+        "malhas": info["malhas"],
+        "pegadas": [[(x, -y) for x, y in poly] for poly in info["pegadas"]],
+        "raio_ocupado": info["raio_ocupado"],
+        "conteudo": generate_estufa_conteudo(rng, layer),
+    }
+    if info["portas_angulos"]:
+        campos["porta_angulo_godot"] = -info["portas_angulos"][0]
+    if espelho is not None:
+        campos["espelho_dagua"] = espelho
+        campos["raio_ocupado"] = max(info["raio_ocupado"], espelho["raio"] + 1.0)
+    return campos
+
+
+def _montar_estufa_colossal(rng, out_dir, raio):
+    """A estufa cuja circunferência abarca o nível inteiro: um domo de 32
+    lados e 3 pavimentos centrado na origem, com um portal de entrada do lado
+    da entrada do mapa (z negativo) e outro de saída no lado oposto."""
+    lados = 32
+    ruina = rng.random() < ESTUFA_RUINA_CHANCE
+    planta = {
+        "porte": "colossal",
+        "dado": None,
+        "lados": lados,
+        "portas": 2,
+        "andares": 3,
+        "raio": raio,
+        "alas": 0,
+        "padrao": "colossal",
+        "estado": "lastimavel" if ruina else "conservada",
+        "piso_xadrez": rng.random() < ESTUFA_XADREZ_CHANCE,
+        "moldura": "ferrugem" if ruina and rng.random() < 0.7 else rng.choice(ESTUFA_MOLDURAS),
+    }
+    path, info = _generate_greenhouse_mesh(
+        rng,
+        sides=lados,
+        n_floors=3,
+        radius=raio,
+        ruined=ruina,
+        checker=planta["piso_xadrez"],
+        bay=raio / 18.0,
+        fase=math.pi / 2 - math.pi / lados,
+        portas_angulos=[math.pi / 2, -math.pi / 2],
+        out_path=os.path.join(out_dir, "nivel_estufa_colossal.obj"),
+    )
+    return {
+        "planta": planta,
+        "obj": path,
+        "malhas": info["malhas"],
+        "raio": raio,
+        "portas": [{"tipo": "entrada", "x": 0.0, "z": -raio}, {"tipo": "saida", "x": 0.0, "z": raio}],
+        "texto": ESTUFA_COLOSSAL_TEXTO,
     }
 
 
@@ -342,14 +488,7 @@ def _preencher_lote(rng, layer, plot, i, out_dir):
         if extras["inclinacao"] is not None:
             plot["inclinacao"] = extras["inclinacao"]
     elif plot["tipo"] == "estufa":
-        planta = generate_estufa_planta(rng)
-        out_path = os.path.join(out_dir, f"camada{layer}_estufa_{i}.obj")
-        path, _ = _generate_greenhouse_mesh(
-            rng, sides=planta["lados"], n_floors=planta["andares"], radius=planta["raio"], out_path=out_path
-        )
-        plot["obj"] = path
-        plot["planta"] = planta
-        plot["conteudo"] = generate_estufa_conteudo(rng, layer)
+        plot.update(_montar_estufa(rng, layer, i, out_dir))
     elif plot["tipo"] == "gazebo":
         out_path = os.path.join(out_dir, f"camada{layer}_gazebo_{i}.obj")
         path, _ = _generate_gazebo_mesh(rng, out_path=out_path)
@@ -391,6 +530,7 @@ def generate_nivel(
     field_depth=layout.FIELD_DEPTH,
     resolution=65,
     cell_size=2.0,
+    estufa_colossal="auto",
 ):
     """Produtor de níveis no estilo do livro: um mapa de pontos
     (`ynn.pointcrawl`) com a entrada na camada 0 e locais cada vez mais
@@ -400,12 +540,39 @@ def generate_nivel(
     para escolher a banda de conteúdo. O relevo varia só ao redor dos
     locais cujo detalhe pede (`generate_terrain_localizado`).
 
+    As estufas são montadas antes do layout, que precisa dos tamanhos delas
+    pra não as sobrepor (e pra manter as minúsculas afastadas entre si).
+    `estufa_colossal`: "auto" (1 em 30 por estufa), "sempre" (força uma) ou
+    "nunca". Se sair, o nível inteiro fica sob uma estufa colossal, com
+    entrada e saída em lados opostos.
+
     Devolve um dict pronto para virar JSON: `terreno`, `layout` (com
-    `plots` e `arestas`) e `areas` (o conteúdo narrativo dos nós do tipo
-    "area", cruzado por `area_index`)."""
+    `plots`, `arestas` e, se houver, `portas_estufa`), `areas` (o conteúdo
+    narrativo dos nós do tipo "area", cruzado por `area_index`) e, se
+    houver, `estufa_colossal`."""
     grafo = pointcrawl.generate_pointcrawl(rng, profundidade_max, max_nos)
-    plots = pointcrawl.layout_grafo(rng, grafo, field_width, field_depth)
     out_dir = plant_output_dir or PLANT_OUTPUT_DIR
+
+    nos_estufa = [no for no in grafo["nos"] if no["tipo"] == "estufa"]
+    if estufa_colossal == "sempre" and not nos_estufa:
+        no = rng.choice(grafo["nos"])
+        no["tipo"], no["local"] = "estufa", "Estufa de ferro e vidro do tamanho do nível"
+        nos_estufa = [no]
+
+    estufas = {}
+    colossal_no = None
+    for no in nos_estufa:
+        camada = no["profundidade"] + 1
+        if _sorteou_colossal(rng, estufa_colossal) and colossal_no is None:
+            colossal_no = no["id"]
+            estufas[no["id"]] = {"planta": {"porte": "colossal"}, "raio_ocupado": 3.0, "colossal": True}
+        else:
+            estufas[no["id"]] = _montar_estufa(rng, camada, no["id"] + 1, out_dir)
+
+    raios = {id_: campos["raio_ocupado"] for id_, campos in estufas.items()}
+    grupos = {id_: "minuscula" for id_, campos in estufas.items() if campos["planta"].get("porte") == "minuscula"}
+    plots = pointcrawl.layout_grafo(rng, grafo, field_width, field_depth, raios=raios, grupos=grupos)
+    posicao = {p["no_id"]: p for p in plots}
 
     areas = []
     for i, plot in enumerate(plots, start=1):
@@ -423,6 +590,15 @@ def generate_nivel(
             area["no_id"] = plot["no_id"]
             areas.append(area)
             plot["area_index"] = area["index"]
+        elif plot["tipo"] == "estufa":
+            plot.update(estufas[plot["no_id"]])
+            pai = grafo["nos"][plot["no_id"]]["pai"]
+            if "porta_angulo_godot" in plot:
+                alvo = posicao[pai] if pai is not None else None
+                direcao = math.atan2(alvo["z"] - plot["z"], alvo["x"] - plot["x"]) if alvo else math.pi / 2
+                plot["rotacao_y"] = plot["porta_angulo_godot"] - direcao
+                if "espelho_dagua" in plot:
+                    plot["espelho_dagua"]["caminho_angulo"] = direcao
         else:
             _preencher_lote(rng, camada, plot, i, out_dir)
         if "tesouro" in efeitos:
@@ -434,7 +610,11 @@ def generate_nivel(
         resolution=resolution,
         cell_size=cell_size,
     )
-    return {
+    for plot in plots:
+        if "espelho_dagua" in plot:
+            terrain.achatar_circulo(terreno, plot["x"], plot["z"], plot["espelho_dagua"]["raio"], 3.0)
+
+    nivel = {
         "modo": "livro",
         "profundidade_maxima": profundidade_max,
         "terreno": terreno,
@@ -446,3 +626,13 @@ def generate_nivel(
         },
         "areas": areas,
     }
+    if colossal_no is not None:
+        afastamento = max(math.hypot(p["x"], p["z"]) for p in plots)
+        colossal = _montar_estufa_colossal(rng, out_dir, min(64.0, max(55.0, afastamento + 12.0)))
+        mais_fundo = max(grafo["nos"], key=lambda no: (no["profundidade"], no["id"]))["id"]
+        entrada, saida = colossal["portas"]
+        entrada["no_id"], saida["no_id"] = 0, mais_fundo
+        posicao[mais_fundo]["saida_nivel"] = True
+        nivel["layout"]["portas_estufa"] = colossal["portas"]
+        nivel["estufa_colossal"] = colossal
+    return nivel

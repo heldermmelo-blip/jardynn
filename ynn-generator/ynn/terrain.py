@@ -141,3 +141,22 @@ def generate_terrain_localizado(rng, pontos, resolution=65, cell_size=2.0, raio_
         "alturas": alturas,
         "localizado": True,
     }
+
+
+def achatar_circulo(terreno, x, z, raio, margem=3.0):
+    """Aplaina (z = 0) o relevo dentro de um círculo de `raio` metros em
+    (x, z), com uma rampa suave de `margem` metros até o relevo original —
+    pra pôr um espelho d'água sem o chão furar a superfície. Altera
+    `terreno["alturas"]` no lugar."""
+    size = terreno["resolucao"]
+    cell = terreno["tamanho_celula"]
+    meia = (size - 1) / 2
+    for j in range(size):
+        pz = (j - meia) * cell
+        for i in range(size):
+            px = (i - meia) * cell
+            d = math.hypot(px - x, pz - z)
+            if d >= raio + margem:
+                continue
+            peso = 0.0 if d <= raio else (d - raio) / margem
+            terreno["alturas"][j][i] *= peso

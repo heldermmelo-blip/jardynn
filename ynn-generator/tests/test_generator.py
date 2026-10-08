@@ -179,20 +179,6 @@ def test_generate_layout_camada_populates_structure_meshes():
         assert "plantas_obj" not in plot
 
 
-def test_estufa_planta_follows_dice_table():
-    from ynn.generator import ESTUFA_DADOS, generate_estufa_planta
-
-    vistos = set()
-    for seed in range(300):
-        planta = generate_estufa_planta(random.Random(seed))
-        info = ESTUFA_DADOS[planta["dado"]]
-        assert planta["lados"] == info["lados"] == planta["portas"]
-        assert planta["andares"] == info["andares"]
-        assert planta["raio"] == info["raio"]
-        vistos.add(planta["dado"])
-    assert vistos == set(ESTUFA_DADOS)  # todos os tamanhos aparecem
-
-
 def test_estufa_bigger_dice_are_bigger_and_taller():
     from ynn.generator import ESTUFA_DADOS
 
