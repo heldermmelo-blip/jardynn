@@ -77,6 +77,7 @@ def test_water_mirror_happens_one_in_ten_and_only_for_the_tiny(monkeypatch):
         return "x.obj", {"n_alas": 0, "pegadas": [quadrado], "raio_ocupado": 2.0, "portas_angulos": [0.5], "malhas": {}}
 
     monkeypatch.setattr(generator, "_generate_greenhouse_mesh", fake_mesh)
+    monkeypatch.setattr(generator, "sortear_flora_interna", lambda *a, **k: {})  # sem gerar malhas nas 4000 estufas
     pequenas = com_espelho = 0
     for seed in range(4000):
         campos = generator._montar_estufa(random.Random(seed), 1, 1, ".")
@@ -165,3 +166,105 @@ def test_never_mode_has_no_level_sized_greenhouse(tmp_path):
     )
     assert "estufa_colossal" not in nivel and "portas_estufa" not in nivel["layout"]
     assert not any(p.get("colossal") for p in nivel["layout"]["plots"])
+
+
+# --- flora de dentro das estufas -------------------------------------------------
+
+QUADRADO = [(-4.0, -3.0), (4.0, -3.0), (4.0, 3.0), (-4.0, 3.0)]
+
+
+@pytest.fixture
+def sem_malhas(monkeypatch):
+    """Troca a geração de malha de planta por um nome de arquivo falso: os
+    testes de sorteio não precisam do .obj."""
+    monkeypatch.setattr(generator, "_generate_plant_mesh", lambda rng, especie, out_path=None: (out_path, []))
+
+
+def _flora(seed, **kw):
+    argumentos = dict(poligonos=[QUADRADO], raio=4.0, ruina=False, out_dir=".", prefixo="t")
+    argumentos.update(kw)
+    return generator.sortear_flora_interna(random.Random(seed), **argumentos)
+
+
+def test_flora_densities_vary_from_empty_to_jungle(sem_malhas):
+    contagem = {}
+    for seed in range(600):
+        f = _flora(seed)
+        contagem[f["densidade"]] = contagem.get(f["densidade"], 0) + 1
+        if f["densidade"] == "vazia":
+            assert f["plantas"] == []
+    assert set(contagem) == set(generator.ESTUFA_DENSIDADES)  # de vazia a selva
+    assert contagem["selva"] > 40 and contagem["vazia"] > 15
+
+
+def test_ruined_greenhouses_are_sparser_and_have_dead_plants(sem_malhas):
+    vivas = [_flora(s, ruina=False) for s in range(300)]
+    ruinas = [_flora(s, ruina=True) for s in range(300)]
+    assert all(f["mortas"] == 0.0 and not any(p["morta"] for p in f["plantas"]) for f in vivas)
+    assert all(0.4 <= f["mortas"] <= 0.9 for f in ruinas)
+    assert not any(f["densidade"] == "selva" for f in ruinas)
+    media = lambda fs: sum(len(f["plantas"]) for f in fs) / len(fs)
+    assert media(ruinas) < media(vivas)
+    com_plantas = [f for f in ruinas if len(f["plantas"]) >= 8]
+    assert com_plantas and any(p["morta"] for f in com_plantas for p in f["plantas"])
+
+
+def test_every_greenhouse_gets_its_own_mix_of_species(sem_malhas):
+    combinacoes = {tuple(sorted(_flora(s)["especies"])) for s in range(200)}
+    assert len(combinacoes) >= 25  # "variam loucamente"
+    f = _flora(3, tema="deserto")
+    assert set(f["especies"]) <= set(generator.ESTUFA_TEMAS["deserto"]) and f["tema"] == "deserto"
+
+
+def test_small_greenhouses_get_no_tall_species_and_smaller_plants(sem_malhas):
+    for seed in range(120):
+        f = _flora(seed, raio=1.6, poligonos=[[(-1.2, -1.2), (1.2, -1.2), (1.2, 1.2), (-1.2, 1.2)]], densidade="selva")
+        assert not set(f["especies"]) & set(generator.ESTUFA_ESPECIES_ALTAS)
+        assert all(p["escala"] <= 0.4 * 1.3 + 1e-6 for p in f["plantas"])
+
+
+def test_plants_stay_inside_the_footprint_and_away_from_avoided_spots(sem_malhas):
+    evitar = [(0.0, 0.0, 1.5)]
+    for seed in range(40):
+        f = _flora(seed, densidade="selva", evitar=evitar)
+        assert f["plantas"]
+        for p in f["plantas"]:
+            assert abs(p["x"]) <= 4.0 - generator.ESTUFA_FLORA_MARGEM + 1e-6
+            assert abs(p["z"]) <= 3.0 - generator.ESTUFA_FLORA_MARGEM + 1e-6
+            assert math.hypot(p["x"], p["z"]) >= 1.5
+
+
+def test_flora_count_is_capped_and_deterministic(sem_malhas):
+    grande = [[(-60.0, -60.0), (60.0, -60.0), (60.0, 60.0), (-60.0, 60.0)]]
+    f = _flora(1, poligonos=grande, raio=30.0, densidade="selva")
+    assert len(f["plantas"]) == generator.ESTUFA_FLORA_MAX_PLANTAS
+    assert _flora(7) == _flora(7)
+
+
+def test_flora_does_not_disturb_the_level_random_stream(sem_malhas, monkeypatch):
+    def fake_mesh(rng, **kw):
+        return "x.obj", {"n_alas": 0, "pegadas": [QUADRADO], "raio_ocupado": 4.0, "portas_angulos": [0.5], "malhas": {}}
+
+    monkeypatch.setattr(generator, "_generate_greenhouse_mesh", fake_mesh)
+    com, sem = random.Random(11), random.Random(11)
+    generator._montar_estufa(com, 1, 1, ".")
+    monkeypatch.setattr(generator, "sortear_flora_interna", lambda *a, **k: {})
+    generator._montar_estufa(sem, 1, 1, ".")
+    assert com.random() == sem.random()
+
+
+def test_colossal_greenhouse_is_a_tropical_garden_that_avoids_the_level_content(tmp_path):
+    nivel = generator.generate_nivel(
+        random.Random(5), profundidade_max=2, max_nos=6, plant_output_dir=str(tmp_path), estufa_colossal="sempre"
+    )
+    flora = nivel["estufa_colossal"]["flora_interna"]
+    assert flora["tema"] == "tropical" and flora["plantas"]
+    assert set(flora["especies"]) <= set(generator.ESTUFA_TEMAS["tropical"])
+    raio = nivel["estufa_colossal"]["raio"]
+    for p in flora["plantas"]:
+        assert math.hypot(p["x"], p["z"]) <= raio
+        for plot in nivel["layout"]["plots"]:
+            assert math.hypot(p["x"] - plot["x"], p["z"] - plot["z"]) >= plot.get("raio_ocupado", 6.0)
+    for plot in nivel["layout"]["plots"]:
+        if plot["tipo"] == "estufa" and not plot.get("colossal"):
+            assert "flora_interna" in plot

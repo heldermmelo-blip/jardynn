@@ -2,6 +2,7 @@
 
 import math
 import os
+import random
 import sys
 
 from . import layout, pointcrawl, tables, terrain
@@ -93,6 +94,34 @@ ESTUFA_XADREZ_CHANCE = 0.3
 ESTUFA_ESPELHO_CHANCE = 1 / 10
 ESTUFA_MAX_ANDARES = 3
 ESTUFA_MOLDURAS = ("verde", "verdete", "branca", "preta")
+
+# Flora de dentro das estufas: varia loucamente de uma pra outra. Cada estufa
+# sorteia um tema (ou uma mistura de espécies de vários) e uma densidade,
+# desde vazia até uma selva fechada; as em ruína têm menos plantas e boa
+# parte delas morta. Espécies são de `gielis.plants`.
+ESTUFA_TEMAS = {
+    "deserto": ("cacto_coluna", "cacto_barril", "agave"),
+    "tropical": ("palmeira", "folha_larga", "samambaia", "videira"),
+    "formal": ("topiaria", "cipreste", "flor", "arbusto"),
+    "sombra": ("samambaia", "cogumelo", "videira", "arbusto"),
+}
+ESTUFA_TEMA_MISTO_CHANCE = 0.3
+ESTUFA_ESPECIES_ALTAS = ("palmeira", "cipreste")  # não cabem nas pequenas
+ESTUFA_FLORA_ALTURA_MIN_RAIO = 3.2
+# densidade -> (plantas por m², peso se conservada, peso se em ruína)
+ESTUFA_DENSIDADES = {
+    "vazia": (0.0, 1, 3),
+    "rala": (0.05, 3, 4),
+    "media": (0.12, 4, 3),
+    "densa": (0.25, 3, 1),
+    "selva": (0.5, 2, 0),
+}
+ESTUFA_FLORA_VARIANTES = (2, 3)
+ESTUFA_FLORA_MAX_PLANTAS = 260
+ESTUFA_FLORA_MARGEM = 0.35  # folga da parede, em metros
+ESTUFA_MORTAS_RUINA = (0.4, 0.9)
+ESTUFA_COLOSSAL_FLORA_MAX = 500
+ESTUFA_COLOSSAL_FLORA_ESCALA = 2.5  # o vidro dela é enorme: plantas maiores
 
 ESTUFA_COLOSSAL_TEXTO = (
     "O nível inteiro está sob o vidro de uma estufa colossal. Os aventureiros entram por um portal "
@@ -327,6 +356,97 @@ def _sorteou_colossal(rng, modo):
     return rng.random() < ESTUFA_COLOSSAL_CHANCE
 
 
+def _dentro_do_poligono(px, pz, poligono, margem):
+    """Ponto dentro de um polígono convexo, a pelo menos `margem` de cada
+    lado."""
+    n = len(poligono)
+    area2 = sum(poligono[k][0] * poligono[(k + 1) % n][1] - poligono[(k + 1) % n][0] * poligono[k][1] for k in range(n))
+    sinal = 1.0 if area2 > 0 else -1.0
+    for k in range(n):
+        x0, z0 = poligono[k]
+        x1, z1 = poligono[(k + 1) % n]
+        comprimento = math.hypot(x1 - x0, z1 - z0)
+        if comprimento < 1e-9:
+            continue
+        distancia = sinal * ((x1 - x0) * (pz - z0) - (z1 - z0) * (px - x0)) / comprimento
+        if distancia < margem:
+            return False
+    return True
+
+
+def _area_poligono(poligono):
+    n = len(poligono)
+    return abs(sum(poligono[k][0] * poligono[(k + 1) % n][1] - poligono[(k + 1) % n][0] * poligono[k][1] for k in range(n))) / 2.0
+
+
+def sortear_flora_interna(
+    rng, poligonos, raio, ruina, out_dir, prefixo, max_plantas=ESTUFA_FLORA_MAX_PLANTAS, tema=None, densidade=None, evitar=(), escala_extra=1.0
+):
+    """Sorteia a flora de dentro de uma estufa e gera as malhas. `poligonos`
+    são as pegadas convexas dela no plano (x, z), em coordenadas locais do
+    Godot; `evitar` é uma lista de `(x, z, raio)` onde não plantar. Devolve
+    `tema`, `densidade`, `mortas` (fração de plantas mortas), `especies` e
+    `plantas` (uma por exemplar: `especie`, `obj`, `x`, `z`, `escala`, `rot`,
+    `morta`). `escala_extra` multiplica o tamanho de todas."""
+    if tema is None:
+        if rng.random() < ESTUFA_TEMA_MISTO_CHANCE:
+            tema = "misto"
+        else:
+            tema = rng.choice(sorted(ESTUFA_TEMAS))
+    if tema == "misto":
+        todas = sorted({e for lista in ESTUFA_TEMAS.values() for e in lista})
+    else:
+        todas = list(ESTUFA_TEMAS[tema])
+    if raio < ESTUFA_FLORA_ALTURA_MIN_RAIO:
+        todas = [e for e in todas if e not in ESTUFA_ESPECIES_ALTAS] or ["arbusto"]
+    n_especies = rng.randint(2, min(5, len(todas))) if len(todas) > 1 else 1
+    especies = rng.sample(todas, n_especies)
+
+    if densidade is None:
+        nomes = list(ESTUFA_DENSIDADES)
+        pesos = [ESTUFA_DENSIDADES[n][2 if ruina else 1] for n in nomes]
+        densidade = rng.choices(nomes, weights=pesos)[0]
+    taxa = ESTUFA_DENSIDADES[densidade][0]
+    mortas = rng.uniform(*ESTUFA_MORTAS_RUINA) if ruina else 0.0
+
+    area = sum(_area_poligono(poly) for poly in poligonos)
+    quantidade = 0 if taxa == 0.0 else min(max_plantas, max(2, round(area * taxa)))
+
+    escala_max = 1.0 if raio >= 4.0 else max(0.4, raio / 4.0)
+    plantas = []
+    caminhos = {}
+    if quantidade:
+        todos = [pt for poly in poligonos for pt in poly]
+        x_min, x_max = min(p[0] for p in todos), max(p[0] for p in todos)
+        z_min, z_max = min(p[1] for p in todos), max(p[1] for p in todos)
+        for especie in especies:
+            caminhos[especie] = []
+            for v in range(1, rng.randint(*ESTUFA_FLORA_VARIANTES) + 1):
+                path = os.path.join(out_dir, f"{prefixo}_flora_{especie}_{v}.obj")
+                caminhos[especie].append(_generate_plant_mesh(rng, especie, out_path=path)[0])
+        tentativas = 0
+        while len(plantas) < quantidade and tentativas < quantidade * 40:
+            tentativas += 1
+            px, pz = rng.uniform(x_min, x_max), rng.uniform(z_min, z_max)
+            if not any(_dentro_do_poligono(px, pz, poly, ESTUFA_FLORA_MARGEM) for poly in poligonos):
+                continue
+            if any(math.hypot(px - ex, pz - ez) < er for ex, ez, er in evitar):
+                continue
+            especie = rng.choice(especies)
+            plantas.append(
+                {
+                    "especie": especie,
+                    "obj": rng.choice(caminhos[especie]),
+                    "x": round(px, 3),
+                    "z": round(pz, 3),
+                    "escala": round(rng.uniform(0.8, 1.3) * escala_max * escala_extra, 3),
+                    "rot": round(rng.uniform(0.0, math.tau), 3),
+                    "morta": rng.random() < mortas,
+                }
+            )
+    return {"tema": tema, "densidade": densidade, "mortas": round(mortas, 2), "especies": especies, "plantas": plantas}
+
+
 def _montar_estufa(rng, layer, i, out_dir):
     """Sorteia a planta de uma estufa e gera suas malhas (uma por material).
     Devolve os campos que vão no lote: `planta`, `obj` (a moldura), `malhas`,
@@ -361,13 +481,23 @@ def _montar_estufa(rng, layer, i, out_dir):
     }
     if info["portas_angulos"]:
         campos["porta_angulo_godot"] = -info["portas_angulos"][0]
+    # rng próprio (semeado pela planta): a flora não muda o resto do nível
+    flora_rng = random.Random(f"flora-{layer}-{i}-{planta['raio']:.3f}-{planta['lados']}")
+    campos["flora_interna"] = sortear_flora_interna(
+        flora_rng,
+        campos["pegadas"],
+        planta["raio"],
+        planta["estado"] == "lastimavel",
+        out_dir,
+        f"camada{layer}_estufa_{i}",
+    )
     if espelho is not None:
         campos["espelho_dagua"] = espelho
         campos["raio_ocupado"] = max(info["raio_ocupado"], espelho["raio"] + 1.0)
     return campos
 
 
-def _montar_estufa_colossal(rng, out_dir, raio):
+def _montar_estufa_colossal(rng, out_dir, raio, evitar=()):
     """A estufa cuja circunferência abarca o nível inteiro: um domo de 32
     lados e 3 pavimentos centrado na origem, com um portal de entrada do lado
     da entrada do mapa (z negativo) e outro de saída no lado oposto."""
@@ -398,10 +528,25 @@ def _montar_estufa_colossal(rng, out_dir, raio):
         portas_angulos=[math.pi / 2, -math.pi / 2],
         out_path=os.path.join(out_dir, "nivel_estufa_colossal.obj"),
     )
+    disco = [(math.cos(math.tau * k / 32) * (raio - 1.5), math.sin(math.tau * k / 32) * (raio - 1.5)) for k in range(32)]
+    flora = sortear_flora_interna(
+        random.Random(f"flora-colossal-{raio:.3f}"),
+        [disco],
+        raio,
+        ruina,
+        out_dir,
+        "nivel_estufa_colossal",
+        max_plantas=ESTUFA_COLOSSAL_FLORA_MAX,
+        tema="tropical",
+        densidade="rala" if ruina else "media",
+        evitar=evitar,
+        escala_extra=ESTUFA_COLOSSAL_FLORA_ESCALA,
+    )
     return {
         "planta": planta,
         "obj": path,
         "malhas": info["malhas"],
+        "flora_interna": flora,
         "raio": raio,
         "portas": [{"tipo": "entrada", "x": 0.0, "z": -raio}, {"tipo": "saida", "x": 0.0, "z": raio}],
         "texto": ESTUFA_COLOSSAL_TEXTO,
@@ -628,7 +773,8 @@ def generate_nivel(
     }
     if colossal_no is not None:
         afastamento = max(math.hypot(p["x"], p["z"]) for p in plots)
-        colossal = _montar_estufa_colossal(rng, out_dir, min(64.0, max(55.0, afastamento + 12.0)))
+        evitar = [(p["x"], p["z"], p.get("raio_ocupado", 6.0) + 1.5) for p in plots]
+        colossal = _montar_estufa_colossal(rng, out_dir, min(64.0, max(55.0, afastamento + 12.0)), evitar=evitar)
         mais_fundo = max(grafo["nos"], key=lambda no: (no["profundidade"], no["id"]))["id"]
         entrada, saida = colossal["portas"]
         entrada["no_id"], saida["no_id"] = 0, mais_fundo

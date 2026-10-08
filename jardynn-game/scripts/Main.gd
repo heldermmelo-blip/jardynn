@@ -49,6 +49,21 @@ const COLOR_PISO_PRETO := Color(0.06, 0.06, 0.07)
 const COLOR_PISO_BRANCO := Color(0.88, 0.87, 0.82)
 const COLOR_AGUA := Color(0.32, 0.5, 0.58, 0.72)
 const COLOR_CALCADA := Color(0.7, 0.68, 0.62)
+const COLOR_PLANTA_MORTA := Color(0.36, 0.27, 0.16)
+const COR_FLORA_ESTUFA := {
+	"cacto_coluna": Color(0.3, 0.55, 0.32),
+	"cacto_barril": Color(0.35, 0.6, 0.3),
+	"agave": Color(0.45, 0.62, 0.55),
+	"palmeira": Color(0.22, 0.5, 0.2),
+	"folha_larga": Color(0.18, 0.6, 0.25),
+	"samambaia": Color(0.25, 0.55, 0.2),
+	"videira": Color(0.2, 0.42, 0.2),
+	"flor": Color(0.85, 0.4, 0.55),
+	"arbusto": Color(0.28, 0.5, 0.22),
+	"cipreste": Color(0.1, 0.3, 0.16),
+	"topiaria": Color(0.2, 0.46, 0.2),
+	"cogumelo": Color(0.75, 0.35, 0.3),
+}
 const COR_MOLDURA := {
 	"verde": Color(0.16, 0.36, 0.24),
 	"verdete": Color(0.3, 0.55, 0.5),
@@ -187,6 +202,7 @@ func _spawn_estufa(plot: Dictionary, x: float, z: float, terreno) -> void:
 	raiz.rotation.y = plot.get("rotacao_y", 0.0)
 	add_child(raiz)
 	_spawn_malhas_estufa(plot.get("malhas", {}), planta, raiz)
+	_spawn_flora_interna(plot.get("flora_interna"), raiz)
 
 
 ## Uma malha por material: o .obj da moldura (`malhas.moldura`) mais as
@@ -216,6 +232,42 @@ func _spawn_malhas_estufa(malhas: Dictionary, planta: Dictionary, pai: Node3D) -
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		else:
 			mi.material_override = _material(cores[grupo], true)
+		pai.add_child(mi)
+
+
+## Plantas de dentro da estufa (`flora_interna`): cada exemplar já vem com
+## posição local, escala, giro e se está morto (as estufas em ruína têm
+## plantas secas, em marrom). Vão sob o mesmo nó da estufa, então giram com
+## ela.
+func _spawn_flora_interna(flora, pai: Node3D) -> void:
+	if flora == null or flora.is_empty():
+		return
+	var plantas: Array = flora.get("plantas", [])
+	print("  Flora interna: %s, tema %s, %s plantas (%s)" % [flora.get("densidade", "?"), flora.get("tema", "?"), str(plantas.size()), ", ".join(PackedStringArray(flora.get("especies", [])))])
+	if flora.get("mortas", 0.0) > 0.0:
+		print("  %d%% delas estão mortas." % int(round(float(flora.get("mortas")) * 100.0)))
+	var meshes := {}
+	var materiais := {}
+	for planta in plantas:
+		var caminho: String = planta.get("obj", "")
+		if caminho == "":
+			continue
+		if not meshes.has(caminho):
+			meshes[caminho] = load(plants_dir.path_join(caminho.replace("\\", "/").get_file()))
+		var mesh = meshes[caminho]
+		if mesh == null:
+			continue
+		var morta: bool = planta.get("morta", false)
+		var especie = str(planta.get("especie"))
+		var chave = "morta" if morta else especie
+		if not materiais.has(chave):
+			materiais[chave] = _material(COLOR_PLANTA_MORTA if morta else COR_FLORA_ESTUFA.get(especie, COLOR_PLANTA), true)
+		var mi = MeshInstance3D.new()
+		mi.mesh = mesh
+		mi.material_override = materiais[chave]
+		mi.position = Vector3(planta.get("x", 0.0), 0.05, planta.get("z", 0.0))
+		mi.rotation.y = planta.get("rot", 0.0)
+		mi.scale = Vector3.ONE * float(planta.get("escala", 1.0))
 		pai.add_child(mi)
 
 
@@ -299,6 +351,7 @@ func _spawn_estufa_colossal(colossal: Dictionary, posicoes: Dictionary) -> void:
 	raiz.position = Vector3(0.0, 0.0, 0.0)
 	add_child(raiz)
 	_spawn_malhas_estufa(colossal.get("malhas", {}), planta, raiz)
+	_spawn_flora_interna(colossal.get("flora_interna"), raiz)
 
 	for porta in colossal.get("portas", []):
 		var tipo = str(porta.get("tipo"))

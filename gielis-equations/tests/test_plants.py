@@ -34,3 +34,17 @@ def test_unknown_species_raises():
         pass
     else:
         raise AssertionError("esperava ValueError para espécie desconhecida")
+
+
+def test_greenhouse_species_exist_and_have_plausible_sizes(tmp_path):
+    novas = ("cacto_coluna", "cacto_barril", "agave", "palmeira", "folha_larga", "cipreste", "topiaria")
+    assert all(n in SPECIES for n in novas)
+    for species in novas:
+        for seed in range(5):
+            path, _ = generate_plant(random.Random(seed), species, out_path=os.path.join(tmp_path, f"{species}.obj"))
+            with open(path) as f:
+                pts = [[float(c) for c in line.split()[1:4]] for line in f if line.startswith("v ")]
+            assert len(pts) > 20
+            xs, ys, zs = zip(*pts)  # o .obj sai em Y para cima (Godot)
+            assert 0.15 <= max(ys) - min(ys) <= 3.2  # nem pó, nem gigante
+            assert max(max(map(abs, xs)), max(map(abs, zs))) < 1.5

@@ -175,10 +175,169 @@ def _generate_fern(rng):
     return parts, [stub]
 
 
+def _uv_sphere(center, radius, squash=1.0, n_lat=8, n_lon=14):
+    """Esfera (ou elipsoide achatado em Z por `squash`) como (vértices, faces)."""
+    verts = []
+    for i in range(n_lat + 1):
+        theta = np.pi * i / n_lat
+        for j in range(n_lon):
+            phi = 2 * np.pi * j / n_lon
+            verts.append(
+                center
+                + np.array(
+                    [
+                        radius * np.sin(theta) * np.cos(phi),
+                        radius * np.sin(theta) * np.sin(phi),
+                        radius * squash * np.cos(theta),
+                    ]
+                )
+            )
+    faces = []
+    for i in range(n_lat):
+        for j in range(n_lon):
+            a = i * n_lon + j
+            b = i * n_lon + (j + 1) % n_lon
+            c = (i + 1) * n_lon + (j + 1) % n_lon
+            d = (i + 1) * n_lon + j
+            faces.append([a, c, b])
+            faces.append([a, d, c])
+    return np.array(verts), np.array(faces, dtype=int)
+
+
+def _stem(start, end, r0, r1, n_sides=8, n=2.0):
+    seg = dict(start=np.asarray(start, float), end=np.asarray(end, float), r0=r0, r1=r1, depth=0)
+    return seg, tube_mesh(seg, n_sides=n_sides, cross_section_n=n)
+
+
+def _generate_columnar_cactus(rng):
+    """Cacto-coluna: haste verde grossa, com 0 a 3 braços que saem de lado e
+    sobem."""
+    height = rng.uniform(0.6, 1.5)
+    radius = rng.uniform(0.05, 0.09)
+    trunk, mesh = _stem([0, 0, 0], [0, 0, height], radius, radius * 0.85)
+    parts = [mesh, _uv_sphere(np.array([0.0, 0.0, height]), radius * 0.85, squash=0.7)]
+    for _ in range(rng.randint(0, 3)):
+        z0 = height * rng.uniform(0.3, 0.65)
+        ang = rng.uniform(0, 2 * np.pi)
+        out = np.array([np.cos(ang), np.sin(ang), 0.0])
+        elbow = np.array([0.0, 0.0, z0]) + out * rng.uniform(0.15, 0.28)
+        top = elbow + np.array([0.0, 0.0, height * rng.uniform(0.25, 0.5)])
+        r_arm = radius * 0.65
+        parts.append(_stem([0, 0, z0], elbow, r_arm, r_arm)[1])
+        parts.append(_stem(elbow, top, r_arm, r_arm * 0.85)[1])
+        parts.append(_uv_sphere(top, r_arm * 0.85, squash=0.7))
+    return parts, [trunk]
+
+
+def _generate_barrel_cactus(rng):
+    """Cacto-barril: bola achatada, às vezes com uma florzinha no alto."""
+    radius = rng.uniform(0.1, 0.22)
+    center = np.array([0.0, 0.0, radius * 0.8])
+    parts = [_uv_sphere(center, radius, squash=rng.uniform(0.75, 1.1))]
+    if rng.random() < 0.5:
+        bloom_v, bloom_f = foliage.flower_bloom_mesh(n_petals=rng.choice([5, 6, 8]), radius=radius * 0.5)
+        parts.append((bloom_v + np.array([0.0, 0.0, radius * 1.65]), bloom_f))
+    stub = dict(start=np.zeros(3), end=np.array([0.0, 0.0, radius * 0.3]), r0=radius * 0.5, r1=radius * 0.5, depth=0)
+    return parts, [stub]
+
+
+def _generate_agave(rng):
+    """Agave: roseta de folhas duras, longas, que sobem em leque."""
+    base = np.array([0.0, 0.0, 0.03])
+    up_tangent = np.array([0.0, 0.0, -1.0])  # tangente para baixo: o "droop" vira elevação
+    parts = []
+    n_leaves = rng.randint(10, 16)
+    for k in range(n_leaves):
+        twist = 2 * np.pi * k / n_leaves + rng.uniform(-0.15, 0.15)
+        local_v, local_f = foliage.leaf_mesh(
+            shape_power=rng.uniform(0.9, 1.4), length=rng.uniform(0.35, 0.7), width_ratio=rng.uniform(0.12, 0.2)
+        )
+        world_v = foliage.place_leaf(local_v, base, up_tangent, twist=twist, droop_deg=rng.uniform(35, 70))
+        parts.append((world_v, local_f))
+    stub = dict(start=np.zeros(3), end=base, r0=0.04, r1=0.04, depth=0)
+    parts.append(tube_mesh(stub, n_sides=6, cross_section_n=2.0))
+    return parts, [stub]
+
+
+def _generate_palm(rng):
+    """Palmeira: tronco fino e alto, com uma coroa de folhas longas que caem
+    em arco."""
+    height = rng.uniform(1.3, 2.4)
+    lean = rng.uniform(-0.12, 0.12)
+    top = np.array([lean, 0.0, height])
+    trunk, mesh = _stem([0, 0, 0], top, 0.06, 0.04, n=2.2)
+    parts = [mesh]
+    n_fronds = rng.randint(7, 11)
+    for k in range(n_fronds):
+        twist = 2 * np.pi * k / n_fronds + rng.uniform(-0.2, 0.2)
+        local_v, local_f = foliage.leaf_mesh(
+            shape_power=rng.uniform(1.1, 1.6), length=rng.uniform(0.6, 1.0), width_ratio=0.1
+        )
+        if k % 3 == 0:  # as folhas novas sobem
+            world_v = foliage.place_leaf(local_v, top, np.array([0.0, 0.0, -1.0]), twist=twist, droop_deg=rng.uniform(40, 65))
+        else:
+            world_v = foliage.place_leaf(local_v, top, np.array([0.0, 0.0, 1.0]), twist=twist, droop_deg=rng.uniform(20, 55))
+        parts.append((world_v, local_f))
+    return parts, [trunk]
+
+
+def _generate_broadleaf(rng):
+    """Folha-larga (bananeira, costela-de-adão): vários pecíolos curtos com
+    folhas grandes e arredondadas."""
+    parts = []
+    stems = []
+    n = rng.randint(4, 8)
+    for k in range(n):
+        ang = 2 * np.pi * k / n + rng.uniform(-0.3, 0.3)
+        out = np.array([np.cos(ang), np.sin(ang), 0.0])
+        tip = out * rng.uniform(0.08, 0.2) + np.array([0.0, 0.0, rng.uniform(0.25, 0.6)])
+        seg, mesh = _stem([0, 0, 0], tip, 0.012, 0.008, n_sides=6)
+        stems.append(seg)
+        parts.append(mesh)
+        local_v, local_f = foliage.leaf_mesh(
+            shape_power=rng.uniform(0.55, 0.9), length=rng.uniform(0.35, 0.65), width_ratio=rng.uniform(0.45, 0.7)
+        )
+        parts.append((foliage.place_leaf(local_v, tip, tip, twist=rng.uniform(0, 6.28), droop_deg=rng.uniform(25, 55)), local_f))
+    return parts, stems
+
+
+def _generate_cypress(rng):
+    """Cipreste: tronco curto com cones sobrepostos, estreito e alto."""
+    height = rng.uniform(1.0, 1.9)
+    radius = rng.uniform(0.14, 0.24)
+    stub = dict(start=np.zeros(3), end=np.array([0.0, 0.0, height * 0.12]), r0=0.03, r1=0.025, depth=0)
+    parts = [tube_mesh(stub, n_sides=6, cross_section_n=2.0)]
+    n_tiers = 3
+    for t in range(n_tiers):
+        z0 = height * (0.08 + 0.26 * t)
+        r = radius * (1.0 - 0.28 * t)
+        cap_v, cap_f = foliage.cap_mesh(radius=r, height=height * 0.4, n_sides=12, cross_section_n=2.0)
+        parts.append((cap_v + np.array([0.0, 0.0, z0]), cap_f))
+    return parts, [stub]
+
+
+def _generate_topiary(rng):
+    """Topiaria: tronco fino com uma bola de folhagem aparada (às vezes duas)."""
+    trunk_h = rng.uniform(0.25, 0.6)
+    radius = rng.uniform(0.18, 0.3)
+    trunk, mesh = _stem([0, 0, 0], [0, 0, trunk_h], 0.02, 0.018, n_sides=6)
+    parts = [mesh, _uv_sphere(np.array([0.0, 0.0, trunk_h + radius * 0.8]), radius)]
+    if rng.random() < 0.4:
+        parts.append(_uv_sphere(np.array([0.0, 0.0, trunk_h + radius * 1.9]), radius * 0.6))
+    return parts, [trunk]
+
+
 SPECIAL_SPECIES = {
     "flor": _generate_flower,
     "cogumelo": _generate_mushroom,
     "samambaia": _generate_fern,
+    "cacto_coluna": _generate_columnar_cactus,
+    "cacto_barril": _generate_barrel_cactus,
+    "agave": _generate_agave,
+    "palmeira": _generate_palm,
+    "folha_larga": _generate_broadleaf,
+    "cipreste": _generate_cypress,
+    "topiaria": _generate_topiary,
 }
 
 SPECIES = sorted(set(BRANCHING_SPECIES) | set(SPECIAL_SPECIES))

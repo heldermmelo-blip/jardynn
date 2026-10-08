@@ -95,7 +95,9 @@ leva até ela. Cada uma imprime seu conteúdo (`plot.conteudo`: texto, valor em
 ouro ou criatura). Uma minúscula pode estar no meio de um espelho d'água
 (disco translúcido + calçada até a porta), e a estufa colossal
 (`estufa_colossal`) cobre o nível inteiro, com um aro luminoso verde na
-entrada e um âmbar na saída, ligados por trilhas aos nós extremos. Gazebos
+entrada e um âmbar na saída, ligados por trilhas aos nós extremos. As estufas trazem a flora de dentro (`plot.flora_interna`: tema, densidade e
+um exemplar por planta, com posição, escala e giro; as mortas ficam marrons).
+Gazebos
 imprimem estado, bibelô, tesouro e a regra de abrigo noturno.
 
 A torre é tratada à parte: além da malha, imprime no console o conteúdo

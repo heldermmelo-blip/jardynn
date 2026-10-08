@@ -111,6 +111,15 @@ o tubo de seção de Lamé e o domo da Superfórmula de `gielis.plants`):
   de ouro, ervas, frutos, flores venenosas, esporos, limo no teto, ou uma
   criatura — `Jarro Carnívoro` e `Esqueleto Vegetal` (`ynn/creatures.py`),
   só do jardim profundo em diante, assim como a estufa lacrada.
+  **A flora de dentro varia loucamente** (`sortear_flora_interna`, em
+  `plot.flora_interna`): cada estufa sorteia um tema (`deserto`, `tropical`,
+  `formal`, `sombra` ou `misto`) e de 2 a 5 espécies dele, e uma densidade de
+  `vazia` a `selva` (plantas por m²); as pequenas não recebem espécies altas e
+  as em ruína têm menos plantas, 40–90% delas mortas. As espécies novas, em
+  `gielis.plants`, são cacto-coluna, cacto-barril, agave, palmeira,
+  folha-larga, cipreste e topiaria. A colossal vira um jardim tropical
+  (plantas maiores, desviando dos locais do nível). O sorteio usa um `rng`
+  próprio, então não muda o resto do nível.
   Duas estufas minúsculas nunca ficam coladas (`DISTANCIA_MESMO_GRUPO`), e
   **1 minúscula em 10** fica no meio de um **espelho d'água**
   (`plot.espelho_dagua`: raio e `caminho_angulo`; o relevo é aplainado sob

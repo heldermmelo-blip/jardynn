@@ -61,6 +61,13 @@ def _render_estrutura(plot):
             f"{', piso em xadrez' if planta['piso_xadrez'] else ''}"
             f"{', no meio de um espelho d' + chr(39) + 'água' if plot.get('espelho_dagua') else ''}"
         )
+        flora = plot.get("flora_interna")
+        if flora:
+            mortas = f", {round(flora['mortas'] * 100)}% mortas" if flora["mortas"] else ""
+            lines.append(
+                f"  - flora {flora['densidade']} ({len(flora['plantas'])} plantas, tema {flora['tema']}: "
+                f"{', '.join(flora['especies'])}{mortas})"
+            )
         conteudo = plot["conteudo"]
         lines.append(f"  - {conteudo['texto']}")
         if conteudo.get("valor_ouro") is not None:
