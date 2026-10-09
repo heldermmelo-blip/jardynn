@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://7hcogilod8qs"
+path="res://.godot/imported/camada5_canteiro_13_rosa_6.obj-e5e7eb04c6e362805b35386f631a081d.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada5_canteiro_13_rosa_6.obj-e5e7eb04c6e362805b35386f631a081d.mesh"]
+
+source_file="res://assets/plants/camada5_canteiro_13_rosa_6.obj"
+dest_files=["res://.godot/imported/camada5_canteiro_13_rosa_6.obj-e5e7eb04c6e362805b35386f631a081d.mesh", "res://.godot/imported/camada5_canteiro_13_rosa_6.obj-e5e7eb04c6e362805b35386f631a081d.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

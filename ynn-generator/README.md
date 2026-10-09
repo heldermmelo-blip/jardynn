@@ -23,10 +23,9 @@ não teria uma única planta solitária por canteiro. Vegetação de cobertura
 Veja `camada2_com_plantas_exemplo.md` para um exemplo (nota: gerado antes
 dessa mudança, ainda mostra uma malha só por área).
 
-Cerca de 1 em 6 áreas (`FALLEN_BRANCH_CHANCE` em `ynn/generator.py`) também
-ganha de 1 a 3 galhos/troncos caídos ou cortados, via
-`gielis.plants.generate_fallen_branch` — um detrito de jardim sem cuidado,
-não uma espécie viva; os caminhos aparecem em `galhos_caidos_obj`.
+Uma área em ruína (o estado vem do Detalhe do local) ganha de 1 a 3 galhos/troncos caídos ou cortados, via
+`gielis.plants.generate_fallen_branch` — um detrito de jardim sem cuidado, não uma espécie viva; os caminhos
+aparecem em `galhos_caidos_obj`.
 
 ## Modo livro: o mapa de pontos (padrão)
 
@@ -91,63 +90,68 @@ o tubo de seção de Lamé e o domo da Superfórmula de `gielis.plants`):
   piso em anel sem bloquear a entrada. Como cada torre sorteia seu número
   de andares (3 a 8, o `d6+2` do livro) e o conteúdo de cada um, duas
   torres nunca são iguais.
-  Outros efeitos, sorteados por torre (`sortear_extras_torre`): **nem toda
-  torre tem trepadeiras** (60%: hastes de folhas subindo pela parede em
-  manchas, `trepadeiras_obj`, via `gielis.structures.generate_tower_vines`);
-  **40% perdem o telhado** e algo brota lá em cima (`TORRE_BROTO`: árvore,
-  mato, flores, samambaias, cogumelos; `topo_obj` e `conteudo.topo_brotado`),
-  com a malha destelhada (piso de terra e cornija no topo); e **uma em cada
-  dez fica inclinada** (`inclinacao`: 4 a 12 graus, azimute sorteado).
-- **estufa**: de ferro pintado e vidro, com soco de pedra e portas em arco
-  (módulo `gielis.greenhouse`; uma malha `.obj` por material em
-  `plot.malhas`: moldura, vidro, soco, piso xadrez, trepadeiras mortas).
-  Tem **porte** (`generate_estufa_planta`): minúscula (20%, raio ~1,5 m,
-  sem porta), normal (60%) ou imensa (20%, várias alas). Telhado de domo
-  (planta poligonal, até 3 pavimentos com galeria e, às vezes, tambor e
-  pináculo), de abóbada ou de duas águas. As alas seguem um padrão:
-  *palácio* (2), *cruz* (4) ou *muitas alas* (alas saindo de alas); nunca
-  mais de 3 andares. **4 em 10 estão em estado lastimável** (vidros
-  faltando, ferrugem, trepadeiras mortas) e **3 em 10 têm o piso em xadrez
-  preto-e-branco**. Cada estufa sorteia um conteúdo em `ESTUFA_CONTEUDO`
-  (`generate_estufa_conteudo`, em `plot.conteudo`): plantas raras ou gaiolas
-  de ouro, ervas, frutos, flores venenosas, esporos, limo no teto, ou uma
-  criatura — `Jarro Carnívoro` e `Esqueleto Vegetal` (`ynn/creatures.py`),
-  só do jardim profundo em diante, assim como a estufa lacrada.
-  **A flora de dentro varia loucamente** (`sortear_flora_interna`, em
-  `plot.flora_interna`): cada estufa sorteia um tema (`deserto`, `tropical`,
-  `formal`, `sombra` ou `misto`) e de 2 a 5 espécies dele, e uma densidade de
-  `vazia` a `selva` (plantas por m²); as pequenas não recebem espécies altas e
-  as em ruína têm menos plantas, 40–90% delas mortas. As espécies novas, em
-  `gielis.plants`, são cacto-coluna, cacto-barril, agave, palmeira,
-  folha-larga, cipreste e topiaria. A colossal vira um jardim tropical
-  (plantas maiores, desviando dos locais do nível). O sorteio usa um `rng`
-  próprio, então não muda o resto do nível.
-  Duas estufas minúsculas nunca ficam coladas (`DISTANCIA_MESMO_GRUPO`), e
-  **1 minúscula em 10** fica no meio de um **espelho d'água**
-  (`plot.espelho_dagua`: raio e `caminho_angulo`; o relevo é aplainado sob
-  a água e há uma calçada até a porta). A **estufa colossal** é a mais rara
-  de todas (1 em 30 por estufa, `--estufa-colossal auto|sempre|nunca`): o
-  vidro dela cobre o nível inteiro (`estufa_colossal`, raio 55–64 m, 32
-  lados, 3 andares); entra-se por um portal num lado (`layout.portas_estufa`,
-  tipo `entrada`, junto ao nó 0) e só se sai pelo portal do lado oposto
-  (tipo `saida`, junto ao local mais fundo). **Sob a colossal só há alas de
-  vidro**: todos os locais do nível viram vidraças ou orquidários
-  (`tables.ALAS_VIDRO`, `plot.ala`), minúsculos ou normais, cada um com
-  conteúdo de estufa — nada de torre, gazebo, canteiro ou jardim aberto. O
-  orquidário (`generate_orquidario_conteudo`) sempre tem orquídeas que um
-  colecionador compra por 1d10 × profundidade de prata (`valor_prata`), e em
-  metade das vezes mais alguma coisa do conteúdo de estufa.
-- **estruturas pitorescas** (`gielis.pitoresco`, tipos em
-  `generator.PITORESCOS`; uma malha por material em `plot.malhas`, com
-  `raio_ocupado`, `rotacao_y` e o terreno aplainado debaixo): **fonte** de três
-  bacias (às vezes seca), **estátuas** de mármore em terraço (às vezes de costas
-  pro centro), **labirinto** de sebes (perfeito, com vão de entrada virado
-  pro caminho), **mausoléu** de mármore coberto de hera com porta escura,
-  **lago** com nenúfares e juncos ou **lago congelado**, e **gramado de xadrez**
-  com peças gigantes. Entram na tabela de locais (`tables.LOCAIS`) no lugar de
-  áreas genéricas: Labirinto de sebes aparadas, Mausoléu coberto de hera,
-  Gramado de xadrez de peças gigantes, Tanque de nenúfares, Terraço de estátuas de
-  mármore, Fonte de três bacias e Lago congelado fora de estação.
+  Outros efeitos vêm do **Detalhe** do local (`sortear_extras_torre`): a torre é **sempre**
+  coberta de hera (hastes de folhas subindo pela parede, `trepadeiras_obj`, via
+  `gielis.structures.generate_tower_vines`, como no livro); com "Fértil" ela perde o telhado e algo brota lá
+  em cima (`TORRE_BROTO`: árvore, mato, flores, samambaias, cogumelos; `topo_obj` e `conteudo.topo_brotado`),
+  com "Queimado" ou "Fumegante" o telhado queima e o topo fica aberto e enegrecido
+  (`conteudo.topo_queimado`), ambos com a malha destelhada (piso de terra, cornija e parapeito no topo); e
+  quando o chão se mexe ("Estrondo", "Convulso", "Abismos", "Invertido", "Flutuante") a torre fica
+  inclinada (`inclinacao`: 4 a 12 graus, azimute sorteado).
+- **torre** (`gielis.structures.generate_tower`, conteúdo em `generate_torre_conteudo`),
+  como a do livro: um *folly* de tijolo e madeira de ~6 m de largura, com a **porta
+  térrea entreaberta** (a folha gira pra fora), **janelas de veneziana** em quatro setores
+  de cada andar de cima (metade entreaberta, metade fechada: `geometria.janelas`), escada
+  de madeira em espiral, tapete mofado, poças d'água junto às janelas e papel de parede
+  descascando — uma malha por material (`plot.malhas`). **Dá pra entrar por qualquer
+  andar escalando até uma janela** (`plot.escalada`: andares com janela, se há trepadeiras
+  e a regra de escalada, `tables.TORRE_ESCALADA_REGRA`). São `d6+2` andares; **cada andar
+  rola 1d12** em `tables.TORRE_ANDARES` (nada, tesouro, algo mora aqui, algo também
+  explora, móveis, estante, ninhos, teias, esqueleto, rações, retratos, espelho) e o
+  **topo rola 1d12 duas vezes** em `tables.TORRE_TOPO` (por isso `andares` tem uma entrada a
+  mais, com `extra: true`). Mecânicas do livro: a estante esconde um livro de magias de
+  1º nível em 1 de 6; os retratos são 1d4 e cada um vale 100 de ouro × profundidade; o
+  grande tesouro do topo são 3 achados e o monstro poderoso soma os andares à
+  profundidade; a biblioteca tem 1d12 magias de 1º nível, 1d10 de 2º, 1d8 de 3º, 1d6 de
+  4º, 1d4 de 5º e uma de 6º ou mais.
+- **ruína e estilo**: o estado de um lugar vem do **Detalhe** sorteado (tabela do livro, `d20 +
+  profundidade`): só "Bem Cuidado" e "Coberto de Hera" o deixam inteiro; nos demais **o lugar jaz em
+  ruínas** (`plot.estado`, `generator.DETALHES_INTEIROS`) — por isso, quanto mais fundo, mais ruínas, e
+  "Bem Cuidado" só sai nas profundidades 0 a 3. Cada estrutura tem o seu "esquema" de ferragens
+  (`plot.estilo`, de `gielis.ferragens`): **art nouveau** (grades de ferro forjado em curvas de chicote,
+  gavinhas e botões, simétricas, como as portas de Ernest Blerot), **rústico** (corrimão e treliça de
+  ripas de madeira) ou **clássico** (balaustrada de pedra com jarros). Isso vale para as grades das
+  **janelas e da porta** da torre e para o **parapeito** do topo destelhado da torre, do gazebo, do
+  terraço das estátuas e da escadaria. Em ruína, a torre perde pedaços de parede, a porta cai da
+  dobradiça, as venezianas pendem ou somem, balaústres e painéis caem, **jarros tombam**, trechos de
+  corrimão desaparecem e o **musgo** cobre a base; uma área em ruína espalha 1d3 galhos caídos. Duas
+  estruturas vêm de uma foto de jardim abandonado: a **escadaria curva** (`escadaria`, o Jardim do
+  Penhasco: degraus de pedra em anfiteatro em volta de um gramado redondo, muro de arrimo, parapeito
+  com jarros e musgo) e a **casa inclinada** (`casa_inclinada`, as Ruínas de Ynn: casa de dois andares
+  de janelas vazias, torta, com um canto afundado no chão).
+- **o que o Detalhe faz**: "Teto de Vidro" cobre o lugar com uma cúpula de vidro (`plot.cupula_vidro`: o
+  lugar inteiro dentro de uma estufa gigante); "Queimado" e "Fumegante" queimam o telhado da torre;
+  "Fértil" abre o topo e deixa algo brotar; "Estrondo", "Convulso", "Abismos", "Invertido" e "Flutuante"
+  (o chão se mexe) inclinam a torre; "Alagado", "Congelado" e "Queimado" dão ao lugar um disco de água,
+  gelo ou cinza no Godot; "Luminoso" e "Poste de Luz" acendem luzes. A torre é **sempre** coberta de
+  hera, como a do livro.
+- **estufas** (locais "Estufas" e "Orquidários"), como no livro: **um punhado de dados jogados no
+  papel** (`1d4 + 1`, `sortear_dados_estufa`), cada dado uma casa de vidro e ferro (módulo
+  `gielis.greenhouse`, uma malha por material). **A planta baixa é a do dado** (d4, d8 e d20 triângulo; d6 e d10
+  retângulo; d12 pentágono; cada canto, uma porta), **o d12 tem 2 andares e o d20, 3**, e dado maior dá casa
+  maior. **O número tirado diz o que há dentro** (`tables.ESTUFA_CONTEUDO`, na ordem do livro: plantas
+  raras, nada, ervas medicinais, frutas, plantas venenosas, mesas e cadeiras, 1d4+1 jarros carnívoros,
+  sem plantas, limo digestivo, gaiolas de ouro, esporos, esqueletos vegetais; **13 ou mais é a estufa
+  lacrada**, só possível no d20). A flora de cada casa segue o conteúdo (`ESTUFA_FLORA_POR_RESULTADO`:
+  tema e densidade, de vazia a selva), e as de salão (chá, gaiolas) têm piso em xadrez. No **Orquidário**
+  sempre há orquídeas (`1d10 × profundidade` de prata) e os resultados pares são só orquídeas. O estado
+  (inteira ou em ruínas, com painéis faltando, ferrugem e trepadeiras mortas) vem do Detalhe do lugar.
+  Cada conjunto vira `plot.estufas` (uma entrada por dado, com `x`/`z` locais, planta, conteúdo e flora).
+  A **estufa colossal** é o modo `--estufa-colossal sempre`: o vidro cobre o nível inteiro (`estufa_colossal`,
+  raio 55–80 m, 32 lados, 3 andares), entra-se por um portal num lado (`layout.portas_estufa`, tipo
+  `entrada`, junto ao nó 0) e só se sai pelo portal do lado oposto (tipo `saida`, junto ao local mais
+  fundo), e **sob ela só há alas de vidro** (`tables.ALAS_VIDRO`, `plot.ala`: vidraças e orquidários, um dado
+  cada), nada de torre, gazebo ou jardim aberto.
 - **gazebo**: pavilhão aberto (plataforma, 6 ou 8 postes, grade baixa com
   uma abertura de entrada, telhado em cúpula e pináculo). Em
   `plot.conteudo`: estado do pavilhão (`GAZEBO_ESTADO`), um bibelô largado

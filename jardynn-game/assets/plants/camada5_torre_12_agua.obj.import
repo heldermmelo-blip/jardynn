@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://ihdn62vpd2c6"
+path="res://.godot/imported/camada5_torre_12_agua.obj-aacf341e83b87a6353a13049b42dfb3d.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada5_torre_12_agua.obj-aacf341e83b87a6353a13049b42dfb3d.mesh"]
+
+source_file="res://assets/plants/camada5_torre_12_agua.obj"
+dest_files=["res://.godot/imported/camada5_torre_12_agua.obj-aacf341e83b87a6353a13049b42dfb3d.mesh", "res://.godot/imported/camada5_torre_12_agua.obj-aacf341e83b87a6353a13049b42dfb3d.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

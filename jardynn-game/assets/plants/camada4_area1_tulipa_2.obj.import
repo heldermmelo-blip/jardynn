@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dpbq25hf7wcdr"
+path="res://.godot/imported/camada4_area1_tulipa_2.obj-6d6d8984b723c30cc34904b3beb6ea7e.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada4_area1_tulipa_2.obj-6d6d8984b723c30cc34904b3beb6ea7e.mesh"]
+
+source_file="res://assets/plants/camada4_area1_tulipa_2.obj"
+dest_files=["res://.godot/imported/camada4_area1_tulipa_2.obj-6d6d8984b723c30cc34904b3beb6ea7e.mesh", "res://.godot/imported/camada4_area1_tulipa_2.obj-6d6d8984b723c30cc34904b3beb6ea7e.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

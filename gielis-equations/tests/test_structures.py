@@ -24,12 +24,18 @@ def _vertices(path):
         return np.array([[float(c) for c in line.split()[1:4]] for line in f if line.startswith("v ")])
 
 
+def _todas(skeleton):
+    """Vértices de todas as malhas da torre (tijolo, madeira...)."""
+    return np.vstack([_vertices(p) for p in skeleton[0]["malhas"].values()])
+
+
 def test_tower_is_hollow_and_wide_enough_to_enter(tmp_path):
-    path, _ = generate_tower(random.Random(2), 5, out_path=os.path.join(tmp_path, "t.obj"))
-    v = _vertices(path)  # .obj é Y-up: o plano horizontal é (x, z)
+    _, skeleton = generate_tower(random.Random(2), 5, out_path=os.path.join(tmp_path, "t.obj"))
+    v = _vertices(skeleton[0]["malhas"]["tijolo"])  # .obj é Y-up: o plano horizontal é (x, z)
+    madeira = _vertices(skeleton[0]["malhas"]["madeira"])
+    assert (np.hypot(madeira[:, 0], madeira[:, 2]) < 1.3).any()  # escada e mastro no vão central
     radii = np.hypot(v[:, 0], v[:, 2])
     assert radii.max() >= 2.5  # ~6 m de largura: cabe um aventureiro com folga
-    assert (radii < 1.3).any()  # escada e mastro no vão central
     # Paredes só na borda: não há vértices de parede entre o poço e a parede.
     assert not ((radii > 1.9) & (radii < 2.5) & (v[:, 1] > 0.5) & (v[:, 1] < 2.0)).any()
 
@@ -90,10 +96,12 @@ def test_tower_without_roof_is_open_on_top_with_a_soil_floor(tmp_path):
     with_roof, _ = generate_tower(random.Random(6), 4, out_path=os.path.join(tmp_path, "a.obj"), roof=True)
     open_top, skeleton = generate_tower(random.Random(6), 4, out_path=os.path.join(tmp_path, "b.obj"), roof=False)
     total = skeleton[0]["altura_total"]
-    assert _vertices(with_roof)[:, 1].max() > total + 2.0  # telhado cônico
-    assert total <= _vertices(open_top)[:, 1].max() <= total + 0.3  # só a cornija passa do topo
+    _, com_telhado = generate_tower(random.Random(6), 4, out_path=os.path.join(tmp_path, "c.obj"), roof=True)
+    assert _vertices(com_telhado[0]["malhas"]["telhado"])[:, 1].max() > total + 2.0  # telhado cônico
+    assert "telhado" not in skeleton[0]["malhas"]
+    assert total <= _todas(skeleton)[:, 1].max() <= total + 1.6  # a cornija e o parapeito (com jarros) passam do topo
     assert skeleton[0]["raio_topo"] > 2.0
-    piso_de_terra = np.isclose(_vertices(open_top)[:, 1], total - 0.08)
+    piso_de_terra = np.isclose(_vertices(skeleton[0]["malhas"]["terra"])[:, 1], total - 0.08)
     assert piso_de_terra.sum() > 10
 
 
@@ -117,3 +125,62 @@ def test_tower_vines_are_deterministic(tmp_path):
     b, _ = generate_tower_vines(random.Random(9), skeleton, out_path=os.path.join(tmp_path, "b.obj"))
     with open(a) as fa, open(b) as fb:
         assert fa.read() == fb.read()
+
+
+# --- a torre do livro: porta entreaberta, venezianas, poças, tapete mofado ------------
+
+
+def test_tower_is_split_into_materials_with_walls_in_the_main_file(tmp_path):
+    path, skeleton = generate_tower(random.Random(1), 5, out_path=os.path.join(tmp_path, "t.obj"))
+    malhas = skeleton[0]["malhas"]
+    assert malhas["tijolo"] == path
+    assert {"tijolo", "madeira", "telhado", "tapete", "agua", "papel"} <= set(malhas)
+    assert all(os.path.getsize(p) > 0 for p in malhas.values())
+
+
+def test_every_upper_floor_has_shuttered_windows_with_a_state(tmp_path):
+    for n_floors in (3, 5, 8):
+        _, skeleton = generate_tower(random.Random(n_floors), n_floors, out_path=os.path.join(tmp_path, "t.obj"))
+        janelas = skeleton[0]["janelas"]
+        assert {j["andar"] for j in janelas} == set(range(2, n_floors + 1))  # todo andar acima do térreo
+        assert len([j for j in janelas if j["andar"] == 2]) == 4
+        assert {j["estado"] for j in janelas} <= {"fechada", "entreaberta"}
+    estados = [j["estado"] for s in range(20) for j in generate_tower(random.Random(s), 4, out_path=os.path.join(tmp_path, "x.obj"))[1][0]["janelas"]]
+    assert 0.35 < estados.count("entreaberta") / len(estados) < 0.65  # ~metade entreaberta
+
+
+def test_shutters_swing_out_when_ajar_and_stay_in_the_wall_when_closed(tmp_path):
+    _, skeleton = generate_tower(random.Random(4), 4, out_path=os.path.join(tmp_path, "t.obj"))
+    madeira = _vertices(skeleton[0]["malhas"]["madeira"])
+    raio_parede = np.hypot(madeira[:, 0], madeira[:, 2])
+    # folhas entreabertas passam da parede (raio maior que a torre); nenhuma entra além do raio externo + ~1,6 m
+    assert raio_parede.max() > skeleton[0]["r0"] + 0.4 or all(j["estado"] == "fechada" for j in skeleton[0]["janelas"])
+    assert raio_parede.max() < skeleton[0]["r0"] + 3.0
+
+
+def test_ground_door_is_ajar_outside_the_doorway(tmp_path):
+    _, skeleton = generate_tower(random.Random(3), 3, out_path=os.path.join(tmp_path, "t.obj"))
+    madeira = _vertices(skeleton[0]["malhas"]["madeira"])
+    porta = skeleton[0]["porta_angulo"]
+    # o .obj é Y-up: ângulo no plano (x, z) é o oposto do de construção
+    no_setor = [v for v in madeira if v[1] < 2.3 and abs(np.cos(np.arctan2(-v[2], v[0]) - porta)) > 0.8 and np.hypot(v[0], v[2]) > skeleton[0]["r0"] * 0.95]
+    assert no_setor  # a folha da porta está do lado de fora da parede, diante do vão
+
+
+def test_puddles_and_peeling_wallpaper_and_mouldy_carpet_are_inside(tmp_path):
+    _, skeleton = generate_tower(random.Random(5), 5, out_path=os.path.join(tmp_path, "t.obj"))
+    raio_externo = skeleton[0]["r0"]
+    for grupo in ("agua", "tapete", "papel"):
+        v = _vertices(skeleton[0]["malhas"][grupo])
+        assert np.hypot(v[:, 0], v[:, 2]).max() <= raio_externo + 0.01  # tudo por dentro das paredes
+    agua = _vertices(skeleton[0]["malhas"]["agua"])
+    assert agua[:, 1].max() < 17 and len(agua) >= 4 * 13  # uma poça (13 vértices) por janela, 4 andares de janela
+    tapete = _vertices(skeleton[0]["malhas"]["tapete"])
+    assert len(set(np.round(tapete[:, 1], 2))) >= 5  # um por andar
+
+
+def test_tower_is_deterministic_across_all_materials(tmp_path):
+    _, a = generate_tower(random.Random(8), 4, out_path=os.path.join(tmp_path, "a.obj"))
+    _, b = generate_tower(random.Random(8), 4, out_path=os.path.join(tmp_path, "b.obj"))
+    for grupo in a[0]["malhas"]:
+        assert open(a[0]["malhas"][grupo]).read() == open(b[0]["malhas"][grupo]).read()

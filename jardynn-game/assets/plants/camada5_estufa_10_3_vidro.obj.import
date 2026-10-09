@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://b2hvjqs8u8hq0"
+path="res://.godot/imported/camada5_estufa_10_3_vidro.obj-17f10dd4109eed108b5762ab0ec44d5c.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada5_estufa_10_3_vidro.obj-17f10dd4109eed108b5762ab0ec44d5c.mesh"]
+
+source_file="res://assets/plants/camada5_estufa_10_3_vidro.obj"
+dest_files=["res://.godot/imported/camada5_estufa_10_3_vidro.obj-17f10dd4109eed108b5762ab0ec44d5c.mesh", "res://.godot/imported/camada5_estufa_10_3_vidro.obj-17f10dd4109eed108b5762ab0ec44d5c.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

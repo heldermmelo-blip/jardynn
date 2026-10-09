@@ -75,6 +75,10 @@ VEGETATION = [
         "bambu",
     ),
     ("Um campo de tulipas em cores que não deveriam existir juntas.", "all", "tulipa"),
+    ("Carvalhos enormes, os troncos cobertos de hera velha, as copas fechadas num dossel baixo.", "all", "carvalho"),
+    ("Salgueiros chorões de ramos tão longos que varrem o chão, ondulando sem vento.", ("jardim_externo", "jardim_profundo"), "salgueiro"),
+    ("Um bosque de pinheiros escuros e retos, o chão forrado de agulhas que abafam os passos.", "all", "pinheiro"),
+    ("Uma araucária solitária, os galhos em candelabro, as folhas duras como escamas de lagarto.", ("jardim_profundo", "nucleo_selvagem"), "araucaria"),
     ("Roseiras bem cuidadas demais: cada rosa de uma cor, nenhuma com um só espinho fora do lugar.", "all", "rosa"),
     ("Canteiros de lavanda zumbindo de abelhas, o perfume forte demais para o ar parado.", "all", "lavanda"),
     ("Margaridas até onde a vista alcança, todas viradas para o mesmo lado.", "all", "margarida"),
@@ -141,11 +145,10 @@ VEGETATION = [
 ]
 
 CANTEIRO_ESPECIE_POR_LOCAL = {
-    # nome do local (`LOCAIS`) -> espécie de flor do canteiro; sem entrada, sorteia
-    "Canteiro de lavanda zumbindo de abelhas": "lavanda",
-    "Canteiro de dálias": "dalia",
-    "Canteiro de ervas de boticário": "arbusto",
-    "Canteiro de flores que se mexem": "flor",
+    # nome do local (`LOCAIS`) -> espécie do canteiro; sem entrada, sorteia
+    "Horta de Ervas": "arbusto",
+    "Roseiral": "rosa",
+    "Canteiros de Cogumelos": "cogumelo",
 }
 
 FEATURES = [
@@ -478,38 +481,46 @@ LOCALIDADE = [
 ]
 
 TORRE_ANDARES = [
-    # (texto, bandas, tipo, prop, rotulo) — tipo em "tesouro", "encontro" ou
-    # None; `prop` é o objeto que o Godot monta no piso do andar (None = só
-    # o andar vazio); `rotulo` é o texto curto que flutua sobre ele.
+    # Um d12 por andar, na ordem do livro (índice 1..12). (texto, bandas, tipo,
+    # prop, rotulo) — tipo em "tesouro", "encontro" ou None; `prop` é o objeto
+    # que o Godot monta no piso do andar (None = só o andar vazio); `rotulo` é
+    # o texto curto que flutua sobre ele. Sem filtro de banda: o livro não tem.
     ("O andar está vazio, só poeira e silêncio.", "all", None, None, "Vazio"),
     ("Um pequeno tesouro foi deixado para trás aqui, esquecido entre os destroços.", "all", "tesouro", "bau", "Tesouro"),
-    ("Algo vive neste andar e reage à presença de quem entra.", "all", "encontro", "criatura", "Habitante"),
+    ("Algo mora neste andar e reage à presença de quem entra.", "all", "encontro", "criatura", "Habitante"),
+    ("Algo também explora esta torre e está aqui agora, tão surpreso quanto você.", "all", "encontro", "criatura", "Explorador"),
     ("Móveis apodrecidos se desfazem ao toque — uma cadeira, uma mesa, os restos de uma cama.", "all", None, "mobilia", "Móveis podres"),
     ("Uma estante de livros embolorados ainda de pé; a maioria das páginas grudou umas nas outras.", "all", None, "estante", "Estante"),
     ("Ninhos de pássaros nos cantos mais altos, ovos e filhotes piando sem parar.", "all", None, "ninhos", "Ninhos"),
-    ("Teias de aranha grossas dificultam a visão e o movimento por aqui.", ("jardim_profundo", "nucleo_selvagem"), None, "teias", "Teias"),
-    ("Um esqueleto preso à parede por correntes enferrujadas há muito tempo.", ("jardim_profundo", "nucleo_selvagem"), None, "esqueleto", "Esqueleto acorrentado"),
-    ("Rações perfeitamente conservadas, o suficiente para alimentar um grupo grande por dias.", "all", None, "caixotes", "Rações"),
-    ("Retratos emoldurados de rostos alienígenamente belos cobrem a parede.", ("jardim_profundo", "nucleo_selvagem"), "tesouro", "quadros", "Retratos"),
-    ("Um espelho de corpo inteiro que reflete tudo, menos quem está olhando para ele.", ("nucleo_selvagem",), None, "espelho", "Espelho"),
+    ("Teias de aranha grossas dificultam a visão e o movimento por aqui.", "all", None, "teias", "Teias"),
+    ("Um esqueleto preso à parede por correntes enferrujadas há muito tempo.", "all", None, "esqueleto", "Esqueleto acorrentado"),
+    ("Caixotes de rações perfeitamente conservadas: o bastante pra dez pessoas por uma semana.", "all", None, "caixotes", "Rações"),
+    ("Retratos emoldurados de rostos alienígenamente belos cobrem a parede.", "all", None, "quadros", "Retratos"),
+    ("Um espelho de corpo inteiro que reflete com exatidão, mas só mostra o que é mágico: Ynn e seus nativos aparecem; quem o encara, talvez não.", "all", None, "espelho", "Espelho"),
 ]
 
 TORRE_TOPO = [
-    # Mesmo formato de TORRE_ANDARES, mas só pro último andar — conteúdo
-    # mais raro/significativo, reservado pro topo da torre.
+    # Um d12 no andar mais alto — que rola duas vezes, na ordem do livro.
     ("Um sino enorme de bronze, silencioso, pendurado bem no centro do andar.", "all", None, "sino", "Sino de bronze"),
     ("Um telescópio antigo, apontado para um trecho do céu que não parece bater com o de baixo.", "all", None, "telescopio", "Telescópio"),
     ("Uma câmera escura projeta, invertida, uma imagem do jardim lá fora numa parede caiada.", "all", None, "camera_escura", "Câmera escura"),
-    ("Um tesouro bem maior que o normal está escondido aqui.", "all", "tesouro", "bau_grande", "Grande tesouro"),
-    ("Uma biblioteca arcana, prateleiras cheias de livros sobre magias que ninguém mais lembra de estudar.", ("jardim_profundo", "nucleo_selvagem"), None, "biblioteca", "Biblioteca arcana"),
-    ("Algo poderoso e perigoso vive neste andar — o mais alto de todos.", ("jardim_profundo", "nucleo_selvagem"), "encontro", "criatura", "Criatura poderosa"),
-    ("Uma armadilha está escondida no assoalho, pronta pra disparar no primeiro passo em falso.", "all", None, "armadilha", "Armadilha"),
-    ("Uma armadura completa, de aparência amaldiçoada, montada num pedestal, esperando um dono.", ("nucleo_selvagem",), None, "armadura", "Armadura amaldiçoada"),
-    ("Uma máquina voadora incompleta, engrenagens e lona espalhadas pelo chão em volta dela.", "all", None, "maquina", "Máquina voadora"),
+    ("Um tesouro bem maior que o normal, escondido aqui: três achados de uma vez.", "all", "tesouro", "bau_grande", "Grande tesouro"),
+    ("Uma biblioteca arcana, prateleiras cheias de livros sobre magias que ninguém mais lembra de estudar.", "all", None, "biblioteca", "Biblioteca arcana"),
+    ("Algo poderoso e perigoso mora neste andar — o mais alto de todos.", "all", "encontro", "criatura", "Criatura poderosa"),
+    ("Uma tábua do assoalho é, na verdade, uma placa de pressão: pisar nela solta uma rajada de dardos de metal pelas frestas (1d4 de dano em todos, a menos que passem numa Resistência a Dispositivos).", "all", None, "armadilha", "Armadilha"),
+    ("Uma armadura completa, de aparência amaldiçoada, num pedestal: dá a CA de uma armadura de placas e deixa quem a veste dar um último ataque ao ser morto (se matar, ignora o dano que o mataria).", "all", None, "armadura", "Armadura amaldiçoada"),
+    ("Uma máquina voadora incompleta, movida a mola de relógio, engrenagens e lona espalhadas em volta dela.", "all", None, "maquina", "Máquina voadora"),
     ("Um espelho gigante, usado pra mandar sinais refletindo luz a longa distância.", "all", None, "espelho_sinal", "Espelho de sinais"),
-    ("Um caixão de vidro guarda um corpo perfeitamente preservado, como se dormisse.", ("nucleo_selvagem",), None, "caixao", "Caixão de vidro"),
-    ("Uma lâmpada enorme, alimentada por algo vivo e luminoso preso dentro dela, ilumina tudo ao redor.", "all", None, "lampada", "Lâmpada viva"),
+    ("Um caixão de vidro elegante guarda o esqueleto perfeito e belo de um dos sidhe.", "all", None, "caixao", "Caixão de vidro"),
+    ("Uma lâmpada enorme — uma tigela de vidro com água e camarões luminosos — ilumina o local e todos os vizinhos.", "all", None, "lampada", "Lâmpada viva"),
 ]
+
+TORRE_ESCALADA_REGRA = (
+    "Dá pra entrar por qualquer andar escalando até uma janela. Cada andar subido pede um teste de Escalar "
+    "(1-em-6, ou os pontos do Especialista); com trepadeiras grossas na parede, soma +2 em 6. Quem falha "
+    "cai do andar onde está: 1d6 de dano por andar de queda. Veneziana entreaberta se abre sem esforço; "
+    "fechada, só empurrando de dentro ou arrombando."
+)
 
 GAZEBO_ESTADO = [
     ("Um pavilhão de madeira de ar festivo, a tinta alegre desbotada e descascando em lascas.", "all"),
@@ -531,65 +542,108 @@ GAZEBO_BIBELOS = [
 ]
 
 ESTUFA_CONTEUDO = [
-    # (texto, bandas, tipo, criatura) — tipo em "valor", "criatura" ou None.
-    ("Vasos de plantas raras, cada um com uma plaqueta de colecionador escrita em latim.", "all", "valor", None),
+    # Uma entrada por número do dado jogado (1..12); o 13 ou mais é a estufa
+    # lacrada. Na ordem da tabela do livro. (texto, bandas, tipo, criatura) —
+    # tipo "valor" (ouro, crescente com a profundidade), "criatura" (a ficha
+    # `criatura` de `ynn.creatures.CREATURES`) ou None. Sem filtro de banda.
+    ("Vasos de plantas raras, cada um com a plaquinha de um colecionador: valem 1d4 + profundidade de ouro.", "all", "valor", None),
     ("Nada de notável: só vasos vazios e terra seca rachada.", "all", None, None),
-    ("Ervas medicinais crescem entre os vasos — 1d4+1 doses, e cada dose cura 1 PV.", "all", None, None),
+    ("Plantas medicinais crescem entre os vasos: 1d6 doses, e cada uma cura 1 PV.", "all", None, None),
     ("Frutos graúdos e maduros pendem dos galhos, seguros de comer.", "all", None, None),
-    ("Flores lindas e venenosas: comer ou se espetar nelas causa 1d8 de dano (1d4 doses colhíveis).", "all", None, None),
+    ("Plantas venenosas e lindas: comer ou se espetar nelas causa 2d6 de dano (1d6 doses colhíveis).", "all", None, None),
     ("Mesas e cadeiras de ferro, enferrujadas e cobertas de musgo, postas como para um chá abandonado.", "all", None, None),
+    ("De 2 a 5 jarros carnívoros enormes, enraizados, que não saem do lugar e abrem a boca para quem passa.", "all", "criatura", "jarro_carnivoro"),
     ("Nenhuma planta: prateleiras vazias e vidro limpo demais pra um lugar abandonado.", "all", None, None),
+    ("Limo verde digestivo cobre o teto; um barulho súbito faz pingar gotas (1d6 de dano, como um ataque a +0).", "all", None, None),
     ("Gaiolas ornamentais de ouro penduradas do teto, vazias, ainda balançando de leve.", "all", "valor", None),
-    ("Um jarro carnívoro enorme, enraizado perto da porta, abre a boca na direção de quem entra.", ("jardim_profundo", "nucleo_selvagem"), "criatura", "jarro_carnivoro"),
-    ("Limo verde digestivo cobre o teto; qualquer barulho súbito faz pingar gotas que queimam (1d6).", ("jardim_profundo", "nucleo_selvagem"), None, None),
-    ("Esporos densos no ar: respirar causa 1 de dano por turno, e quem falhar numa resistência a veneno continua sofrendo ao sair.", ("jardim_profundo", "nucleo_selvagem"), None, None),
-    ("Sob a folhagem, esqueletos humanos com trepadeiras saindo das costelas se levantam quando alguém se aproxima.", ("jardim_profundo", "nucleo_selvagem"), "criatura", "esqueleto_vegetal"),
-    ("A estufa está lacrada por fora, as portas pregadas; lá dentro, a folhagem empurra o vidro tentando sair.", ("nucleo_selvagem",), None, None),
+    ("Esporos densos no ar: respirar causa 1 de dano por turno, e quem falhar numa resistência a veneno continua sofrendo ao sair.", "all", None, None),
+    ("Sob a folhagem, esqueletos humanos com trepadeiras nas costelas se levantam quando alguém se aproxima.", "all", "criatura", "esqueleto_vegetal"),
+    ("A estufa está lacrada por fora, as portas pregadas; lá dentro, a folhagem empurra o vidro tentando sair, e uma planta solta-se a cada rodada se abrirem.", "all", None, None),
 ]
 
 LOCAIS = [
-    # (nome, tipo_de_lote) — sorteada por d20 + profundidade (`ynn.pointcrawl`):
-    # as primeiras entradas são amenas, as do fim são estranhas e industriais.
-    # `tipo_de_lote` é "area", "canteiro", "estufa", "gazebo", "torre" ou uma
-    # estrutura pitoresca de `gielis.pitoresco` ("fonte", "estatuas",
-    # "labirinto", "mausoleu", "lago", "lago_gelado" ou "xadrez");
-    # resultados acima do tamanho da lista caem na última.
-    ("Gramado de croquet, os arcos tortos e as bolas espalhadas", "area"),
-    ("Alameda de tílias", "area"),
-    ("Canteiro de lavanda zumbindo de abelhas", "canteiro"),
-    ("Pérgula de glicínias", "area"),
-    ("Pomar de marmeleiros", "area"),
-    ("Tanque de nenúfares", "lago"),
-    ("Coreto de música", "gazebo"),
-    ("Estufa de samambaias", "estufa"),
-    ("Canteiro de dálias", "canteiro"),
-    ("Labirinto de sebes aparadas", "labirinto"),
-    ("Quiosque de chá", "gazebo"),
-    ("Estufa de laranjeiras", "estufa"),
-    ("Terraço de estátuas de mármore", "estatuas"),
-    ("Torre do relógio", "torre"),
-    ("Canteiro de ervas de boticário", "canteiro"),
-    ("Fonte de três bacias", "fonte"),
-    ("Mausoléu coberto de hera", "mausoleu"),
-    ("Observatório de latão", "torre"),
-    ("Viveiro de borboletas de vidro", "estufa"),
-    ("Gramado de xadrez de peças gigantes", "xadrez"),
-    ("Cemitério de bonecas", "area"),
-    ("Lago congelado fora de estação", "lago_gelado"),
-    ("Salão de baile sem teto", "area"),
-    ("Ponte sobre um vale de névoa", "area"),
-    ("Canteiro de flores que se mexem", "canteiro"),
-    ("Câmara de espelhos cobertos de hera", "area"),
-    ("Estufa de pulmões vegetais", "estufa"),
-    ("Praça dos relógios derretidos", "area"),
-    ("Cozinha abandonada de um banquete", "area"),
-    ("Orquestra de espantalhos", "area"),
-    ("Torre sem topo", "torre"),
-    ("Cisterna de memórias", "area"),
-    ("Jardim de ponta-cabeça", "area"),
-    ("Trono de espinhos", "area"),
-    ("Ruínas do Primeiro Jardim", "area"),
+    # Os 35 locais, na ordem da tabela do livro (d20 + profundidade; 35 ou mais
+    # cai no último): quanto mais fundo, mais estranho. (nome, tipo_de_lote) —
+    # `tipo_de_lote` é "area", "canteiro", "estufa", "orquidario", "gazebo",
+    # "torre" ou uma estrutura pitoresca de `gielis.pitoresco` ("fonte",
+    # "estatuas", "labirinto", "mausoleu", "lago", "lago_gelado", "xadrez",
+    # "escadaria" ou "casa_inclinada"). Os textos de cada local são meus.
+    ("Gramado Aparado", "area"),
+    ("Horta de Ervas", "canteiro"),
+    ("Treliça de Videiras", "area"),
+    ("Pomar", "area"),
+    ("Lagoas", "lago"),
+    ("Roseiral", "canteiro"),
+    ("Gazebo", "gazebo"),
+    ("Estufas", "estufa"),
+    ("Orquidários", "orquidario"),
+    ("Jardim de Seda", "area"),
+    ("Gramado de Xadrez", "xadrez"),
+    ("Labirinto de Sebes", "labirinto"),
+    ("Canil", "area"),
+    ("Estatuária", "estatuas"),
+    ("Bosque", "area"),
+    ("Mausoléu", "mausoleu"),
+    ("Estande de Tiro", "area"),
+    ("Pátio da Fonte", "fonte"),
+    ("Teatro de Sombras", "area"),
+    ("Casa das Engrenagens", "area"),
+    ("Torre", "torre"),
+    ("Pista de Gelo", "lago_gelado"),
+    ("Fogueira", "area"),
+    ("Cemitério", "area"),
+    ("Tubulações de Vapor", "area"),
+    ("Jardim do Penhasco", "escadaria"),
+    ("Canteiros de Cogumelos", "canteiro"),
+    ("Galeria de Máscaras", "area"),
+    ("Assentamentos", "area"),
+    ("Cubas de Emenda", "area"),
+    ("Berçários", "area"),
+    ("Teatro de Vivissecção", "area"),
+    ("Moita Eletrodinâmica", "area"),
+    ("Vinícola", "area"),
+    ("Ruínas de Ynn", "casa_inclinada"),
 ]
+
+# O que cada local tem de próprio (um texto curto, meu), usado na descrição
+# da área: o gerador sorteia vegetação e características, mas o local dá o tom.
+LOCAL_TEXTOS = {
+    "Gramado Aparado": "Um gramado liso, aparado rente, que se estende como um tapete entre canteiros de bordas retas.",
+    "Horta de Ervas": "Canteiros de ervas em fileiras, cada uma com a plaquinha de um nome que já não se lê.",
+    "Treliça de Videiras": "Treliças de madeira carregadas de videiras formam um corredor de sombra verde.",
+    "Pomar": "Fileiras de árvores frutíferas, os galhos curvados sob frutos de cores demais.",
+    "Lagoas": "Lagoas rasas e escuras, ligadas por pontezinhas, com nenúfares do tamanho de pratos.",
+    "Roseiral": "Roseiras de todas as variedades, emboladas em espinhos, com rosas de cores impossíveis.",
+    "Gazebo": "Um pavilhão aberto de madeira, de tinta desbotada, com cadeiras de vime no meio.",
+    "Estufas": "Casas de vidro e ferro, espalhadas como dados jogados num papel, cada uma com a sua planta baixa.",
+    "Orquidários": "Casas de vidro mornas e úmidas, cheias de orquídeas raras em vasos de musgo.",
+    "Jardim de Seda": "Armações de aço que lembram árvores sem folhas, entremeadas de fios de seda colorida.",
+    "Gramado de Xadrez": "Um gramado quadriculado de grama e lajes pretas, com peças enormes de pedra largadas.",
+    "Labirinto de Sebes": "Sebes altas e aparadas, dobrando-se em corredores que se repetem.",
+    "Canil": "Fileiras de canis de pedra, os portões de ferro entreabertos, o chão cheio de ossos roídos.",
+    "Estatuária": "Um terraço de estátuas de mármore sobre pedestais, todas de rostos belos demais.",
+    "Bosque": "Árvores altas e antigas, de troncos largos, fechando o céu numa copa só.",
+    "Mausoléu": "Um pequeno templo de mármore, de porta escura, onde os mortos do jardim descansam.",
+    "Estande de Tiro": "Alvos de palha e madeira em linha, crivados de flechas de épocas diferentes.",
+    "Pátio da Fonte": "Um pátio calçado em volta de uma fonte de várias bacias, cercada de bancos.",
+    "Teatro de Sombras": "Um palco de tela branca e lanternas, onde sombras sem dono encenam a mesma peça.",
+    "Casa das Engrenagens": "Engrenagens enormes giram devagar, soltando ferrugem, ligadas a alguma máquina maior.",
+    "Torre": "Um capricho ornamental de tijolo e madeira, que se alça acima das copas, coberto de hera.",
+    "Pista de Gelo": "Um lago de gelo liso, fora de estação, onde patinadores sem rosto deixaram marcas.",
+    "Fogueira": "Um poço de fogo de pedra, aceso, cercado de bancos e de lenha empilhada.",
+    "Cemitério": "Lápides inclinadas sob salgueiros, os nomes gastos pela chuva de outros mundos.",
+    "Tubulações de Vapor": "Canos que sobem e descem entre as plantas, chiando vapor quente em jatos curtos.",
+    "Jardim do Penhasco": "Terraços de pedra descem em degraus até a beira de um abismo coberto de névoa.",
+    "Canteiros de Cogumelos": "Canteiros de cogumelos pálidos, em camas de terra úmida, brilhando de leve.",
+    "Galeria de Máscaras": "Uma galeria aberta com máscaras de todos os feitios penduradas, olhando pra dentro.",
+    "Assentamentos": "Casebres de gente que vive aqui, amarrados uns nos outros com cordas e trepadeiras.",
+    "Cubas de Emenda": "Tanques de vidro e aço, cheios de líquido turvo, onde coisas vivas são costuradas.",
+    "Berçários": "Fileiras de camas de terra e vidro onde algo pequeno e vivo é cuidado.",
+    "Teatro de Vivissecção": "Um anfiteatro de pedra, de plateia vazia, com uma mesa de mármore no centro.",
+    "Moita Eletrodinâmica": "Uma moita de arbustos que faíscam, soltando arcos azuis entre os galhos.",
+    "Vinícola": "Fileiras de videiras, prensas de madeira e barris empilhados em adegas de pedra.",
+    "Ruínas de Ynn": "Muros caídos, escadas cobertas de musgo e uma casinha torta que a terra engole aos poucos.",
+}
 
 ALAS_VIDRO = [
     # (nome, subtipo) — os locais de um nível sob uma estufa colossal: todos
@@ -633,47 +687,50 @@ ORQUIDARIO_TEXTOS = [
 ]
 
 DETALHES = [
-    # (texto, tipo_relevo, efeito) — também sorteada por d20 + profundidade.
-    # `tipo_relevo` ("plano", "leve", "acentuado" ou "irregular") dita o
-    # quanto o terreno ao redor do local varia (`ynn.terrain.
-    # generate_terrain_localizado`). `efeito`: "vazio" (sem habitantes),
-    # "tesouro" (um achado extra), "saida" (uma porta de volta ao mundo
-    # real), "duplo" (rola mais dois detalhes) ou None.
-    ("Quietude fora do comum: nada se mexe, nada canta, como se o lugar tivesse sido esvaziado.", "plano", "vazio"),
-    ("Um tapete de pétalas recém-caídas cobre o chão, embora não haja flores acima.", "plano", None),
-    ("Cada pedra do caminho tem um número pintado em tinta branca.", "plano", None),
-    ("Uma mesa posta para o chá, a fumaça ainda saindo das xícaras, sem ninguém sentado.", "plano", None),
-    ("Pegadas minúsculas, descalças, fazem círculos no chão úmido.", "plano", None),
-    ("O chão ondula de leve, como respirando devagar.", "leve", None),
-    ("Algo brilha entre as raízes: alguém enterrou isto às pressas.", "plano", "tesouro"),
-    ("Varais de roupa branca secando, sem vento e sem dono.", "plano", None),
-    ("Montes de terra revirada em intervalos regulares demais para ser natural.", "leve", None),
-    ("Uma cerca-viva aparada em letras de um alfabeto desconhecido.", "plano", None),
-    ("Sinos de vento por todo lado tocam uma melodia que nunca termina.", "plano", None),
-    ("Terraços baixos de pedra dividem o terreno em patamares desalinhados.", "leve", None),
-    ("Poças de água parada refletem um céu mais escuro que o de cima.", "plano", None),
-    ("Cheiro de bolo assando, vindo de lugar nenhum.", "plano", None),
-    ("Colinas abruptas se erguem sem aviso, como se o chão tivesse sido amassado.", "acentuado", None),
-    ("Cada árvore tem uma portinha pequena e fechada no tronco.", "plano", None),
-    ("Rastros de tinta colorida levam sempre para o mesmo ponto.", "plano", None),
-    ("Uma ravina corta o lugar, as bordas cobertas de raízes expostas.", "acentuado", None),
-    ("Estátuas viradas de costas para o centro, como em castigo.", "plano", None),
-    ("Neblina baixa e morna, com gosto de hortelã.", "plano", None),
-    ("Poeira dourada suspensa no ar, caindo devagar demais.", "plano", "tesouro"),
-    ("O solo sobe e desce em ondas fundas demais para as árvores que crescem nele.", "acentuado", None),
-    ("Relógios de sol que giram: as sombras andam para trás.", "plano", None),
-    ("Uma segunda lua, pequena, paira baixa sobre o lugar.", "plano", None),
-    ("O chão se curva para cima contra a lógica, e as plantas crescem apontando para baixo.", "irregular", None),
-    ("Pedaços inteiros de terra flutuam a pouca altura, presos por raízes esticadas.", "irregular", None),
-    ("O peso não vale aqui: tudo que está solto sobe devagar.", "irregular", None),
-    ("Crateras rasas sobrepostas, como bolhas de algo que ferveu e endureceu.", "irregular", None),
-    ("Uma voz repete baixinho os pensamentos de quem chega.", "plano", None),
-    ("Cada passo muda a altura do chão de um jeito que a vista não acompanha.", "irregular", None),
-    ("Os rostos das estátuas mudam de expressão quando ninguém olha.", "plano", None),
-    ("Sombras sem dono caminham em direções opostas.", "plano", None),
-    ("Uma porta de madeira simples, pintada de verde, entre dois arbustos: leva para fora de Ynn.", "plano", "saida"),
-    ("Dois detalhes se enroscam e valem ao mesmo tempo.", "plano", "duplo"),
-    ("Emaranhado total: dois detalhes aplicam-se juntos.", "plano", "duplo"),
+    # Os 35 detalhes, na ordem da tabela do livro (d20 + profundidade).
+    # (texto, tipo_relevo, efeito) — o texto é meu, a mecânica é a do livro.
+    # `tipo_relevo` ("plano", "leve", "acentuado" ou "irregular") dita o quanto o
+    # terreno ao redor varia (`ynn.terrain.generate_terrain_localizado`).
+    # `efeito` é uma etiqueta que o gerador lê: "vazio", "tesouro",
+    # "bem_cuidado" (o único jeito de um lugar estar inteiro; nos demais, jaz em
+    # ruínas), "hera" (tudo coberto de hera, estruturas preservadas), "alagado",
+    # "queimado", "congelado", "vidro" (o lugar inteiro sob uma estufa gigante),
+    # "fertil", "luminoso", "saida" (porta de volta ao mundo real) etc.
+    ("Quietude fora do comum: nada canta, nada zumbe, e qualquer encontro que viria simplesmente não vem.", "plano", "vazio"),
+    ("Um montinho de moedas e bugigangas brilha no meio do gramado: 5d10 de prata e dois sorteios de tesouro.", "plano", "tesouro"),
+    ("Exploradores do mundo real rabiscaram uma parede: o perigo e o valor do lugar estão apontados ali, e três mãos deixaram outros recados.", "plano", "grafite"),
+    ("Aqui, ao contrário do resto do jardim, tudo está conservado: metal sem ferrugem, grama aparada, flores em fileiras retas.", "plano", "bem_cuidado"),
+    ("Jazem aqui 1d6 exploradores, em estados diferentes de decomposição, cada um com o equipamento do seu ofício.", "plano", "exploradores_mortos"),
+    ("Ninhos nos cantos mais altos: ovos, filhotes piando e pais que defendem a prole.", "plano", "ninhos"),
+    ("Algo ronca debaixo da terra: o chão vibra em intervalos e as construções estremecem.", "acentuado", "estrondo"),
+    ("Um poste de ferro forjado acende toda noite sozinho, iluminando o centro do lugar.", "plano", "poste"),
+    ("Volutas de prata nascem entre as plantas, vida mineral que brota das veias da terra: valem 100 de prata por profundidade, se arrancadas.", "plano", "filigrana"),
+    ("Tubos escuros serpenteiam entre as plantas, levando um fluido iridescente: na pele exige Resistência a Magia, bebido causa Alteração de Ynn sem teste.", "leve", "tubos"),
+    ("Vigas de aço enormes saem do chão, retorcidas como o esqueleto de uma torre que ninguém terminou.", "leve", "armacoes"),
+    ("O chão está coberto de pássaros coloridos mortos, as penas quebradas, como se tivessem caído do céu de uma vez.", "plano", "passaros_mortos"),
+    ("Há água parada, de joelho à cintura, com plantas e construções emergindo e algas na linha d'água: o movimento cai pela metade.", "plano", "alagado"),
+    ("Houve um incêndio: cinza no chão, árvores chamuscadas, estruturas frágeis, com 1 em 6 de desabarem na pior hora.", "plano", "queimado"),
+    ("Geada cobre tudo e a água tem gelo grosso; quem se demora sem abrigo ou fogo sofre 1 de dano por turno.", "plano", "congelado"),
+    ("Hera cobre absolutamente tudo numa manta emaranhada que suaviza as silhuetas; por baixo, as estruturas estão intactas.", "plano", "hera"),
+    ("Uma música baixa vem de tubos de ouro escondidos na folhagem: cada turno ouvindo concede uma pergunta ao Mestre.", "plano", "cantante"),
+    ("O lugar inteiro fica dentro de uma estufa gigante, mais quente e abafada, protegida do tempo; 1 em 3 encontros é com os moradores da estufa.", "plano", "vidro"),
+    ("Esqueletos de 1d4 sidhe, de alabastro perfeito e simétrico: cada osso vale cerca de 10 de ouro a um colecionador, e são 250.", "plano", "esqueletos_sidhe"),
+    ("As construções têm relógios embutidos: engrenagens girando devagar, um tique-taque polirrítmico constante.", "plano", "relojoaria"),
+    ("O lugar está de cabeça para baixo, crescendo do teto sobre um abismo sem fundo: cair é um caminho sem volta.", "irregular", "invertido"),
+    ("Ilhas de grama e concreto pairam imóveis sobre o abismo, sem pontes entre elas.", "irregular", "flutuante"),
+    ("Fendas profundas cortam o lugar em seções, abertas para o nada nebuloso; dá pra pular, se nada der errado.", "irregular", "abismos"),
+    ("Ainda há fogo baixo dançando nas superfícies carbonizadas: o ar quente e a fumaça dão 1 de dano por turno.", "plano", "fumegante"),
+    ("O chão se move como o convés de um navio, abrindo e fechando a relva; árvores e construções balançam.", "acentuado", "convulso"),
+    ("O solo quer comer você: bocas de barro com dentes de marfim se abrem aos pés de quem faz barulho.", "plano", "predador"),
+    ("As plantas aqui são de carne, osso e cartilagem; comer qualquer coisa exige rolar Alteração de Ynn.", "plano", "carnudo"),
+    ("Um campo mental suave faz o lugar parecer um lar: cada turno cura 1 ponto, mas sair desfaz a cura e custa 1d10 de Carisma.", "plano", "enfeiticante"),
+    ("Tudo cresce com força e a vegetação é densa e lustrosa; cada turno aqui cura 1 ponto de dano.", "leve", "fertil"),
+    ("As plantas brilham: pétalas e brotos soltam luz suave e nunca fica totalmente escuro.", "plano", "luminoso"),
+    ("A gravidade quase não existe: pedras caem devagar e dá pra saltar distâncias enormes.", "plano", "gravidade_zero"),
+    ("Ao entrar, as passagens se fecham atrás de você numa realidade-bolha; só se sai desmaiando e acordando do outro lado.", "plano", "hipnotico"),
+    ("O lugar está infestado de parasitas: comer, beber, dormir ou se ferir aqui exige Resistência a Veneno.", "plano", "parasitado"),
+    ("Numa cerca, uma portinha entreaberta com letras de giz: leva de volta ao mundo real.", "plano", "saida"),
+    ("Aqui fora a realidade perde a consistência: causas se embaralham, distâncias e ângulos se deformam.", "irregular", "loucura"),
 ]
 
 TORRE_BROTO = [

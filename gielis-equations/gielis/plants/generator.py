@@ -13,6 +13,7 @@ import numpy as np
 
 from . import foliage
 from .flowers import ESPECIES_FLORES, GERADORES_FLOR
+from .lsystem import ESPECIES_L, gerar_arvore_l
 from .mesh_utils import orthonormal_basis, rotate_around_axis, tube_mesh, write_obj
 from .skeleton import generate_skeleton
 
@@ -310,6 +311,7 @@ def _generate_topiary(rng):
 
 SPECIAL_SPECIES = {
     **GERADORES_FLOR,
+    **{nome: (lambda rng, nome=nome: gerar_arvore_l(rng, nome)) for nome in ESPECIES_L},
     "cogumelo": _generate_mushroom,
     "samambaia": _generate_fern,
     "cacto_coluna": _generate_columnar_cactus,
@@ -374,7 +376,7 @@ def generate_fallen_branch(rng, out_path=None):
     return out_path, skeleton
 
 
-def generate_plant(rng, species, out_path=None, **skeleton_overrides):
+def generate_plant(rng, species, out_path=None, altura=None, **skeleton_overrides):
     """Gera uma planta da espécie `species` e salva como .obj em `out_path`
     (padrão: `examples/output/<species>.obj`). Retorna `(out_path,
     skeleton)` — `skeleton` é a lista de segmentos (para espécies sem
@@ -389,6 +391,8 @@ def generate_plant(rng, species, out_path=None, **skeleton_overrides):
             params = dict(params)
             params["skeleton"] = {**params["skeleton"], **skeleton_overrides}
         parts, skeleton = _generate_branching_plant(rng, params)
+    elif species in ESPECIES_L:
+        parts, skeleton = gerar_arvore_l(rng, species, altura)  # altura em metros; sem ela, sorteia de muda a veterana
     elif species in SPECIAL_SPECIES:
         parts, skeleton = SPECIAL_SPECIES[species](rng)
     else:

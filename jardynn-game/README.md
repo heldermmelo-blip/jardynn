@@ -87,26 +87,24 @@ como cluster denso, igual às plantas de área mas com `canteiro_radius`
 menor). JSON gerado antes dessa mudança (sem `layout`) ainda funciona —
 cai de volta na linha reta antiga (`area_spacing`).
 
-Estufas (`plot.planta`: porte, lados, andares, alas, estado, piso xadrez)
-vêm em várias malhas, uma por material (`plot.malhas`: moldura pintada
-conforme `planta.moldura`, vidro translúcido, soco, piso preto/branco e
-trepadeiras mortas) e giradas (`rotacao_y`) para a porta olhar o caminho que
-leva até ela. Cada uma imprime seu conteúdo (`plot.conteudo`: texto, valor em
-ouro ou criatura). Uma minúscula pode estar no meio de um espelho d'água
-(disco translúcido + calçada até a porta), e a estufa colossal
-(`estufa_colossal`) cobre o nível inteiro, com um aro luminoso verde na
-entrada e um âmbar na saída, ligados por trilhas aos nós extremos. As flores vêm com cor de vértice no `.obj` (haste verde, corola e miolo
-coloridos, uma cor por flor); `Main.gd` detecta isso (`_material_planta`) e liga
-`vertex_color_use_as_albedo`, e as demais plantas seguem com a cor fixa por
-espécie. As estufas trazem a flora de dentro (`plot.flora_interna`: tema, densidade e
-um exemplar por planta, com posição, escala e giro; as mortas ficam marrons).
-Sob a estufa
-colossal só há alas de vidro (vidraças e orquidários, com o valor das
-orquídeas impresso). As estruturas pitorescas (fonte, estátuas, labirinto,
-mausoléu, lago, lago congelado e gramado de xadrez) vêm em uma malha por
-material (`COR_PITORESCO` em `Main.gd`), sobre o chão aplainado, e imprimem
-seus detalhes. Gazebos
-imprimem estado, bibelô, tesouro e a regra de abrigo noturno.
+Cada local tem o seu Detalhe, e é ele quem decide o estado do lugar: só os "Bem Cuidado" e "Coberto
+de Hera" estão inteiros, os demais jazem em ruínas (`plot.estado`). Estufas e orquidários são um conjunto de
+casas de vidro, uma por dado jogado (`plot.estufas`: `dado`, `resultado`, planta baixa do dado, conteúdo do
+número tirado e flora de dentro, tudo impresso no console); cada casa vem em várias malhas, uma por
+material (moldura pintada, vidro translúcido, soco, piso preto/branco e trepadeiras mortas). O Detalhe
+"Teto de Vidro" cobre o lugar com uma cúpula (`plot.cupula_vidro`); "Alagado", "Congelado", "Queimado" e
+"Fumegante" desenham um disco de água, gelo ou cinza (e brasas) em volta; "Luminoso" e "Poste de Luz" acendem
+luzes. A estufa colossal (`estufa_colossal`, só no modo `--estufa-colossal sempre`) cobre o nível inteiro, com
+um aro luminoso verde na entrada e um âmbar na saída, ligados por trilhas aos nós extremos, e sob ela só há
+alas de vidro. As estruturas pitorescas (fonte, estátuas, labirinto, mausoléu, lago, lago congelado, gramado
+de xadrez, escadaria e casa inclinada) vêm em uma malha por material (`COR_PITORESCO` em `Main.gd`), sobre o
+chão aplainado, e imprimem seus detalhes. Gazebos imprimem estado, bibelô, tesouro e a regra de abrigo
+noturno.
+
+As flores vêm com cor de vértice no `.obj` (haste verde, corola e miolo coloridos, uma cor por
+flor); `Main.gd` detecta isso (`_material_planta`) e liga `vertex_color_use_as_albedo`, e as demais plantas
+seguem com a cor fixa por espécie. Cada casa de vidro traz a flora de dentro (`flora_interna`: tema,
+densidade e um exemplar por planta, com posição, escala e giro; as mortas ficam marrons).
 
 A torre é tratada à parte: além da malha, imprime no console o conteúdo
 de cada andar (`plot.conteudo`, ver README do `ynn-generator`) e espalha

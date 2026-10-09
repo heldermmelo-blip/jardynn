@@ -3,95 +3,101 @@ import random
 
 import pytest
 
-from ynn import generator, pointcrawl, terrain
-from ynn.generator import (
-    ESTUFA_COLOSSAL_CHANCE,
-    ESTUFA_ESPELHO_CHANCE,
-    ESTUFA_MAX_ANDARES,
-    ESTUFA_MOLDURAS,
-    ESTUFA_RUINA_CHANCE,
-    ESTUFA_XADREZ_CHANCE,
-    generate_estufa_planta,
-)
+from ynn import generator, pointcrawl, tables, terrain
+from ynn.generator import ESTUFA_DADOS, ESTUFA_LACRADA_A_PARTIR_DE, generate_estufa_conteudo, sortear_dados_estufa
 
 
-def test_portes_follow_their_weights_and_limits():
-    n = 4000
-    contagem = {"minuscula": 0, "normal": 0, "imensa": 0}
-    for seed in range(n):
-        p = generate_estufa_planta(random.Random(seed))
-        contagem[p["porte"]] += 1
-        assert 1 <= p["andares"] <= ESTUFA_MAX_ANDARES  # nunca mais de 3 pavimentos
-        assert p["moldura"] in ESTUFA_MOLDURAS + ("ferrugem",)
-        if p["moldura"] == "ferrugem":
-            assert p["estado"] == "lastimavel"
-        if p["porte"] == "minuscula":
-            assert 1.2 <= p["raio"] <= 1.9 and p["andares"] == 1 and p["alas"] == 0
-        elif p["porte"] == "imensa":
-            assert p["alas"] >= 2 and p["andares"] >= 2
-            assert p["padrao"] in ("palacio", "cruz", "livre")
-            if p["padrao"] == "palacio":
-                assert 2 <= p["alas"] <= 5
-            if p["padrao"] == "cruz":
-                assert 4 <= p["alas"] <= 8
-        else:
-            assert p["alas"] <= 3
-            if p["padrao"] == "palacio":
-                assert p["alas"] == 2 and p["andares"] >= 2
-    assert abs(contagem["minuscula"] / n - 0.2) < 0.04
-    assert abs(contagem["normal"] / n - 0.6) < 0.04
-    assert abs(contagem["imensa"] / n - 0.2) < 0.04
+# --- estufas como no livro: dados jogados no papel ----------------------------------------
 
 
-def test_immense_ones_are_much_bigger_than_tiny_ones():
-    tinys = [generate_estufa_planta(random.Random(s), porte="minuscula")["raio"] for s in range(50)]
-    imensas = [generate_estufa_planta(random.Random(s), porte="imensa")["raio"] for s in range(50)]
-    assert max(tinys) < min(imensas)
+def test_the_handful_of_dice_is_1d4_plus_1_and_each_result_fits_its_die():
+    quantidades = set()
+    for seed in range(400):
+        dados = sortear_dados_estufa(random.Random(seed))
+        quantidades.add(len(dados))
+        for d in dados:
+            assert d["dado"] in ESTUFA_DADOS and 1 <= d["resultado"] <= d["dado"]
+    assert quantidades == {2, 3, 4, 5}
+    assert len(sortear_dados_estufa(random.Random(1), n=1)) == 1
 
 
-def test_ruin_and_checker_floor_follow_their_chances():
-    n = 5000
-    ruinas = xadrez = 0
-    for seed in range(n):
-        p = generate_estufa_planta(random.Random(seed))
-        ruinas += p["estado"] == "lastimavel"
-        xadrez += p["piso_xadrez"]
-    assert abs(ruinas / n - ESTUFA_RUINA_CHANCE) < 0.03  # 4 em 10
-    assert abs(xadrez / n - ESTUFA_XADREZ_CHANCE) < 0.03
+def test_dice_give_the_floorplan_and_the_d12_and_d20_have_more_floors():
+    assert {d: info["andares"] for d, info in ESTUFA_DADOS.items()} == {4: 1, 6: 1, 8: 1, 10: 1, 12: 2, 20: 3}
+    assert ESTUFA_DADOS[4]["lados"] == ESTUFA_DADOS[8]["lados"] == ESTUFA_DADOS[20]["lados"] == 3
+    assert ESTUFA_DADOS[6]["lados"] == ESTUFA_DADOS[10]["lados"] == 4
+    assert ESTUFA_DADOS[12]["lados"] == 5
+    raios = [ESTUFA_DADOS[d]["raio"] for d in (4, 6, 8, 10, 12, 20)]
+    assert raios == sorted(raios)  # dado maior, casa maior
 
 
-def test_colossal_is_the_rarest_one_in_thirty():
-    assert ESTUFA_COLOSSAL_CHANCE == pytest.approx(1 / 30)
-    n = 20000
-    saiu = sum(generator._sorteou_colossal(random.Random(s), "auto") for s in range(n))
-    assert abs(saiu / n - 1 / 30) < 0.006
-    assert all(generator._sorteou_colossal(random.Random(s), "sempre") for s in range(20))
-    assert not any(generator._sorteou_colossal(random.Random(s), "nunca") for s in range(20))
-    # mais rara que qualquer outra característica das estufas
-    assert ESTUFA_COLOSSAL_CHANCE < ESTUFA_ESPELHO_CHANCE < min(ESTUFA_XADREZ_CHANCE, ESTUFA_RUINA_CHANCE)
+def test_greenhouse_content_follows_the_number_rolled_in_the_books_order():
+    for resultado in range(1, 14):
+        c = generate_estufa_conteudo(random.Random(resultado), 3, resultado)
+        assert c["texto"] == tables.ESTUFA_CONTEUDO[resultado - 1][0] and c["resultado"] == resultado
+    assert generate_estufa_conteudo(random.Random(1), 3, 19)["texto"] == tables.ESTUFA_CONTEUDO[12][0]  # lacrada
+    assert ESTUFA_LACRADA_A_PARTIR_DE == 13 and max(ESTUFA_DADOS) == 20
+    assert len(tables.ESTUFA_CONTEUDO) == 13
+    raras = {generate_estufa_conteudo(random.Random(s), 3, 1)["valor_ouro"] for s in range(200)}
+    gaiolas = {generate_estufa_conteudo(random.Random(s), 3, 10)["valor_ouro"] for s in range(300)}
+    assert raras == set(range(4, 8)) and gaiolas == set(range(4, 14))  # 1d4 + 3 e 1d10 + 3
+    jarros = {generate_estufa_conteudo(random.Random(s), 3, 7)["quantidade"] for s in range(200)}
+    assert jarros == {2, 3, 4, 5}  # 1d4 + 1
+    assert generate_estufa_conteudo(random.Random(1), 3, 7)["criatura"]["nome"] == "Jarro Carnívoro"
 
 
-def test_water_mirror_happens_one_in_ten_and_only_for_the_tiny(monkeypatch):
-    def fake_mesh(rng, **kw):
-        quadrado = [(-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)]
-        return "x.obj", {"n_alas": 0, "pegadas": [quadrado], "raio_ocupado": 2.0, "portas_angulos": [0.5], "malhas": {}}
+def test_rolling_d12_without_a_result_gives_a_valid_entry():
+    for seed in range(60):
+        c = generate_estufa_conteudo(random.Random(seed), 2)
+        assert 1 <= c["resultado"] <= 12 and c["texto"]
 
-    monkeypatch.setattr(generator, "_generate_greenhouse_mesh", fake_mesh)
-    monkeypatch.setattr(generator, "sortear_flora_interna", lambda *a, **k: {})  # sem gerar malhas nas 4000 estufas
-    pequenas = com_espelho = 0
-    for seed in range(4000):
-        campos = generator._montar_estufa(random.Random(seed), 1, 1, ".")
-        if campos["planta"]["porte"] == "minuscula":
-            pequenas += 1
-            if "espelho_dagua" in campos:
-                com_espelho += 1
-                assert 2.2 <= campos["planta"]["raio"] <= 2.5  # ainda a menor classe, mas com porta
-                assert 5.5 <= campos["espelho_dagua"]["raio"] <= 8.0
-                assert campos["raio_ocupado"] >= campos["espelho_dagua"]["raio"] + 1.0
-        else:
-            assert "espelho_dagua" not in campos
-    assert pequenas > 500
-    assert abs(com_espelho / pequenas - ESTUFA_ESPELHO_CHANCE) < 0.03
+
+def _orquidario(resultado):
+    return generator.generate_orquidario_conteudo(random.Random(resultado), 3, resultado)
+
+
+def test_orchid_house_is_always_orchids_and_even_results_are_just_orchids():
+    for resultado in range(1, 13):
+        c = _orquidario(resultado)
+        assert c["orquidario"] and 3 <= c["valor_prata"] <= 30 and c["valor_prata"] % 3 == 0  # 1d10 x profundidade
+        assert any(c["texto"].startswith(base) for base in tables.ORQUIDARIO_TEXTOS)
+        assert (c["texto"] in tables.ORQUIDARIO_TEXTOS) == (resultado % 2 == 0)
+
+
+def test_a_cluster_of_greenhouses_is_built_from_the_dice(tmp_path):
+    for seed in range(1, 6):
+        campos = generator._montar_estufas(random.Random(seed), 2, seed, str(tmp_path))
+        casas = campos["estufas"]
+        assert 2 <= len(casas) <= 5 and campos["obj"] == casas[0]["obj"]
+        for c in casas:
+            p = c["planta"]
+            assert p["dado"] in ESTUFA_DADOS and 1 <= p["resultado"] <= p["dado"]
+            assert p["lados"] == ESTUFA_DADOS[p["dado"]]["lados"] and p["andares"] == ESTUFA_DADOS[p["dado"]]["andares"]
+            assert p["lacrada"] == (c["resultado"] >= 13)
+            assert p["piso_xadrez"] == (min(c["resultado"], 13) in generator.ESTUFA_PISO_XADREZ_COM)
+            assert c["conteudo"]["resultado"] == c["resultado"]
+            assert math.hypot(c["x"], c["z"]) + c["raio_ocupado"] <= campos["raio_ocupado"]
+        for i, a in enumerate(casas):
+            for b in casas[i + 1 :]:
+                assert math.hypot(a["x"] - b["x"], a["z"] - b["z"]) >= a["planta"]["raio"] + b["planta"]["raio"]
+
+
+def test_the_state_of_a_greenhouse_follows_the_places_detail(tmp_path):
+    de_pe = generator._montar_estufas(random.Random(2), 2, 1, str(tmp_path), ruina=False)["estufas"]
+    ruina = generator._montar_estufas(random.Random(2), 2, 1, str(tmp_path), ruina=True)["estufas"]
+    assert all(c["planta"]["estado"] == "conservada" and c["planta"]["moldura"] != "ferrugem" for c in de_pe)
+    assert all(c["planta"]["estado"] == "lastimavel" and c["planta"]["moldura"] == "ferrugem" for c in ruina)
+    assert all("morto" in c["malhas"] for c in ruina) and all("morto" not in c["malhas"] for c in de_pe)
+
+
+def test_what_a_greenhouse_grows_follows_what_it_holds(tmp_path):
+    for seed in range(1, 6):
+        c = generator._montar_estufas(random.Random(seed), 2, seed, str(tmp_path), n_dados=1)["estufas"][0]
+        tema, densidade = generator.ESTUFA_FLORA_POR_RESULTADO[min(c["resultado"], 13)]
+        assert c["flora_interna"]["densidade"] == densidade
+        if densidade == "vazia":
+            assert c["flora_interna"]["plantas"] == []
+    orq = generator._montar_estufas(random.Random(3), 2, 3, str(tmp_path), n_dados=1, orquidario=True)["estufas"][0]
+    assert orq["flora_interna"]["tema"] == "orquidario" and orq["flora_interna"]["densidade"] != "vazia"
 
 
 def _grafo(seed=3):
@@ -141,57 +147,6 @@ def test_flatten_circle_flattens_inside_and_keeps_far_terrain():
                 assert 0.0 < h < 1.0
 
 
-def test_level_sized_greenhouse_wraps_the_whole_level_with_entry_and_exit(tmp_path):
-    nivel = generator.generate_nivel(
-        random.Random(5), profundidade_max=2, max_nos=6, plant_output_dir=str(tmp_path), estufa_colossal="sempre"
-    )
-    colossal = nivel["estufa_colossal"]
-    raio = colossal["raio"]
-    assert 55.0 <= raio <= 80.0
-    entrada, saida = colossal["portas"]
-    assert (entrada["tipo"], saida["tipo"]) == ("entrada", "saida")
-    assert entrada["z"] == pytest.approx(-raio) and saida["z"] == pytest.approx(raio)  # lados opostos
-    plots = nivel["layout"]["plots"]
-    assert all(math.hypot(p["x"], p["z"]) + p.get("raio_ocupado", 6.0) <= raio for p in plots)  # o nível inteiro cabe sob o vidro
-    assert entrada["no_id"] == 0
-    mais_fundo = max(plots, key=lambda p: (p["profundidade"], p["no_id"]))
-    assert saida["no_id"] == mais_fundo["no_id"] and mais_fundo.get("saida_nivel") is True
-    assert colossal["planta"]["andares"] == 3 and colossal["planta"]["lados"] == 32
-
-
-def test_level_under_the_colossal_greenhouse_holds_only_glass_wings(tmp_path):
-    for seed in (1, 2, 3):
-        nivel = generator.generate_nivel(
-            random.Random(seed), profundidade_max=3, max_nos=10, plant_output_dir=str(tmp_path), estufa_colossal="sempre"
-        )
-        plots = nivel["layout"]["plots"]
-        assert plots and all(p["tipo"] == "estufa" for p in plots)  # nada de torre, gazebo, canteiro ou área aberta
-        assert nivel["areas"] == []
-        assert all(p["ala"] in ("vidraca", "orquidario") and p["planta"]["porte"] in ("minuscula", "normal") for p in plots)
-        assert all("espelho_dagua" not in p and "conteudo" in p and "flora_interna" in p for p in plots)
-        for p in plots:
-            if p["ala"] == "orquidario":
-                assert p["conteudo"]["orquidario"] and p["conteudo"]["valor_prata"] >= 1
-
-
-def test_orchid_house_is_always_orchids_and_sometimes_something_else():
-    n = 400
-    so_orquideas = 0
-    for seed in range(n):
-        c = generator.generate_orquidario_conteudo(random.Random(seed), 3)
-        assert 3 <= c["valor_prata"] <= 30 and c["valor_prata"] % 3 == 0  # 1d10 x profundidade
-        assert any(c["texto"].startswith(base) for base in generator.tables.ORQUIDARIO_TEXTOS)
-        so_orquideas += c["texto"] in generator.tables.ORQUIDARIO_TEXTOS
-    assert abs(so_orquideas / n - 0.5) < 0.1
-
-
-def test_never_mode_has_no_level_sized_greenhouse(tmp_path):
-    nivel = generator.generate_nivel(
-        random.Random(5), profundidade_max=2, max_nos=6, plant_output_dir=str(tmp_path), estufa_colossal="nunca"
-    )
-    assert "estufa_colossal" not in nivel and "portas_estufa" not in nivel["layout"]
-    assert not any("ala" in p for p in nivel["layout"]["plots"])
-
 
 # --- flora de dentro das estufas -------------------------------------------------
 
@@ -202,7 +157,7 @@ QUADRADO = [(-4.0, -3.0), (4.0, -3.0), (4.0, 3.0), (-4.0, 3.0)]
 def sem_malhas(monkeypatch):
     """Troca a geração de malha de planta por um nome de arquivo falso: os
     testes de sorteio não precisam do .obj."""
-    monkeypatch.setattr(generator, "_generate_plant_mesh", lambda rng, especie, out_path=None: (out_path, []))
+    monkeypatch.setattr(generator, "_generate_plant_mesh", lambda rng, especie, out_path=None, altura=None: (out_path, []))
 
 
 def _flora(seed, **kw):
@@ -266,16 +221,82 @@ def test_flora_count_is_capped_and_deterministic(sem_malhas):
     assert _flora(7) == _flora(7)
 
 
-def test_flora_does_not_disturb_the_level_random_stream(sem_malhas, monkeypatch):
+def test_flora_does_not_disturb_the_level_random_stream_of_the_dice(sem_malhas, monkeypatch):
     def fake_mesh(rng, **kw):
-        return "x.obj", {"n_alas": 0, "pegadas": [QUADRADO], "raio_ocupado": 4.0, "portas_angulos": [0.5], "malhas": {}}
+        quadrado = [(-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)]
+        return "x.obj", {"n_alas": 0, "pegadas": [quadrado], "raio_ocupado": 2.0, "portas_angulos": [0.5], "malhas": {}}
 
     monkeypatch.setattr(generator, "_generate_greenhouse_mesh", fake_mesh)
+    a = generator._montar_estufas(random.Random(11), 1, 1, ".", n_dados=2)
+    b = generator._montar_estufas(random.Random(11), 1, 1, ".", n_dados=2)
+    assert a == b
     com, sem = random.Random(11), random.Random(11)
-    generator._montar_estufa(com, 1, 1, ".")
-    monkeypatch.setattr(generator, "sortear_flora_interna", lambda *a, **k: {})
-    generator._montar_estufa(sem, 1, 1, ".")
-    assert com.random() == sem.random()
+    generator._montar_estufas(com, 1, 1, ".", n_dados=2)
+    monkeypatch.setattr(generator, "sortear_flora_interna", lambda *a, **k: {"plantas": []})
+    generator._montar_estufas(sem, 1, 1, ".", n_dados=2)
+    assert com.random() == sem.random()  # a flora tem um rng só dela
+
+
+# --- o Detalhe "Teto de Vidro" e a estufa colossal -------------------------------------------
+
+
+def _nivel(seed, **kw):
+    return generator.generate_nivel(random.Random(seed), profundidade_max=4, max_nos=14, **kw)
+
+
+def test_glass_roofed_detail_puts_a_glass_dome_over_that_place_and_only_it(tmp_path):
+    achados = 0
+    for seed in range(1, 60):
+        nivel = _nivel(seed, plant_output_dir=str(tmp_path))
+        for plot in nivel["layout"]["plots"]:
+            tem_vidro = "vidro" in plot["detalhe"]["efeitos"]
+            assert ("cupula_vidro" in plot) == tem_vidro
+            if tem_vidro:
+                achados += 1
+                c = plot["cupula_vidro"]
+                assert c["raio"] >= plot.get("raio_ocupado", 6.0) and c["andares"] in (2, 3)
+                assert {"moldura", "vidro"} <= set(c["malhas"])
+        if achados >= 3:
+            break
+    assert achados >= 3
+
+
+def test_never_mode_ignores_the_glass_roof_and_auto_has_no_level_wide_greenhouse(tmp_path):
+    for seed in range(1, 25):
+        nivel = _nivel(seed, plant_output_dir=str(tmp_path), estufa_colossal="nunca")
+        assert not any("cupula_vidro" in p for p in nivel["layout"]["plots"]) and "estufa_colossal" not in nivel
+        auto = _nivel(seed, plant_output_dir=str(tmp_path))
+        assert "estufa_colossal" not in auto and "portas_estufa" not in auto["layout"]
+
+
+def test_level_sized_greenhouse_wraps_the_whole_level_with_entry_and_exit(tmp_path):
+    nivel = generator.generate_nivel(
+        random.Random(5), profundidade_max=2, max_nos=6, plant_output_dir=str(tmp_path), estufa_colossal="sempre"
+    )
+    colossal = nivel["estufa_colossal"]
+    raio = colossal["raio"]
+    assert 55.0 <= raio <= 80.0
+    entrada, saida = colossal["portas"]
+    assert (entrada["tipo"], saida["tipo"]) == ("entrada", "saida")
+    assert entrada["z"] == pytest.approx(-raio) and saida["z"] == pytest.approx(raio)
+    plots = nivel["layout"]["plots"]
+    assert all(math.hypot(p["x"], p["z"]) + p.get("raio_ocupado", 6.0) <= raio for p in plots)
+    assert entrada["no_id"] == 0
+    mais_fundo = max(plots, key=lambda p: (p["profundidade"], p["no_id"]))
+    assert saida["no_id"] == mais_fundo["no_id"] and mais_fundo.get("saida_nivel") is True
+    assert colossal["planta"]["andares"] == 3 and colossal["planta"]["lados"] == 32
+
+
+def test_level_under_the_colossal_greenhouse_holds_only_glass_wings_with_one_die_each(tmp_path):
+    for seed in (1, 2, 3):
+        nivel = generator.generate_nivel(
+            random.Random(seed), profundidade_max=3, max_nos=10, plant_output_dir=str(tmp_path), estufa_colossal="sempre"
+        )
+        plots = nivel["layout"]["plots"]
+        assert plots and all(p["tipo"] in ("estufa", "orquidario") for p in plots)
+        assert nivel["areas"] == []
+        assert all(p["ala"] in ("vidraca", "orquidario") and len(p["estufas"]) == 1 for p in plots)
+        assert all("cupula_vidro" not in p for p in plots)
 
 
 def test_colossal_greenhouse_is_a_tropical_garden_that_avoids_the_level_content(tmp_path):
@@ -284,11 +305,21 @@ def test_colossal_greenhouse_is_a_tropical_garden_that_avoids_the_level_content(
     )
     flora = nivel["estufa_colossal"]["flora_interna"]
     assert flora["tema"] == "tropical" and flora["plantas"]
-    assert set(flora["especies"]) <= set(generator.ESTUFA_TEMAS["tropical"])
     raio = nivel["estufa_colossal"]["raio"]
     for p in flora["plantas"]:
         assert math.hypot(p["x"], p["z"]) <= raio
         for plot in nivel["layout"]["plots"]:
             assert math.hypot(p["x"] - plot["x"], p["z"] - plot["z"]) >= plot.get("raio_ocupado", 6.0)
-    for plot in nivel["layout"]["plots"]:
-        assert "flora_interna" in plot
+
+
+def test_places_are_whole_only_with_the_well_kept_or_ivy_details(tmp_path):
+    inteiros = ruinas = 0
+    for seed in range(1, 12):
+        nivel = _nivel(seed, plant_output_dir=str(tmp_path))
+        for plot in nivel["layout"]["plots"]:
+            efeitos = plot["detalhe"]["efeitos"]
+            inteiro = any(e in efeitos for e in generator.DETALHES_INTEIROS)
+            assert plot["estado"] == ("intacta" if inteiro else "ruina")
+            inteiros += inteiro
+            ruinas += not inteiro
+    assert ruinas > inteiros * 4  # a maioria jaz em ruínas, como no livro

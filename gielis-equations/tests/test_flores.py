@@ -21,7 +21,7 @@ def _gerar(tmp_path, especie, seed):
 
 def test_there_are_nine_flower_species_all_registered():
     assert len(ESPECIES_FLORES) == 9 and set(ESPECIES_FLORES) <= set(SPECIES)
-    assert len(SPECIES) == 23
+    assert len(SPECIES) == len(set(SPECIES)) >= 23
     assert set(PALETAS) == set(ESPECIES_FLORES)
 
 

@@ -3,6 +3,7 @@ import random
 
 from ynn.generator import band_for_layer, generate_area, generate_layer, generate_layout_camada, generate_torre_conteudo
 
+from ynn import generator
 from ynn.generator import CANTEIRO_SPECIES
 
 
@@ -100,29 +101,6 @@ def test_ground_cover_area_has_no_plant_meshes():
             assert area["plantas_obj"] == []
 
 
-def test_fallen_branches_produce_meshes_and_are_rare():
-    found_branches = False
-    triggered = 0
-    n_seeds = 60
-    for seed in range(n_seeds):
-        area = generate_area(random.Random(seed), layer=1, index=1)
-        if area["galhos_caidos_obj"]:
-            found_branches = True
-            triggered += 1
-            assert 1 <= len(area["galhos_caidos_obj"]) <= 3  # FALLEN_BRANCH_COUNT_RANGE
-            for path in area["galhos_caidos_obj"]:
-                assert os.path.exists(path)
-                assert os.path.getsize(path) > 0
-            assert "galhos cortados ou caídos" in area["text"]
-    assert found_branches
-    # FALLEN_BRANCH_CHANCE é 1/6 (~16.7%); com só 60 seeds (rápido, dado o
-    # custo de gerar malhas), a margem tem que ser bem folgada (~5 desvios
-    # padrão) pra não falhar por azar estatístico — o objetivo aqui é só
-    # pegar um bug grosseiro (chance trocada por 1.0, nunca dispara etc.),
-    # não validar a taxa exata.
-    assert 0.03 < triggered / n_seeds < 0.45
-
-
 def test_area_without_fallen_branches_has_empty_list():
     for seed in range(50):
         area = generate_area(random.Random(seed), layer=1, index=1)
@@ -149,18 +127,19 @@ def test_generate_layout_camada_populates_structure_meshes():
     torre = by_tipo["torre"][0]
     assert os.path.exists(torre["obj"])
     assert os.path.getsize(torre["obj"]) > 0
-    assert torre["conteudo"]["n_andares"] == len(torre["conteudo"]["andares"])
+    assert torre["conteudo"]["n_andares"] + 1 == len(torre["conteudo"]["andares"])  # o topo rola duas vezes
     assert len(torre["hera_obj"]) >= 3  # IVY_VARIANT_RANGE mínimo
     for path in torre["hera_obj"]:
         assert os.path.exists(path)
         assert os.path.getsize(path) > 0
 
     estufa = by_tipo["estufa"][0]
-    assert os.path.exists(estufa["obj"])
-    assert os.path.getsize(estufa["obj"]) > 0
-    assert estufa["planta"]["dado"] in (4, 6, 8, 10, 12, 20)
-    assert estufa["planta"]["portas"] == estufa["planta"]["lados"]
-    assert estufa["conteudo"]["texto"]
+    assert os.path.exists(estufa["obj"]) and os.path.getsize(estufa["obj"]) > 0
+    assert 2 <= len(estufa["estufas"]) <= 5  # um punhado de dados
+    for casa in estufa["estufas"]:
+        assert casa["planta"]["dado"] in (4, 6, 8, 10, 12, 20)
+        assert casa["planta"]["portas"] == casa["planta"]["lados"]
+        assert casa["conteudo"]["texto"]
 
     gazebo = by_tipo["gazebo"][0]
     assert os.path.exists(gazebo["obj"])
@@ -181,17 +160,6 @@ def test_generate_layout_camada_populates_structure_meshes():
         assert "plantas_obj" not in plot
 
 
-def test_estufa_bigger_dice_are_bigger_and_taller():
-    from ynn.generator import ESTUFA_DADOS
-
-    assert ESTUFA_DADOS[12]["andares"] == 2
-    assert ESTUFA_DADOS[20]["andares"] == 3
-    assert all(ESTUFA_DADOS[d]["andares"] == 1 for d in (4, 6, 8, 10))
-    assert ESTUFA_DADOS[4]["raio"] < ESTUFA_DADOS[12]["raio"]
-    # Cabe num lote (12 m): o raio circunscrito não passa da metade do lote.
-    assert all(info["raio"] <= 6.0 for info in ESTUFA_DADOS.values())
-
-
 def test_estufa_conteudo_table_references_valid_creatures():
     from ynn import tables
     from ynn.creatures import CREATURES
@@ -204,34 +172,6 @@ def test_estufa_conteudo_table_references_valid_creatures():
             assert criatura_key is None
 
 
-def test_estufa_conteudo_fills_value_or_creature():
-    from ynn.generator import generate_estufa_conteudo
-
-    visto_valor = visto_criatura = visto_simples = False
-    for seed in range(200):
-        layer = 3
-        conteudo = generate_estufa_conteudo(random.Random(seed), layer)
-        assert conteudo["texto"]
-        if "valor_ouro" in conteudo:
-            visto_valor = True
-            assert 1 + layer <= conteudo["valor_ouro"] <= 6 + layer
-        elif "criatura" in conteudo:
-            visto_criatura = True
-            assert conteudo["criatura"]["pontos_de_vida"] >= 1
-        else:
-            visto_simples = True
-    assert visto_valor and visto_criatura and visto_simples
-
-
-def test_estufa_conteudo_respects_bands():
-    from ynn.generator import generate_estufa_conteudo
-
-    for seed in range(200):
-        conteudo = generate_estufa_conteudo(random.Random(seed), layer=1)  # jardim_externo
-        assert "criatura" not in conteudo  # monstros só do jardim profundo em diante
-        assert "lacrada" not in conteudo["texto"]
-
-
 def test_gazebo_conteudo_fields_and_determinism():
     from ynn.generator import REFUGIO_GAZEBO, generate_gazebo_conteudo
 
@@ -242,12 +182,14 @@ def test_gazebo_conteudo_fields_and_determinism():
     assert a["texto"] and a["bibelo"] and a["tesouro"]
 
 
-def test_torre_conteudo_has_one_entry_per_floor():
+def test_torre_conteudo_has_one_entry_per_floor_and_two_on_top():
     for seed in range(30):
         conteudo = generate_torre_conteudo(random.Random(seed), layer=3)
-        assert 3 <= conteudo["n_andares"] <= 8  # N_ANDARES_TORRE_RANGE
-        assert len(conteudo["andares"]) == conteudo["n_andares"]
-        assert [a["numero"] for a in conteudo["andares"]] == list(range(1, conteudo["n_andares"] + 1))
+        n = conteudo["n_andares"]
+        assert 3 <= n <= 8  # N_ANDARES_TORRE_RANGE
+        assert len(conteudo["andares"]) == n + 1  # d12 em cada andar, d12 duas vezes no topo
+        assert [a["numero"] for a in conteudo["andares"]] == list(range(1, n + 1)) + [n]
+        assert [a.get("extra", False) for a in conteudo["andares"]] == [False] * n + [True]
 
 
 def test_torre_topo_is_the_last_floor_and_distinct_table():
@@ -259,9 +201,9 @@ def test_torre_topo_is_the_last_floor_and_distinct_table():
 
     for seed in range(30):
         conteudo = generate_torre_conteudo(random.Random(seed), layer=3)
-        topo = conteudo["andares"][-1]
-        assert topo["numero"] == conteudo["n_andares"]
-        assert topo["texto"] in topo_textos
+        topos = [a for a in conteudo["andares"] if a["numero"] == conteudo["n_andares"]]
+        assert len(topos) == 2 and topos[0]["texto"] != topos[1]["texto"]
+        assert all(t["texto"] in topo_textos for t in topos)
 
 
 def test_torre_andares_carry_a_prop_and_label():
@@ -337,47 +279,6 @@ def test_ground_cover_vegetation_has_no_species():
     assert all(species is None for _, species in ground_cover_entries)
 
 
-def test_torre_extras_follow_their_chances():
-    import math
-
-    from ynn.generator import (
-        TORRE_INCLINACAO_GRAUS,
-        TORRE_INCLINADA_CHANCE,
-        TORRE_TOPO_BROTADO_CHANCE,
-        TORRE_TREPADEIRA_CHANCE,
-        sortear_extras_torre,
-    )
-
-    n = 3000
-    topo = trepadeiras = inclinadas = 0
-    for seed in range(n):
-        extras = sortear_extras_torre(random.Random(seed), 3)
-        topo += extras["topo"] is not None
-        trepadeiras += extras["trepadeiras"]
-        if extras["inclinacao"] is not None:
-            inclinadas += 1
-            assert TORRE_INCLINACAO_GRAUS[0] <= extras["inclinacao"]["graus"] <= TORRE_INCLINACAO_GRAUS[1]
-            assert 0.0 <= extras["inclinacao"]["azimute"] < 2 * math.pi
-    assert abs(topo / n - TORRE_TOPO_BROTADO_CHANCE) < 0.04
-    assert abs(trepadeiras / n - TORRE_TREPADEIRA_CHANCE) < 0.04
-    assert abs(inclinadas / n - TORRE_INCLINADA_CHANCE) < 0.03  # 1 em cada 10
-
-
-def test_torre_topo_species_respect_bands_and_exist():
-    from gielis.plants import SPECIES
-
-    from ynn import tables
-    from ynn.generator import TORRE_TOPO_VARIANTES, sortear_extras_torre
-
-    for _texto, especie, _bandas in tables.TORRE_BROTO:
-        assert especie in SPECIES and especie in TORRE_TOPO_VARIANTES
-
-    externo = {sortear_extras_torre(random.Random(s), 1)["topo"][1] for s in range(400) if sortear_extras_torre(random.Random(s), 1)["topo"]}
-    selvagem = {sortear_extras_torre(random.Random(s), 5)["topo"][1] for s in range(400) if sortear_extras_torre(random.Random(s), 5)["topo"]}
-    assert externo <= {"arvore", "arbusto", "flor"}
-    assert "cogumelo" in selvagem
-
-
 def test_preencher_lote_writes_all_tower_extras(monkeypatch, tmp_path):
     from ynn import generator
 
@@ -386,7 +287,7 @@ def test_preencher_lote_writes_all_tower_extras(monkeypatch, tmp_path):
         "trepadeiras": True,
         "inclinacao": {"graus": 8.0, "azimute": 1.0},
     }
-    monkeypatch.setattr(generator, "sortear_extras_torre", lambda rng, layer: forcado)
+    monkeypatch.setattr(generator, "sortear_extras_torre", lambda rng, layer, efeitos=(), **kw: forcado)
     plot = {"tipo": "torre", "x": 0.0, "z": 0.0}
     generator._preencher_lote(random.Random(3), 3, plot, 1, str(tmp_path))
 
@@ -406,11 +307,175 @@ def test_preencher_lote_without_extras_keeps_the_conical_roof(monkeypatch, tmp_p
     from ynn import generator
 
     monkeypatch.setattr(
-        generator, "sortear_extras_torre", lambda rng, layer: {"topo": None, "trepadeiras": False, "inclinacao": None}
+        generator, "sortear_extras_torre", lambda rng, layer, efeitos=(), **kw: {"topo": None, "trepadeiras": False, "inclinacao": None}
     )
     plot = {"tipo": "torre", "x": 0.0, "z": 0.0}
     generator._preencher_lote(random.Random(3), 3, plot, 1, str(tmp_path))
     assert "topo_obj" not in plot and "trepadeiras_obj" not in plot and "inclinacao" not in plot
-    with open(plot["obj"]) as f:
+    with open(plot["malhas"]["telhado"]) as f:  # o telhado tem malha própria
         alturas = [float(line.split()[2]) for line in f if line.startswith("v ")]
     assert max(alturas) > plot["geometria"]["altura_total"] + 2.0  # telhado
+
+
+def test_tower_tables_are_the_two_d12_of_the_book():
+    from ynn import tables
+
+    assert len(tables.TORRE_ANDARES) == 12 and len(tables.TORRE_TOPO) == 12
+    assert all(entrada[1] == "all" for entrada in tables.TORRE_ANDARES + tables.TORRE_TOPO)  # o livro não filtra por banda
+    props = [e[3] for e in tables.TORRE_ANDARES]
+    assert props[:5] == [None, "bau", "criatura", "criatura", "mobilia"]  # nada, tesouro, mora, explora, móveis
+    assert props[5:] == ["estante", "ninhos", "teias", "esqueleto", "caixotes", "quadros", "espelho"]
+    assert [e[3] for e in tables.TORRE_TOPO] == [
+        "sino", "telescopio", "camera_escura", "bau_grande", "biblioteca", "criatura",
+        "armadilha", "armadura", "maquina", "espelho_sinal", "caixao", "lampada",
+    ]
+
+
+def test_tower_floor_rolls_are_a_fair_d12():
+    from collections import Counter
+
+    contagem = Counter()
+    for seed in range(1500):
+        conteudo = generate_torre_conteudo(random.Random(seed), layer=3, n_andares_range=(8, 8))
+        for andar in conteudo["andares"][:7]:
+            contagem[andar["rotulo"]] += 1
+    assert len(contagem) == 12  # os dois encontros têm rótulos diferentes
+    esperado = 1500 * 7 / 12
+    assert all(abs(c - esperado) < esperado * 0.15 for c in contagem.values())
+
+
+def test_bookshelf_has_a_one_in_six_spellbook_with_a_first_level_spell():
+    achados = estantes = 0
+    for seed in range(3000):
+        andar = generator._montar_andar(random.Random(seed), tables_andar("estante"), 3, 1, 5, False)
+        estantes += 1
+        if "livro_de_magias" in andar:
+            achados += 1
+            assert andar["livro_de_magias"]["nivel"] == 1 and andar["livro_de_magias"]["nome"]
+    assert abs(achados / estantes - 1 / 6) < 0.025
+
+
+def tables_andar(prop):
+    from ynn import tables
+
+    return next(e for e in tables.TORRE_ANDARES + tables.TORRE_TOPO if e[3] == prop)
+
+
+def test_paintings_are_d4_each_worth_100_gold_times_depth():
+    for layer in (1, 3, 5):
+        for seed in range(100):
+            q = generator._montar_andar(random.Random(seed), tables_andar("quadros"), layer, 1, 5, False)["quadros"]
+            assert 1 <= q["quantidade"] <= 4 and q["valor_ouro"] == q["quantidade"] * 100 * layer
+
+
+def test_top_floor_hoard_is_three_treasures_and_library_has_the_dice_ladder():
+    for seed in range(60):
+        tesouros = generator._montar_andar(random.Random(seed), tables_andar("bau_grande"), 3, 6, 6, True)
+        assert len(tesouros["tesouros"]) == 3 and tesouros["tesouro"] == tesouros["tesouros"][0]
+        biblioteca = generator._montar_andar(random.Random(seed), tables_andar("biblioteca"), 3, 6, 6, True)["biblioteca"]
+        assert 1 <= biblioteca["nivel_1"] <= 12 and 1 <= biblioteca["nivel_2"] <= 10 and 1 <= biblioteca["nivel_3"] <= 8
+        assert 1 <= biblioteca["nivel_4"] <= 6 and 1 <= biblioteca["nivel_5"] <= 4 and biblioteca["nivel_6_ou_mais"] == 1
+
+
+def test_top_floor_monster_is_rolled_deeper_by_the_number_of_floors():
+    from ynn.generator import band_for_layer
+
+    # camada 1 sozinha é jardim externo; somando 8 andares vira o núcleo selvagem
+    assert band_for_layer(1) != band_for_layer(1 + 8)
+    forte = {generator._montar_andar(random.Random(s), tables_andar("criatura"), 1, 8, 8, True).get("denizen") for s in range(80)}
+    fraco = {generator._montar_andar(random.Random(s), tables_andar("criatura"), 1, 8, 8, False).get("denizen") for s in range(80)}
+    assert forte != fraco
+
+
+def test_tower_plot_has_door_windows_climbing_rules_and_materials(tmp_path):
+    from ynn import tables
+    from ynn.generator import _preencher_lote
+
+    for seed in range(1, 7):
+        plot = {"tipo": "torre", "x": 0.0, "z": 0.0}
+        _preencher_lote(random.Random(seed), 3, plot, seed, str(tmp_path))
+        n = plot["conteudo"]["n_andares"]
+        assert plot["porta"]["estado"] == "entreaberta"
+        assert {"tijolo", "madeira", "tapete", "agua", "papel"} <= set(plot["malhas"])
+        assert {j["andar"] for j in plot["geometria"]["janelas"]} == set(range(2, n + 1))
+        assert plot["escalada"]["andares_com_janela"] == list(range(2, n + 1))
+        assert plot["escalada"]["trepadeiras"] == ("trepadeiras_obj" in plot)
+        assert plot["escalada"]["regra"] == tables.TORRE_ESCALADA_REGRA
+
+
+def test_fallen_branches_come_with_ruin_and_only_with_ruin():
+    for seed in range(30):
+        ruina = generate_area(random.Random(seed), layer=1, index=1, ruina=True)
+        assert 1 <= len(ruina["galhos_caidos_obj"]) <= 3  # 1d3
+        assert all(os.path.exists(p) and os.path.getsize(p) > 0 for p in ruina["galhos_caidos_obj"])
+        assert "galhos cortados ou caídos" in ruina["text"]
+        inteira = generate_area(random.Random(seed), layer=1, index=1, ruina=False)
+        assert inteira["galhos_caidos_obj"] == [] and "galhos cortados ou caídos" not in inteira["text"]
+
+
+def test_an_area_opens_with_its_place_name_and_the_places_own_text():
+    from ynn import tables
+
+    for nome, texto in tables.LOCAL_TEXTOS.items():
+        area = generate_area(random.Random(1), layer=1, index=1, local=nome)
+        assert area["text"].startswith(f"{nome}. {texto}")
+    assert set(tables.LOCAL_TEXTOS) == {nome for nome, _ in tables.LOCAIS}
+
+
+def test_tower_extras_come_from_the_details_effects_not_from_chances():
+    import math
+
+    from ynn.generator import (
+        TORRE_INCLINA_COM,
+        TORRE_INCLINACAO_GRAUS,
+        TORRE_SEM_TELHADO_COM,
+        sortear_extras_torre,
+    )
+
+    # a torre do livro é sempre coberta de hera
+    assert all(sortear_extras_torre(random.Random(s), 3)["trepadeiras"] for s in range(50))
+    # sem efeito nenhum: telhado inteiro e torre reta
+    neutro = sortear_extras_torre(random.Random(1), 3, ("vazio",))
+    assert neutro["topo"] is None and neutro["inclinacao"] is None
+    # o chão que se mexe inclina a torre
+    for efeito in TORRE_INCLINA_COM:
+        e = sortear_extras_torre(random.Random(2), 3, (efeito,))
+        assert TORRE_INCLINACAO_GRAUS[0] <= e["inclinacao"]["graus"] <= TORRE_INCLINACAO_GRAUS[1]
+        assert 0.0 <= e["inclinacao"]["azimute"] < 2 * math.pi
+    # fogo queima o telhado; mato abre caminho e algo brota no topo
+    for efeito in ("queimado", "fumegante"):
+        assert sortear_extras_torre(random.Random(3), 3, (efeito,))["topo"][1] is None
+    brotos = {sortear_extras_torre(random.Random(s), 3, ("fertil",))["topo"][1] for s in range(200)}
+    assert brotos and None not in brotos
+
+
+def test_tower_top_species_exist_and_respect_bands():
+    from gielis.plants import SPECIES
+
+    from ynn import tables
+    from ynn.generator import TORRE_TOPO_VARIANTES, sortear_extras_torre
+
+    for _texto, especie, _bandas in tables.TORRE_BROTO:
+        assert especie in SPECIES and especie in TORRE_TOPO_VARIANTES
+    externo = {sortear_extras_torre(random.Random(s), 1, ("fertil",))["topo"][1] for s in range(300)}
+    selvagem = {sortear_extras_torre(random.Random(s), 5, ("fertil",))["topo"][1] for s in range(300)}
+    assert externo <= {"arvore", "arbusto", "flor"} and "cogumelo" in selvagem
+
+
+def test_a_burned_tower_loses_its_roof_and_tilting_details_tilt_it(tmp_path):
+    plot = {"tipo": "torre", "x": 0.0, "z": 0.0, "detalhe": {"efeitos": ["queimado"], "texto": "x", "tipo_relevo": "plano"}}
+    generator._preencher_lote(random.Random(3), 3, plot, 1, str(tmp_path), ["queimado"])
+    assert "telhado" not in plot["malhas"] and "topo_obj" not in plot and plot["conteudo"]["topo_queimado"]["texto"]
+    assert plot["estado"] == "ruina" and "inclinacao" not in plot
+    torta = {"tipo": "torre", "x": 0.0, "z": 0.0}
+    generator._preencher_lote(random.Random(3), 3, torta, 2, str(tmp_path), ["convulso"])
+    assert torta["inclinacao"]["graus"] > 3.9 and "telhado" in torta["malhas"]  # inclinada e com telhado
+    inteira = {"tipo": "torre", "x": 0.0, "z": 0.0}
+    generator._preencher_lote(random.Random(3), 3, inteira, 3, str(tmp_path), ["bem_cuidado"])
+    assert inteira["estado"] == "intacta" and inteira["escalada"]["trepadeiras"]
+
+
+def test_a_fertile_tower_grows_something_on_its_open_top(tmp_path):
+    plot = {"tipo": "torre", "x": 0.0, "z": 0.0}
+    generator._preencher_lote(random.Random(4), 3, plot, 1, str(tmp_path), ["fertil"])
+    assert plot["conteudo"]["topo_brotado"]["especie"] and plot["topo_obj"] and "telhado" not in plot["malhas"]

@@ -47,9 +47,8 @@ const COLOR_SOCO := Color(0.55, 0.53, 0.5)
 const COLOR_MORTO := Color(0.3, 0.22, 0.14)
 const COLOR_PISO_PRETO := Color(0.06, 0.06, 0.07)
 const COLOR_PISO_BRANCO := Color(0.88, 0.87, 0.82)
-const COLOR_AGUA := Color(0.32, 0.5, 0.58, 0.72)
-const COLOR_CALCADA := Color(0.7, 0.68, 0.62)
 const COLOR_PLANTA_MORTA := Color(0.36, 0.27, 0.16)
+const ARVORES_GRANDES := ["carvalho", "salgueiro", "pinheiro", "araucaria", "dracena_dragao"]
 const COR_FLORA_ESTUFA := {
 	"cacto_coluna": Color(0.3, 0.55, 0.32),
 	"cacto_barril": Color(0.35, 0.6, 0.3),
@@ -63,6 +62,7 @@ const COR_FLORA_ESTUFA := {
 	"cipreste": Color(0.1, 0.3, 0.16),
 	"topiaria": Color(0.2, 0.46, 0.2),
 	"cogumelo": Color(0.75, 0.35, 0.3),
+	"dracena_dragao": Color(0.32, 0.5, 0.3),
 }
 const COR_PITORESCO := {
 	"pedra": Color(0.66, 0.64, 0.6),
@@ -78,6 +78,33 @@ const COR_PITORESCO := {
 	"agua": Color(0.28, 0.48, 0.56, 0.78),
 	"gelo": Color(0.78, 0.9, 0.96, 0.88),
 	"flor": Color(0.97, 0.8, 0.88),
+	"ferro": Color(0.1, 0.13, 0.12),
+	"jarro": Color(0.68, 0.64, 0.56),
+	"musgo": Color(0.2, 0.42, 0.16),
+	"madeira": Color(0.5, 0.36, 0.22),
+	"reboco": Color(0.78, 0.7, 0.46),
+	"telha": Color(0.58, 0.3, 0.22),
+}
+const COR_TORRE := {
+	"tijolo": Color(0.62, 0.36, 0.28),
+	"madeira": Color(0.42, 0.28, 0.17),
+	"telhado": Color(0.36, 0.2, 0.18),
+	"terra": Color(0.25, 0.18, 0.1),
+	"tapete": Color(0.3, 0.36, 0.2),
+	"agua": Color(0.3, 0.45, 0.52, 0.7),
+	"papel": Color(0.8, 0.74, 0.58),
+	"ferro": Color(0.1, 0.13, 0.12),
+	"pedra": Color(0.66, 0.64, 0.6),
+	"jarro": Color(0.68, 0.64, 0.56),
+	"musgo": Color(0.2, 0.42, 0.16),
+}
+const COR_GAZEBO := {
+	"madeira": Color(0.93, 0.88, 0.74),
+	"telhado": Color(0.72, 0.36, 0.3),
+	"ferro": Color(0.1, 0.13, 0.12),
+	"pedra": Color(0.66, 0.64, 0.6),
+	"jarro": Color(0.68, 0.64, 0.56),
+	"musgo": Color(0.2, 0.42, 0.16),
 }
 const COR_MOLDURA := {
 	"verde": Color(0.16, 0.36, 0.24),
@@ -154,8 +181,12 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 		print("[profundidade %s] %s" % [_n(plot.get("profundidade")), plot.get("local")])
 		var detalhe = plot.get("detalhe", {})
 		print("  Detalhe (%s): %s" % [detalhe.get("tipo_relevo", "?"), detalhe.get("texto", "")])
-		if detalhe.get("tesouro") != null:
+		if detalhe.get("tesouros") != null:
+			print("  Pilha de tesouro: %s de prata e %s" % [_n(detalhe.get("prata")), " / ".join(PackedStringArray(detalhe.get("tesouros")))])
+		elif detalhe.get("tesouro") != null:
 			print("  Achado extra: %s" % detalhe.get("tesouro"))
+		if plot.get("estado") != null:
+			print("  O lugar %s." % ("está inteiro" if plot.get("estado") == "intacta" else "jaz em ruínas"))
 		if "saida" in detalhe.get("efeitos", []):
 			print("  Há uma porta de volta ao mundo real aqui.")
 
@@ -166,9 +197,9 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 				_spawn_area(area, x, z, terreno)
 		"torre":
 			_spawn_torre(plot, x, z, terreno)
-		"estufa":
+		"estufa", "orquidario":
 			_spawn_estufa(plot, x, z, terreno)
-		"fonte", "estatuas", "labirinto", "mausoleu", "lago", "lago_gelado", "xadrez":
+		"fonte", "estatuas", "labirinto", "mausoleu", "lago", "lago_gelado", "xadrez", "escadaria", "casa_inclinada":
 			_spawn_pitoresco(plot, x, z)
 		"gazebo":
 			var gazebo = plot.get("conteudo", {})
@@ -177,7 +208,17 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 			print("  Bibelô: %s" % gazebo.get("bibelo", ""))
 			print("  Tesouro: %s" % gazebo.get("tesouro", ""))
 			print("  %s" % gazebo.get("refugio", ""))
-			_spawn_structure(plot.get("obj", ""), x, z, terreno, COLOR_GAZEBO, true, true)
+			if plot.get("estado") == "ruina":
+				print("  O coreto está em ruínas: parapeito e telhado vencidos, musgo na base.")
+			print("  Parapeito: %s." % str(plot.get("estilo", "?")).replace("_", " "))
+			if plot.has("malhas"):
+				var raiz_gazebo = Node3D.new()
+				raiz_gazebo.position = Vector3(x, _height_at(terreno, x, z) if terreno != null else 0.0, z)
+				raiz_gazebo.rotation.y = randf_range(0.0, TAU)
+				add_child(raiz_gazebo)
+				_spawn_malhas_torre(plot.get("malhas"), raiz_gazebo, COR_GAZEBO)
+			else:
+				_spawn_structure(plot.get("obj", ""), x, z, terreno, COLOR_GAZEBO, true, true)
 		"canteiro":
 			print("--- Canteiro de %s em (%.1f, %.1f) ---" % [plot.get("especie", "?"), x, z])
 			var cor_canteiro = COLOR_FLOR if plot.get("especie") == "flor" else COLOR_PLANTA
@@ -186,40 +227,128 @@ func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 		_:
 			push_warning("Tipo de lote desconhecido no layout: %s" % tipo)
 
+	_spawn_ambiente(plot, x, z, terreno)
+	_spawn_cupula_vidro(plot, x, z, terreno)
+
 
 ## Estufa comum: moldura de ferro pintada, vidro (às vezes quebrado), soco de
 ## pedra, piso xadrez e trepadeiras mortas, cada grupo de malha com seu
 ## material. `rotacao_y` vira a porta pro caminho que leva até ela; se ela
 ## está num espelho d'água, desenha a água e a calçada até a porta.
 func _spawn_estufa(plot: Dictionary, x: float, z: float, terreno) -> void:
-	var planta = plot.get("planta", {})
-	var estado = "em estado lastimável" if planta.get("estado") == "lastimavel" else "conservada"
-	print("--- Estufa %s em (%.1f, %.1f): %s lados, %s andar(es), %s ala(s), %s ---" % [planta.get("porte", "?"), x, z, _n(planta.get("lados", "?")), _n(planta.get("andares", "?")), _n(planta.get("alas", 0)), estado])
-	if planta.get("piso_xadrez"):
-		print("  Piso em xadrez preto e branco.")
-	var conteudo = plot.get("conteudo", {})
-	print(conteudo.get("texto", ""))
-	if conteudo.get("valor_ouro") != null:
-		print("  Vale %s de ouro" % _n(conteudo.get("valor_ouro")))
-	if conteudo.get("valor_prata") != null:
-		print("  As orquídeas valem %s de prata a um colecionador" % _n(conteudo.get("valor_prata")))
-	var criatura = conteudo.get("criatura")
-	if criatura != null:
-		print("  Criatura: %s (CA %s, DV %s, PV %s)" % [criatura.get("nome"), _n(criatura.get("ca")), criatura.get("dv"), _n(criatura.get("pontos_de_vida"))])
-
+	var casas: Array = plot.get("estufas", [])
+	var rotulo = "Orquidário" if plot.get("tipo") == "orquidario" else "Estufas"
+	var estado = " em ruínas" if plot.get("estado") == "ruina" else ""
+	print("--- %s%s em (%.1f, %.1f): %d casa(s) de vidro, dados jogados no papel ---" % [rotulo, estado, x, z, casas.size()])
 	var y = _height_at(terreno, x, z) if terreno != null else 0.0
-	var espelho = plot.get("espelho_dagua")
-	if espelho != null:
-		y = 0.0  # o relevo foi aplainado debaixo da água
-		print("  A estufa fica no meio de um espelho d'água, com uma calçada até a porta.")
-		_spawn_espelho(espelho, planta, x, z, y)
+	for casa in casas:
+		var planta = casa.get("planta", {})
+		print("  d%s tirou %s: %s lados, %s andar(es)%s%s" % [_n(casa.get("dado")), _n(casa.get("resultado")), _n(planta.get("lados")), _n(planta.get("andares")), ", piso em xadrez" if planta.get("piso_xadrez") else "", ", lacrada" if planta.get("lacrada") else ""])
+		var conteudo = casa.get("conteudo", {})
+		print("    %s" % conteudo.get("texto", ""))
+		if conteudo.get("valor_ouro") != null:
+			print("    Vale %s de ouro" % _n(conteudo.get("valor_ouro")))
+		if conteudo.get("valor_prata") != null:
+			print("    As orquídeas valem %s de prata a um colecionador" % _n(conteudo.get("valor_prata")))
+		var criatura = conteudo.get("criatura")
+		if criatura != null:
+			var qtd = " (x%s)" % _n(conteudo.get("quantidade")) if conteudo.get("quantidade") != null else ""
+			print("    Criatura: %s%s (CA %s, DV %s, PV %s)" % [criatura.get("nome"), qtd, _n(criatura.get("ca")), criatura.get("dv"), _n(criatura.get("pontos_de_vida"))])
+		var raiz = Node3D.new()
+		raiz.position = Vector3(x + float(casa.get("x", 0.0)), y, z + float(casa.get("z", 0.0)))
+		raiz.rotation.y = casa.get("rotacao_y", 0.0)
+		add_child(raiz)
+		_spawn_malhas_estufa(casa.get("malhas", {}), planta, raiz)
+		_spawn_flora_interna(casa.get("flora_interna"), raiz)
 
+
+## "Teto de Vidro": o lugar inteiro fica dentro de uma estufa gigante, uma
+## cúpula de vidro sobre o lote.
+func _spawn_cupula_vidro(plot: Dictionary, x: float, z: float, terreno) -> void:
+	var cupula = plot.get("cupula_vidro")
+	if cupula == null:
+		return
+	print("  O lugar inteiro está dentro de uma estufa gigante (cúpula de %.0f m de raio)." % float(cupula.get("raio", 0.0)))
 	var raiz = Node3D.new()
-	raiz.position = Vector3(x, y, z)
-	raiz.rotation.y = plot.get("rotacao_y", 0.0)
+	raiz.position = Vector3(x, _height_at(terreno, x, z) if terreno != null else 0.0, z)
+	raiz.rotation.y = cupula.get("rotacao_y", 0.0)
 	add_child(raiz)
-	_spawn_malhas_estufa(plot.get("malhas", {}), planta, raiz)
-	_spawn_flora_interna(plot.get("flora_interna"), raiz)
+	_spawn_malhas_estufa(cupula.get("malhas", {}), {"moldura": "verdete", "estado": cupula.get("estado")}, raiz)
+
+
+## O Detalhe de cada lugar muda o clima dele: água parada, geada, cinzas, brasas,
+## brilho de plantas luminosas, um poste aceso. (O estado, inteiro ou em ruínas,
+## vem do mesmo Detalhe e já deu forma às estruturas.)
+func _spawn_ambiente(plot: Dictionary, x: float, z: float, terreno) -> void:
+	var efeitos = plot.get("detalhe", {}).get("efeitos", [])
+	var raio: float = float(plot.get("raio_ocupado", 9.0)) + 5.0
+	if plot.has("cupula_vidro"):
+		raio = float(plot.get("cupula_vidro").get("raio", raio))
+	var y = (_height_at(terreno, x, z) if terreno != null else 0.0)
+	var cor = null
+	var altura = 0.08
+	if "alagado" in efeitos:
+		cor = Color(0.28, 0.44, 0.5, 0.55)
+		altura = 0.35
+	elif "congelado" in efeitos:
+		cor = Color(0.85, 0.93, 0.98, 0.7)
+		altura = 0.1
+	elif "queimado" in efeitos or "fumegante" in efeitos:
+		cor = Color(0.08, 0.07, 0.07, 0.8)
+	if cor != null:
+		var st = SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var n = 36
+		var c0 = Vector3(x, y + altura, z)
+		for i in range(n):
+			var a0 = TAU * i / n
+			var a1 = TAU * (i + 1) / n
+			st.add_vertex(c0)
+			st.add_vertex(c0 + Vector3(cos(a1), 0.0, sin(a1)) * raio)
+			st.add_vertex(c0 + Vector3(cos(a0), 0.0, sin(a0)) * raio)
+		st.generate_normals()
+		var disco = MeshInstance3D.new()
+		disco.mesh = st.commit()
+		var material = StandardMaterial3D.new()
+		material.albedo_color = cor
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		disco.material_override = material
+		disco.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(disco)
+	if "fumegante" in efeitos:
+		for k in range(4):
+			var brasa = OmniLight3D.new()
+			brasa.light_color = Color(1.0, 0.45, 0.15)
+			brasa.omni_range = 5.0
+			brasa.light_energy = 0.9
+			var ang = TAU * k / 4.0 + 0.5
+			brasa.position = Vector3(x + cos(ang) * raio * 0.5, y + 0.5, z + sin(ang) * raio * 0.5)
+			add_child(brasa)
+	if "luminoso" in efeitos:
+		for k in range(5):
+			var luz = OmniLight3D.new()
+			luz.light_color = Color(0.5, 1.0, 0.8)
+			luz.omni_range = 6.0
+			luz.light_energy = 0.8
+			var ang = TAU * k / 5.0
+			luz.position = Vector3(x + cos(ang) * raio * 0.45, y + 1.2, z + sin(ang) * raio * 0.45)
+			add_child(luz)
+	if "poste" in efeitos:
+		var poste = MeshInstance3D.new()
+		var cil = CylinderMesh.new()
+		cil.top_radius = 0.06
+		cil.bottom_radius = 0.1
+		cil.height = 3.6
+		poste.mesh = cil
+		poste.material_override = _material(Color(0.08, 0.1, 0.09))
+		poste.position = Vector3(x + raio * 0.35, y + 1.8, z)
+		add_child(poste)
+		var lampada = OmniLight3D.new()
+		lampada.light_color = Color(1.0, 0.85, 0.55)
+		lampada.omni_range = 11.0
+		lampada.position = Vector3(x + raio * 0.35, y + 3.8, z)
+		add_child(lampada)
 
 
 ## Uma malha por material: o .obj da moldura (`malhas.moldura`) mais as
@@ -295,6 +424,9 @@ func _spawn_pitoresco(plot: Dictionary, x: float, z: float) -> void:
 	var tipo = str(plot.get("tipo"))
 	print("--- %s em (%.1f, %.1f), raio %.1f m ---" % [tipo.capitalize(), x, z, float(plot.get("raio_ocupado", 0.0))])
 	var extra = plot.get("pitoresco", {})
+	if plot.get("estado") == "ruina":
+		print("  Está em ruínas.")
+	print("  Ferragens e parapeito: %s." % str(plot.get("estilo", "?")).replace("_", " "))
 	if tipo == "fonte":
 		print("  A fonte está %s." % ("seca" if extra.get("seca") else "cheia d'água"))
 	elif tipo == "estatuas":
@@ -331,6 +463,32 @@ func _spawn_pitoresco(plot: Dictionary, x: float, z: float) -> void:
 		raiz.add_child(mi)
 
 
+## Torre do livro: tijolo, madeira (porta entreaberta, venezianas, escada, pisos),
+## telhado, tapete mofado, poças d'água junto às janelas e papel de parede
+## descascando — cada material da sua cor, todos de dupla face.
+func _spawn_malhas_torre(malhas: Dictionary, torre: Node3D, cores: Dictionary = COR_TORRE) -> void:
+	for grupo in malhas:
+		var filename = str(malhas[grupo]).replace("\\", "/").get_file()
+		var mesh = load(plants_dir.path_join(filename))
+		if mesh == null:
+			push_warning("Malha não encontrada (reimporte o projeto no editor após gerar os .obj): %s" % filename)
+			continue
+		var cor: Color = cores.get(grupo, COLOR_TORRE)
+		var mi = MeshInstance3D.new()
+		mi.mesh = mesh
+		if cor.a < 1.0:
+			var material = StandardMaterial3D.new()
+			material.albedo_color = cor
+			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			material.cull_mode = BaseMaterial3D.CULL_DISABLED
+			material.roughness = 0.1
+			mi.material_override = material
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		else:
+			mi.material_override = _material(cor, true)
+		torre.add_child(mi)
+
+
 func _material_vidro() -> StandardMaterial3D:
 	var material = StandardMaterial3D.new()
 	material.albedo_color = COLOR_VIDRO
@@ -338,62 +496,6 @@ func _material_vidro() -> StandardMaterial3D:
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	material.roughness = 0.1
 	return material
-
-
-## Disco de água em volta da estufa minúscula e a calçada de pedra da porta
-## até a margem, na direção do caminho (`caminho_angulo`).
-func _spawn_espelho(espelho: Dictionary, planta: Dictionary, x: float, z: float, y: float) -> void:
-	var raio: float = espelho.get("raio", 6.0)
-	var st = SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var n = 40
-	var centro = Vector3(x, y + 0.12, z)
-	for i in range(n):
-		var a0 = TAU * i / n
-		var a1 = TAU * (i + 1) / n
-		st.add_vertex(centro)
-		st.add_vertex(centro + Vector3(cos(a1), 0.0, sin(a1)) * raio)
-		st.add_vertex(centro + Vector3(cos(a0), 0.0, sin(a0)) * raio)
-	st.generate_normals()
-	var agua = MeshInstance3D.new()
-	agua.mesh = st.commit()
-	var material = StandardMaterial3D.new()
-	material.albedo_color = COLOR_AGUA
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.roughness = 0.05
-	material.metallic = 0.4
-	agua.material_override = material
-	add_child(agua)
-
-	var angulo: float = espelho.get("caminho_angulo", 0.0)
-	var dir = Vector2(cos(angulo), sin(angulo))
-	var inicio = Vector2(x, z) + dir * (float(planta.get("raio", 2.3)) + 0.6)
-	var fim = Vector2(x, z) + dir * (raio + 0.6)
-	_spawn_fita(inicio, fim, 1.6, COLOR_CALCADA, y + 0.2)
-
-
-## Fita plana a altura fixa (a calçada do espelho d'água, que fica sobre o
-## chão aplainado).
-func _spawn_fita(a: Vector2, b: Vector2, largura: float, cor: Color, y: float) -> void:
-	var comprimento = a.distance_to(b)
-	if comprimento < 0.01:
-		return
-	var direcao = (b - a).normalized()
-	var lado = Vector2(-direcao.y, direcao.x) * (largura / 2.0)
-	var l0 = a + lado
-	var r0 = a - lado
-	var l1 = b + lado
-	var r1 = b - lado
-	var st = SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for p in [l0, r0, l1, r0, r1, l1]:
-		st.add_vertex(Vector3(p.x, y, p.y))
-	st.generate_normals()
-	var mi = MeshInstance3D.new()
-	mi.mesh = st.commit()
-	mi.material_override = _material(cor, true)
-	add_child(mi)
 
 
 ## A estufa colossal: o vidro dela cobre o nível inteiro. Entra-se por um
@@ -467,11 +569,24 @@ func _spawn_portal(pos: Vector2, entrada: bool) -> void:
 func _spawn_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
 	var conteudo = plot.get("conteudo", {})
 	print("--- Torre em (%.1f, %.1f), %s andares ---" % [x, z, _n(conteudo.get("n_andares", "?"))])
+	if plot.get("estado") == "ruina":
+		print("  A torre está em ruínas: parte das paredes desabou, portas e venezianas caíram, o parapeito se desfez.")
+	print("  Ferragens e parapeito: %s." % str(plot.get("estilo", "?")).replace("_", " "))
 	for andar in conteudo.get("andares", []):
 		var marca = " (topo)" if andar.get("numero") == conteudo.get("n_andares") else ""
 		print("Andar %s%s: %s" % [_n(andar.get("numero")), marca, andar.get("texto", "")])
-		if andar.get("tesouro") != null:
+		if andar.get("tesouros") != null:
+			for achado in andar.get("tesouros"):
+				print("  Tesouro: %s" % achado)
+		elif andar.get("tesouro") != null:
 			print("  Tesouro: %s" % andar.get("tesouro"))
+		if andar.get("livro_de_magias") != null:
+			print("  Entre os livros, um livro de magias de 1º nível: %s" % andar.get("livro_de_magias").get("nome"))
+		if andar.get("quadros") != null:
+			print("  %s retratos, valendo %s de ouro no total" % [_n(andar.get("quadros").get("quantidade")), _n(andar.get("quadros").get("valor_ouro"))])
+		if andar.get("biblioteca") != null:
+			var b = andar.get("biblioteca")
+			print("  Livros de magia: %s de 1º, %s de 2º, %s de 3º, %s de 4º, %s de 5º e 1 de 6º ou mais" % [_n(b.get("nivel_1")), _n(b.get("nivel_2")), _n(b.get("nivel_3")), _n(b.get("nivel_4")), _n(b.get("nivel_5"))])
 		if andar.get("denizen") != null:
 			print("  Encontro: %s" % andar.get("denizen"))
 			var npc = andar.get("npc")
@@ -480,6 +595,15 @@ func _spawn_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
 			var creature = andar.get("criatura")
 			if creature != null:
 				print("  Criatura: %s (CA %s, DV %s, PV %s)" % [creature.get("nome"), _n(creature.get("ca")), creature.get("dv"), _n(creature.get("pontos_de_vida"))])
+
+	var escalada = plot.get("escalada")
+	if escalada != null:
+		var andares_janela := []
+		for a_janela in escalada.get("andares_com_janela"):
+			andares_janela.append(_n(a_janela))
+		print("  Porta térrea entreaberta; janelas de veneziana nos andares %s." % ", ".join(PackedStringArray(andares_janela)))
+		print("  %s" % ("Trepadeiras sobem pela parede até as janelas." if escalada.get("trepadeiras") else "Sem trepadeiras: só o tijolo, pra quem quiser escalar."))
+		print("  Escalada: %s" % escalada.get("regra"))
 
 	# Tudo da torre (malha, trepadeiras, plantas do topo, objetos dos andares,
 	# rótulos e luzes) vai debaixo de um nó na base dela: se ela for uma das
@@ -497,7 +621,10 @@ func _spawn_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
 		print("  A torre está inclinada %.1f graus." % graus)
 	add_child(torre)
 
-	_spawn_structure(plot.get("obj", ""), 0.0, 0.0, null, COLOR_TORRE, false, true, torre)
+	if plot.has("malhas"):
+		_spawn_malhas_torre(plot.get("malhas"), torre)
+	else:
+		_spawn_structure(plot.get("obj", ""), 0.0, 0.0, null, COLOR_TORRE, false, true, torre)
 
 	var trepadeiras = plot.get("trepadeiras_obj")
 	if trepadeiras != null and trepadeiras != "":
@@ -507,6 +634,9 @@ func _spawn_torre(plot: Dictionary, x: float, z: float, terreno) -> void:
 	for ivy_path in plot.get("hera_obj", []):
 		_spawn_plant_cluster(ivy_path, 0.0, 0.0, null, ivy_radius, COLOR_HERA, ivy_inner_radius, 0.0, torre)
 
+	var queimado = conteudo.get("topo_queimado")
+	if queimado != null:
+		print("  No topo, sem telhado: %s" % queimado.get("texto", ""))
 	var topo = conteudo.get("topo_brotado")
 	if topo != null:
 		print("  No topo, sem telhado: %s" % topo.get("texto", ""))
@@ -544,15 +674,17 @@ func _spawn_props_torre(plot: Dictionary, torre: Node3D) -> void:
 
 		var raio_andar: float = raios[indice]
 		var raio_meio = (raio_vao + raio_andar) / 2.0
-		var angulo = porta + PI + indice * 2.4  # longe da porta, girando a cada andar
+		var extra: bool = andar.get("extra", false)
+		var angulo = porta + PI + indice * 2.4 + (PI * 0.75 if extra else 0.0)  # longe da porta, girando a cada andar; o 2º do topo do outro lado
 		var piso_y = indice * altura_andar + 0.05
 
-		var luz = OmniLight3D.new()
-		luz.position = Vector3(0.0, piso_y + altura_andar * 0.65, 0.0)
-		luz.omni_range = 6.0
-		luz.light_energy = 0.7
-		luz.light_color = Color(1.0, 0.85, 0.6)
-		torre.add_child(luz)
+		if not extra:
+			var luz = OmniLight3D.new()
+			luz.position = Vector3(0.0, piso_y + altura_andar * 0.65, 0.0)
+			luz.omni_range = 6.0
+			luz.light_energy = 0.7
+			luz.light_color = Color(1.0, 0.85, 0.6)
+			torre.add_child(luz)
 
 		var raiz = Node3D.new()
 		raiz.position = Vector3(cos(angulo) * raio_meio, piso_y, -sin(angulo) * raio_meio)
@@ -593,8 +725,14 @@ func _spawn_area(area: Dictionary, base_x: float, base_z: float, terreno) -> voi
 	if creature != null:
 		print("Criatura: %s (CA %s, DV %s, PV %s)" % [creature.get("nome"), _n(creature.get("ca")), creature.get("dv"), _n(creature.get("pontos_de_vida"))])
 
+	# árvores de verdade (carvalho, salgueiro, pinheiro, araucária) têm de 5 a 30 m:
+	# poucas por variante e bem mais espalhadas que uma touceira de arbustos
+	var grande = str(area.get("especie_vegetacao")) in ARVORES_GRANDES
 	for plant_path in area.get("plantas_obj", []):
-		_spawn_plant_cluster(plant_path, base_x, base_z, terreno, scatter_radius, COLOR_PLANTA)
+		if grande:
+			_spawn_plant_cluster(plant_path, base_x, base_z, terreno, scatter_radius * 5.0, COLOR_PLANTA, 0.0, 0.0, null, randi_range(1, 2))
+		else:
+			_spawn_plant_cluster(plant_path, base_x, base_z, terreno, scatter_radius, COLOR_PLANTA)
 
 	for branch_path in area.get("galhos_caidos_obj", []):
 		_spawn_fallen_branch(branch_path, base_x, base_z, terreno)

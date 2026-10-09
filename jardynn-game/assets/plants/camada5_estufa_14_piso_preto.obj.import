@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dox36rn8fiwbn"
+path="res://.godot/imported/camada5_estufa_14_piso_preto.obj-7aa4ae3b3b88743382a619e00b84d525.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada5_estufa_14_piso_preto.obj-7aa4ae3b3b88743382a619e00b84d525.mesh"]
+
+source_file="res://assets/plants/camada5_estufa_14_piso_preto.obj"
+dest_files=["res://.godot/imported/camada5_estufa_14_piso_preto.obj-7aa4ae3b3b88743382a619e00b84d525.mesh", "res://.godot/imported/camada5_estufa_14_piso_preto.obj-7aa4ae3b3b88743382a619e00b84d525.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

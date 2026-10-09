@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://b40srlxkheaal"
+path="res://.godot/imported/camada5_xadrez_11_pedra_preta.obj-e92b490aebaa9ba95a3855b236996267.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada5_xadrez_11_pedra_preta.obj-e92b490aebaa9ba95a3855b236996267.mesh"]
+
+source_file="res://assets/plants/camada5_xadrez_11_pedra_preta.obj"
+dest_files=["res://.godot/imported/camada5_xadrez_11_pedra_preta.obj-e92b490aebaa9ba95a3855b236996267.mesh", "res://.godot/imported/camada5_xadrez_11_pedra_preta.obj-e92b490aebaa9ba95a3855b236996267.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

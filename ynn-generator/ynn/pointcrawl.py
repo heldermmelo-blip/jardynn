@@ -27,20 +27,16 @@ def roll_tabela(rng, tabela, profundidade):
 
 
 def roll_detalhe(rng, profundidade):
-    """Sorteia o Detalhe de um local. O efeito "duplo" ("emaranhado") rola
-    mais dois detalhes comuns e combina os dois."""
-    (texto, relevo, efeito), _ = roll_tabela(rng, tables.DETALHES, profundidade)
-    if efeito != "duplo":
-        return {"texto": texto, "tipo_relevo": relevo, "efeitos": [efeito] if efeito else []}
-
-    sub = []
-    while len(sub) < 2:
-        (t, r, e), _ = roll_tabela(rng, tables.DETALHES, profundidade)
-        if e != "duplo":
-            sub.append((t, r, e))
-    relevo = max((r for _, r, _ in sub), key=RELEVO_ORDEM.index)
-    efeitos = sorted({e for _, _, e in sub if e})
-    return {"texto": f"{sub[0][0]} E ainda: {sub[1][0]}", "tipo_relevo": relevo, "efeitos": efeitos}
+    """Sorteia o Detalhe de um local na tabela do livro (`d20 + profundidade`).
+    Devolve `texto`, `tipo_relevo`, `efeitos` (a etiqueta do detalhe, se houver) e
+    `indice` (o número do detalhe na tabela, 1 a 35)."""
+    (texto, relevo, efeito), bruto = roll_tabela(rng, tables.DETALHES, profundidade)
+    return {
+        "texto": texto,
+        "tipo_relevo": relevo,
+        "efeitos": [efeito] if efeito else [],
+        "indice": min(bruto, len(tables.DETALHES)),
+    }
 
 
 def _novo_no(nos, profundidade, pai):

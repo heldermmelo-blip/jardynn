@@ -89,8 +89,16 @@ de geometria própria (`cogumelo`, `samambaia`, `cacto_coluna`, `cacto_barril`, 
 várias, margarida duas); cada flor sorteia uma cor da paleta da espécie e o `.obj`
 sai com **cor de vértice** (`v x y z r g b`: haste e folhas verdes, corola e miolo
 coloridos), que o Godot importa e usa com `vertex_color_use_as_albedo`. Espécies sem
-cor continuam com o `.obj` de sempre. As ramificadas usam uma recursão estocástica
-(`skeleton.py`), não um L-system.
+cor continuam com o `.obj` de sempre. As ferragens e parapeitos (grades art nouveau, balaustradas de pedra com jarros, corrimãos
+rústicos, em versão inteira ou em ruína, com musgo) ficam em `gielis.ferragens`. As árvores
+`arvore`, `arbusto`, `espinheiro`, `bambu` e `videira` usam uma recursão estocástica
+(`skeleton.py`); outras cinco são **L-systems** (`gielis.plants.lsystem`): `carvalho`,
+`salgueiro`, `pinheiro`, `araucaria` e `dracena_dragao`. Cada uma tem uma gramática
+estocástica (símbolos `F + - & ^ / [ ] ! '` e brotos `A`/`B` reescritos com pesos), lida
+por uma tartaruga 3D com tropismo (pra baixo no salgueiro, pra cima na dracena) que
+gera o mesmo esqueleto das demais; a altura vem de uma distribuição de muda a veterana
+(carvalho de 7 a 22 m, pinheiro de 8 a 28 m, araucária de 8 a 30 m...), com o peso da
+malha limitado.
 
 ```bash
 python examples/rpg_plant.py                # árvore única (exemplo original)

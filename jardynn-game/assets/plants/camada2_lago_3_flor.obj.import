@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dj1umobgcu16p"
+path="res://.godot/imported/camada2_lago_3_flor.obj-d5cde331a43c907513d992255714a4ba.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada2_lago_3_flor.obj-d5cde331a43c907513d992255714a4ba.mesh"]
+
+source_file="res://assets/plants/camada2_lago_3_flor.obj"
+dest_files=["res://.godot/imported/camada2_lago_3_flor.obj-d5cde331a43c907513d992255714a4ba.mesh", "res://.godot/imported/camada2_lago_3_flor.obj-d5cde331a43c907513d992255714a4ba.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

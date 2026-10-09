@@ -42,39 +42,59 @@ def _render_estrutura(plot):
     pos = f"({plot['x']:.1f}, {plot['z']:.1f})"
     if plot["tipo"] == "torre":
         conteudo = plot["conteudo"]
-        lines.append(f"- torre em {pos}, {conteudo['n_andares']} andares")
+        estado = " (em ruína)" if plot.get("estado") == "ruina" else ""
+        lines.append(f"- torre{estado} em {pos}, {conteudo['n_andares']} andares, ferragens {plot.get('estilo', '?').replace('_', ' ')}")
+        if plot.get("escalada"):
+            esc = plot["escalada"]
+            lines.append(f"  - porta térrea entreaberta; janelas de veneziana nos andares {', '.join(str(a) for a in esc['andares_com_janela'])}")
+            lines.append(f"  - {'com trepadeiras até as janelas' if esc['trepadeiras'] else 'sem trepadeiras'}. {esc['regra']}")
         for andar in conteudo["andares"]:
             marca = " (topo)" if andar["numero"] == conteudo["n_andares"] else ""
             lines.append(f"  - andar {andar['numero']}{marca}: {andar['texto']}")
-            if andar.get("tesouro") is not None:
-                lines.append(f"    - tesouro: {andar['tesouro']}")
+            for achado in andar.get("tesouros") or ([andar["tesouro"]] if andar.get("tesouro") is not None else []):
+                lines.append(f"    - tesouro: {achado}")
+            if andar.get("livro_de_magias"):
+                lines.append(f"    - entre os livros, um de magias de 1º nível: {andar['livro_de_magias']['nome']}")
+            if andar.get("quadros"):
+                q = andar["quadros"]
+                lines.append(f"    - {q['quantidade']} retrato(s), {q['valor_ouro']} de ouro no total")
+            if andar.get("biblioteca"):
+                b = andar["biblioteca"]
+                lines.append(
+                    f"    - livros de magia: {b['nivel_1']} de 1º, {b['nivel_2']} de 2º, {b['nivel_3']} de 3º, "
+                    f"{b['nivel_4']} de 4º, {b['nivel_5']} de 5º e 1 de 6º ou mais"
+                )
             if andar.get("denizen") is not None:
                 lines.append(f"    - encontro: {andar['denizen']}")
-    elif plot["tipo"] == "estufa":
-        planta = plot["planta"]
-        dado = f"d{planta['dado']}, " if planta.get("dado") else ""
-        lines.append(
-            f"- {'ala de vidro (' + plot['ala'] + ')' if plot.get('ala') else 'estufa'} {planta['porte']} em {pos}: {dado}{planta['lados']} lados, "
-            f"{planta['andares']} andar(es), raio {planta['raio']:.1f} m, {planta['alas']} ala(s), "
-            f"{'em estado lastimável' if planta['estado'] == 'lastimavel' else 'conservada'}"
-            f"{', piso em xadrez' if planta['piso_xadrez'] else ''}"
-            f"{', no meio de um espelho d' + chr(39) + 'água' if plot.get('espelho_dagua') else ''}"
-        )
-        flora = plot.get("flora_interna")
-        if flora:
-            mortas = f", {round(flora['mortas'] * 100)}% mortas" if flora["mortas"] else ""
+    elif plot["tipo"] in ("estufa", "orquidario"):
+        rotulo = "orquidário" if plot["tipo"] == "orquidario" else "estufas"
+        if plot.get("ala"):
+            rotulo = f"ala de vidro ({plot['ala']})"
+        estado = " (em ruínas)" if plot.get("estado") == "ruina" else ""
+        lines.append(f"- {rotulo}{estado} em {pos}: {len(plot['estufas'])} casa(s) de vidro, dados jogados no papel")
+        for casa in plot["estufas"]:
+            planta = casa["planta"]
+            lacrada = ", lacrada" if planta.get("lacrada") else ""
             lines.append(
-                f"  - flora {flora['densidade']} ({len(flora['plantas'])} plantas, tema {flora['tema']}: "
-                f"{', '.join(flora['especies'])}{mortas})"
+                f"  - d{casa['dado']} tirou {casa['resultado']}: {planta['lados']} lados, {planta['andares']} andar(es), "
+                f"raio {planta['raio']:.1f} m{', piso em xadrez' if planta['piso_xadrez'] else ''}{lacrada}"
             )
-        conteudo = plot["conteudo"]
-        lines.append(f"  - {conteudo['texto']}")
-        if conteudo.get("valor_ouro") is not None:
-            lines.append(f"    - vale {conteudo['valor_ouro']} de ouro")
-        if conteudo.get("valor_prata") is not None:
-            lines.append(f"    - as orquídeas valem {conteudo['valor_prata']} de prata a um colecionador")
-        if conteudo.get("criatura") is not None:
-            lines.append(f"    - criatura: {conteudo['criatura']['nome']}")
+            flora = casa.get("flora_interna")
+            if flora:
+                mortas = f", {round(flora['mortas'] * 100)}% mortas" if flora["mortas"] else ""
+                lines.append(
+                    f"    - flora {flora['densidade']} ({len(flora['plantas'])} plantas, tema {flora['tema']}: "
+                    f"{', '.join(flora['especies'])}{mortas})"
+                )
+            conteudo = casa["conteudo"]
+            lines.append(f"    - {conteudo['texto']}")
+            if conteudo.get("valor_ouro") is not None:
+                lines.append(f"      - vale {conteudo['valor_ouro']} de ouro")
+            if conteudo.get("valor_prata") is not None:
+                lines.append(f"      - as orquídeas valem {conteudo['valor_prata']} de prata a um colecionador")
+            if conteudo.get("criatura") is not None:
+                quantidade = f" (x{conteudo['quantidade']})" if conteudo.get("quantidade") else ""
+                lines.append(f"      - criatura: {conteudo['criatura']['nome']}{quantidade}")
     elif plot["tipo"] in PITORESCOS:
         extra = plot.get("pitoresco", {})
         detalhes = []
@@ -89,7 +109,8 @@ def _render_estrutura(plot):
         lines.append(f"- {plot['tipo']} em {pos}, raio {plot['raio_ocupado']:.1f} m" + (f" ({', '.join(detalhes)})" if detalhes else ""))
     elif plot["tipo"] == "gazebo":
         conteudo = plot["conteudo"]
-        lines.append(f"- gazebo em {pos}: {conteudo['texto']}")
+        estado = " (em ruína)" if plot.get("estado") == "ruina" else ""
+        lines.append(f"- gazebo{estado} em {pos}: {conteudo['texto']} (parapeito {plot.get('estilo', '?').replace('_', ' ')})")
         lines.append(f"  - bibelô: {conteudo['bibelo']}")
         lines.append(f"  - tesouro: {conteudo['tesouro']}")
         lines.append(f"  - {conteudo['refugio']}")
@@ -146,10 +167,16 @@ def render_nivel_markdown(nivel):
         lines.append(f"### Profundidade {plot['profundidade']} — {plot['local']} (nó {plot['no_id']}, {plot['tipo']})")
         detalhe = plot["detalhe"]
         lines.append(f"*Detalhe* ({detalhe['tipo_relevo']}): {detalhe['texto']}")
-        if detalhe.get("tesouro"):
+        if detalhe.get("tesouros"):
+            lines.append(f"*Pilha de tesouro*: {detalhe.get('prata', '?')} de prata e {' / '.join(detalhe['tesouros'])}")
+        elif detalhe.get("tesouro"):
             lines.append(f"*Achado extra*: {detalhe['tesouro']}")
         if "saida" in detalhe["efeitos"]:
             lines.append("*Há uma porta de volta ao mundo real aqui.*")
+        if plot.get("estado"):
+            lines.append("*O lugar está inteiro.*" if plot["estado"] == "intacta" else "*O lugar jaz em ruínas.*")
+        if plot.get("cupula_vidro"):
+            lines.append("*Tudo aqui fica dentro de uma estufa gigante, de teto de vidro.*")
         if plot["tipo"] == "area":
             lines.extend(_render_area(areas[plot["area_index"]]))
         else:
@@ -192,7 +219,7 @@ def main(argv=None):
         default="auto",
         help=(
             "[livro] A estufa colossal cobre o nível inteiro, com entrada e saída em lados opostos. "
-            "auto (padrão): é a mais rara de todas, 1 em 30 por estufa; sempre: força uma; nunca: desliga."
+            "auto (padrão): só o Detalhe \"Teto de Vidro\" cobre um local com uma cúpula; sempre: força a colossal, só de alas de vidro; nunca: ignora o vidro."
         ),
     )
     parser.add_argument("--layer", type=int, default=1, help="[grade] Número da camada (profundidade)")

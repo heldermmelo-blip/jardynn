@@ -8,7 +8,13 @@ from ynn.pointcrawl import generate_pointcrawl, layout_grafo, roll_detalhe, roll
 
 from ynn.generator import PITORESCOS
 
-TIPOS_DE_LOTE = ("area", "canteiro", "estufa", "gazebo", "torre", *PITORESCOS)
+EFEITOS_DO_LIVRO = {
+    "vazio", "tesouro", "grafite", "bem_cuidado", "exploradores_mortos", "ninhos", "estrondo", "poste", "filigrana", "tubos",
+    "armacoes", "passaros_mortos", "alagado", "queimado", "congelado", "hera", "cantante", "vidro", "esqueletos_sidhe",
+    "relojoaria", "invertido", "flutuante", "abismos", "fumegante", "convulso", "predador", "carnudo", "enfeiticante",
+    "fertil", "luminoso", "gravidade_zero", "hipnotico", "parasitado", "saida", "loucura",
+}
+TIPOS_DE_LOTE = ("area", "canteiro", "estufa", "orquidario", "gazebo", "torre", *PITORESCOS)
 
 
 def test_tables_are_well_formed():
@@ -17,7 +23,7 @@ def test_tables_are_well_formed():
         assert nome and tipo in TIPOS_DE_LOTE
     for texto, relevo, efeito in tables.DETALHES:
         assert texto and relevo in pointcrawl.RELEVO_ORDEM
-        assert efeito in (None, "vazio", "tesouro", "saida", "duplo")
+        assert efeito and efeito in EFEITOS_DO_LIVRO
 
 
 def test_roll_is_d20_plus_depth_and_clamped_to_table():
@@ -41,15 +47,29 @@ def test_deeper_means_stranger():
     assert any("saida" in d["efeitos"] for d in fundos)
 
 
-def test_duplo_combines_two_ordinary_details():
-    visto = False
-    for seed in range(300):
-        d = roll_detalhe(random.Random(seed), 20)
-        assert "duplo" not in d["efeitos"]
-        if "E ainda:" in d["texto"]:
-            visto = True
-            assert d["tipo_relevo"] in pointcrawl.RELEVO_ORDEM
-    assert visto
+def test_tables_follow_the_books_order_of_locations_and_details():
+    nomes = [n for n, _ in tables.LOCAIS]
+    assert nomes[0] == "Gramado Aparado" and nomes[6] == "Gazebo" and nomes[7] == "Estufas" and nomes[8] == "Orquidários"
+    assert nomes[11] == "Labirinto de Sebes" and nomes[15] == "Mausoléu" and nomes[20] == "Torre" and nomes[34] == "Ruínas de Ynn"
+    efeitos = [e for _, _, e in tables.DETALHES]
+    assert efeitos[0] == "vazio" and efeitos[3] == "bem_cuidado" and efeitos[12] == "alagado" and efeitos[13] == "queimado"
+    assert efeitos[14] == "congelado" and efeitos[15] == "hera" and efeitos[17] == "vidro" and efeitos[33] == "saida"
+    assert len(set(efeitos)) == 35  # cada detalhe tem a sua etiqueta
+
+
+def test_detail_roll_reports_its_table_index_and_only_two_details_leave_a_place_whole():
+    from ynn.generator import DETALHES_INTEIROS
+
+    assert set(DETALHES_INTEIROS) == {"bem_cuidado", "hera"}
+    for seed in range(200):
+        for profundidade in (0, 5, 40):
+            d = roll_detalhe(random.Random(seed), profundidade)
+            assert 1 <= d["indice"] <= 35
+            assert d["efeitos"] == [tables.DETALHES[d["indice"] - 1][2]]
+            assert d["texto"] == tables.DETALHES[d["indice"] - 1][0]
+    # "Bem Cuidado" (4) só sai se d20 + profundidade for 4: impossível a partir da profundidade 4
+    assert not any("bem_cuidado" in roll_detalhe(random.Random(s), 4)["efeitos"] for s in range(500))
+    assert any("bem_cuidado" in roll_detalhe(random.Random(s), 0)["efeitos"] for s in range(500))
 
 
 def test_graph_has_a_node_in_every_layer_and_is_a_connected_tree_plus_extras():
