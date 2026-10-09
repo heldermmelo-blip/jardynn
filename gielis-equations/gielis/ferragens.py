@@ -31,14 +31,20 @@ RUINA_JARRO_SUMIDO = 0.25
 
 
 def sortear_estilo(rng):
+    """Sorteia um estilo de `ESTILOS`, com os pesos de `ESTILOS_PESOS`
+    (o clássico é o mais comum)."""
     return rng.choices(ESTILOS, weights=ESTILOS_PESOS)[0]
 
 
 def _novo():
+    """Dict de grupos vazio: uma lista de partes para cada nome em `GRUPOS`."""
     return {g: [] for g in GRUPOS}
 
 
 def _tubo(grupos, grupo, a, b, r0, r1=None, lados=5):
+    """Acrescenta ao `grupo` um tubo reto de `a` a `b` (raio r0 na ponta `a`,
+    r1 na `b`; se `r1` é None, o tubo não afina), com `lados` lados e seção
+    circular. Segmentos de comprimento ~0 não geram nada."""
     seg = dict(start=np.asarray(a, float), end=np.asarray(b, float), r0=r0, r1=r0 if r1 is None else r1, depth=0)
     v, f = tube_mesh(seg, n_sides=lados, cross_section_n=2.0)
     if len(v):
@@ -46,20 +52,25 @@ def _tubo(grupos, grupo, a, b, r0, r1=None, lados=5):
 
 
 def _bezier(p0, p1, p2, p3, n=14):
+    """Curva de Bézier cúbica de pontos de controle p0..p3 (arrays 2D ou 3D),
+    amostrada em `n` pontos de t=0 a t=1. Devolve um array (n, dim)."""
     t = np.linspace(0.0, 1.0, n)[:, None]
     return (1 - t) ** 3 * p0 + 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t**2 * p2 + t**3 * p3
 
 
 def _espiral(centro, raio, voltas, giro0, sentido, n=12):
-    """Gavinha: espiral que fecha de `raio` até perto do centro, no plano do painel."""
+    """Gavinha: espiral que fecha de `raio` até perto do centro, no plano do painel.
+    `giro0` é o ângulo inicial, `voltas` o número de voltas e `sentido` (+1 ou
+    -1) o sentido de giro; devolve `n` pontos 2D (x, y)."""
     t = np.linspace(0.0, 1.0, n)
     ang = giro0 + sentido * 2 * math.pi * voltas * t
-    r = raio * (1.0 - 0.8 * t)
+    r = raio * (1.0 - 0.8 * t)  # o raio encolhe até 20% do inicial (não chega a zero)
     return np.column_stack([centro[0] + r * np.cos(ang), centro[1] + r * np.sin(ang)])
 
 
 def _polilinha(grupos, grupo, pontos2d, origem, u, v, raio, lados=4):
-    """Desenha uma polilinha (pontos no plano local) como uma fieira de tubos."""
+    """Desenha uma polilinha (pontos no plano local) como uma fieira de tubos.
+    Cada ponto (x, y) vira `origem + u*x + v*y` no espaço 3D."""
     pts = [origem + u * x + v * y for x, y in pontos2d]
     for a, b in zip(pts, pts[1:]):
         _tubo(grupos, grupo, a, b, raio, lados=lados)
@@ -78,6 +89,7 @@ def painel_art_nouveau(rng, origem, u, v, largura, altura, grupo="ferro", ruina=
     raio = max(0.012, min(largura, altura) * 0.014)
 
     def perde():
+        """Sorteia se um elemento (caule ou haste) se perdeu; sempre falso fora da ruína."""
         return ruina and rng.random() < RUINA_PERDE_PAINEL * 0.6
 
     # moldura fina em volta
@@ -95,17 +107,21 @@ def painel_art_nouveau(rng, origem, u, v, largura, altura, grupo="ferro", ruina=
     # hastes em chicote, espelhadas (o painel é simétrico)
     n_pares = rng.randint(2, 4)
     for k in range(n_pares):
-        abre = 0.18 + 0.3 * (k + 1) / n_pares
+        abre = 0.18 + 0.3 * (k + 1) / n_pares  # cada par seguinte abre mais pros lados
         alto = altura * rng.uniform(0.45, 0.88)
         for lado in (-1, 1):
             if perde():
                 continue
+            # Bézier cúbica com os pontos de controle puxados pra fora e depois
+            # de volta pra dentro: desenha o "S" do chicote. Tudo em coordenadas
+            # do painel (x ao longo de u, y ao longo de v).
             p0 = np.array([meio, altura * 0.05])
             p1 = np.array([meio + lado * largura * abre * 0.6, altura * rng.uniform(0.15, 0.35)])
             p2 = np.array([meio + lado * largura * abre * 1.15, altura * rng.uniform(0.4, 0.62)])
             p3 = np.array([meio + lado * largura * abre * 0.8, alto])
             curva = _bezier(p0, p1, p2, p3)
             _polilinha(grupos, grupo, curva, origem, u, v, raio)
+            # a gavinha nasce na ponta da haste, enrolando pra dentro (sentido oposto ao lado)
             gav = _espiral(p3, largura * rng.uniform(0.04, 0.07), rng.uniform(1.0, 1.6), rng.uniform(0, 2 * math.pi), -lado)
             _polilinha(grupos, grupo, gav, origem, u, v, raio * 0.85)
             # folha: um losango pequeno na curva
@@ -138,7 +154,12 @@ def grade_simples(rng, origem, u, v, largura, altura, grupo="ferro", ruina=False
 # ---------------------------------------------------------------------- jarros
 def jarro(rng, centro, escala=1.0, tombado=False):
     """Jarro de pedra: pé, bojo largo, gargalo e boca — um vaso de jardim.
-    Tombado, fica deitado no chão. Devolve partes `(vértices, faces)`."""
+    Tombado, fica deitado no chão. Devolve partes `(vértices, faces)`.
+
+    O jarro é uma superfície de revolução em Z (Z pra cima), feita de troncos
+    de cone empilhados segundo `perfil` (altura relativa, raio), com a base em
+    `centro` e escala `escala` (multiplicada por um sorteio de 0,85 a 1,15).
+    Tombado, `centro` dá o ponto no chão (XY) e a cota Z somada ao fim."""
     perfil = [(0.0, 0.16), (0.1, 0.12), (0.28, 0.22), (0.5, 0.26), (0.7, 0.2), (0.85, 0.12), (0.92, 0.14), (1.0, 0.2)]
     s = escala * rng.uniform(0.85, 1.15)
     partes = []
@@ -156,6 +177,8 @@ def jarro(rng, centro, escala=1.0, tombado=False):
         for v, f in partes:
             rot = _rotacao(eixo, math.radians(80))
             vv = v @ rot.T
+            # o jarro deitado se apoia no chão: a parte mais baixa fica a 2 cm de z = 0
+            # (note: cada parte é rebaixada pelo seu próprio mínimo)
             vv[:, 2] -= vv[:, 2].min() - 0.02
             out.append((vv + np.array([centro[0], centro[1], 0.0]) + np.array([0.0, 0.0, centro[2]]), f))
         return out
@@ -163,6 +186,8 @@ def jarro(rng, centro, escala=1.0, tombado=False):
 
 
 def _rotacao(eixo, ang):
+    """Matriz de rotação 3x3 de `ang` radianos em torno de `eixo` (fórmula de
+    Rodrigues em forma matricial); aplique como `v @ R.T` a vértices em linhas."""
     eixo = eixo / np.linalg.norm(eixo)
     c, s = math.cos(ang), math.sin(ang)
     x, y, z = eixo
@@ -189,11 +214,15 @@ def parapeito(rng, a, b, z, altura=0.95, estilo="classico", ruina=False, com_jar
     comp = float(np.linalg.norm(b - a))
     if comp < 0.05:
         return grupos
+    # Referencial local: u = direção do parapeito (horizontal, 3D), up = +Z, e
+    # as posições ao longo do parapeito são `base + u * x`, com x em 0..comp.
     u = np.array([*((b - a) / comp), 0.0])
     up = np.array([0.0, 0.0, 1.0])
     base = np.array([a[0], a[1], z])
     material_poste = "madeira" if estilo == "rustico" else "pedra"
 
+    # Um poste a cada ~2 m (no mínimo os dois das pontas); só os intermediários
+    # podem cair na ruína, pra o parapeito nunca perder as extremidades.
     n_postes = max(2, int(round(comp / 2.0)) + 1)
     xs = np.linspace(0.0, comp, n_postes)
     postes_ok = [True] * n_postes
@@ -216,12 +245,15 @@ def parapeito(rng, a, b, z, altura=0.95, estilo="classico", ruina=False, com_jar
             tombado = ruina and rng.random() < RUINA_JARRO_TOMBADO
             centro = p + up * (topo if not tombado else 0.0)
             if tombado:
+                # jarro caído: rolou pra perto do poste, num ponto aleatório do chão (cota z do parapeito)
                 centro = p + u * rng.uniform(-0.4, 0.4) + np.array([rng.uniform(-0.3, 0.3), rng.uniform(-0.3, 0.3), 0.0])
             for v_, f_ in jarro(rng, centro, escala=0.7, tombado=tombado):
                 grupos["jarro"].append((v_, f_))
 
     # corrimãos (inteiros, ou em pedaços na ruína)
     def trecho(x0, x1, y):
+        """Corrimão reto de x0 a x1 (ao longo do parapeito) na altura `y`,
+        no material do estilo; ignora trechos menores que 5 cm."""
         if x1 - x0 < 0.05:
             return
         corr = "madeira" if estilo == "rustico" else ("ferro" if estilo == "art_nouveau" else "pedra")
@@ -232,6 +264,8 @@ def parapeito(rng, a, b, z, altura=0.95, estilo="classico", ruina=False, com_jar
         if not ruina:
             trecho(0.0, comp, y)
         else:
+            # Ruína: o corrimão vira pedaços de 0,6 a 2,2 m, cada um com 70% de
+            # chance de ficar, e às vezes com um vão extra entre eles.
             x = 0.0
             while x < comp:
                 comprimento = rng.uniform(0.6, 2.2)
@@ -239,7 +273,7 @@ def parapeito(rng, a, b, z, altura=0.95, estilo="classico", ruina=False, com_jar
                     trecho(x, min(comp, x + comprimento), y)
                 x += comprimento + (rng.uniform(0.3, 1.0) if rng.random() < 0.5 else 0.0)
 
-    # enchimento entre os postes
+    # enchimento entre os postes (deixa 12 cm de folga de cada lado)
     for k in range(n_postes - 1):
         x0, x1 = xs[k] + 0.12, xs[k + 1] - 0.12
         if x1 - x0 < 0.3:
@@ -279,6 +313,7 @@ def parapeito(rng, a, b, z, altura=0.95, estilo="classico", ruina=False, com_jar
             r = rng.uniform(0.18, 0.45)
             ring = [[c[0] + r * math.cos(t), c[1] + r * math.sin(t), c[2]] for t in np.linspace(0, 2 * math.pi, 8, endpoint=False)]
             pts = np.vstack([ring, [c]])
+            # leque a partir do centro (vértice de índice 8) por um disco de 8 lados
             grupos["musgo"].append((pts, np.array([[8, i, (i + 1) % 8] for i in range(8)])))
     return grupos
 

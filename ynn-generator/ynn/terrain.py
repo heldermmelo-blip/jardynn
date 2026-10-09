@@ -16,16 +16,19 @@ import math
 
 from . import tables
 
+# amplitude (m) do ruído por tipo de relevo; RUGOSIDADE = fator que encolhe o ruído a cada subdivisão (maior = mais áspero)
 AMPLITUDE_POR_TIPO = {"plano": 0.0, "leve": 0.5, "acentuado": 1.2, "irregular": 2.0}
 RELEVO_ORDEM = ["plano", "leve", "acentuado", "irregular"]
 RUGOSIDADE_POR_TIPO = {"plano": 0.5, "leve": 0.55, "acentuado": 0.6, "irregular": 0.75}
 
 
 def _localidade_for_band(band):
+    """Entradas `(texto, tipo_relevo)` de `tables.LOCALIDADE` que valem na banda `band` (ou em todas)."""
     return [(text, tipo) for text, bands, tipo in tables.LOCALIDADE if bands == "all" or band in bands]
 
 
 def _pick_localidade(rng, band):
+    """Sorteia uma localidade da banda; devolve `(texto, tipo_relevo)`."""
     return rng.choice(_localidade_for_band(band))
 
 
@@ -38,12 +41,17 @@ def _nearest_valid_size(resolution):
 
 
 def _flat_grid(size):
+    """Grade `size` x `size` de zeros, como lista de linhas (`grade[linha][coluna]`)."""
     return [[0.0] * size for _ in range(size)]
 
 
 def _diamond_square(rng, size, amplitude, rugosidade):
+    """Diamond-square: devolve uma grade `size` x `size` (`size` = 2**n + 1) de alturas.
+    Os quatro cantos recebem valores em `[-amplitude, amplitude]`; a cada rodada o passo cai pela metade, cada
+    ponto novo é a média dos vizinhos mais ruído, e o ruído é multiplicado por `rugosidade` (menor = mais suave)."""
     grid = _flat_grid(size)
     last = size - 1
+    # cantos iniciais aleatórios; o resto nasce por média dos vizinhos + ruído
     grid[0][0] = rng.uniform(-amplitude, amplitude)
     grid[0][last] = rng.uniform(-amplitude, amplitude)
     grid[last][0] = rng.uniform(-amplitude, amplitude)
@@ -62,6 +70,7 @@ def _diamond_square(rng, size, amplitude, rugosidade):
 
         # passo quadrado: centro de cada losango = média dos vizinhos existentes
         for y in range(0, size, half):
+            # em linhas múltiplas de `step` os losangos ficam nas colunas intermediárias; nas demais, nas múltiplas de `step`
             start_x = half if y % step == 0 else 0
             for x in range(start_x, size, step):
                 vizinhos = []
@@ -82,6 +91,10 @@ def _diamond_square(rng, size, amplitude, rugosidade):
 
 
 def generate_terrain(rng, band, resolution=65, cell_size=2.0):
+    """Gera o relevo de uma camada: sorteia a localidade da banda `band` e, conforme o `tipo_relevo`, uma grade de alturas.
+    A resolução é arredondada para `2**n + 1`; `cell_size` é a distância em metros entre pontos vizinhos.
+    O tipo "plano" devolve a grade toda zerada, sem ruído. Devolve `descricao`, `tipo_relevo`, `resolucao`,
+    `tamanho_celula` e `alturas` (lista de linhas)."""
     texto, tipo_relevo = _pick_localidade(rng, band)
     size = _nearest_valid_size(resolution)
     amplitude = AMPLITUDE_POR_TIPO[tipo_relevo]
@@ -110,16 +123,19 @@ def generate_terrain_localizado(rng, pontos, resolution=65, cell_size=2.0, raio_
     (`raio_influencia` em metros). Longe de qualquer local de relevo
     variável, o chão é plano."""
     size = _nearest_valid_size(resolution)
+    # ruído-base de amplitude fixa; a amplitude de cada tipo de relevo entra depois, como peso
     base = _diamond_square(rng, size, 2.5, 0.6)
     meia = (size - 1) / 2
     ativos = [(x, z, AMPLITUDE_POR_TIPO[tipo]) for x, z, tipo in pontos if AMPLITUDE_POR_TIPO[tipo] > 0.0]
 
     alturas = []
     for j in range(size):
+        # coordenadas de mundo: a grade fica centrada na origem, como o layout
         z = (j - meia) * cell_size
         linha = []
         for i in range(size):
             x = (i - meia) * cell_size
+            # peso = maior influência entre os locais: amplitude do tipo × gaussiana da distância
             peso = 0.0
             for px, pz, amplitude in ativos:
                 d2 = (x - px) ** 2 + (z - pz) ** 2
@@ -127,6 +143,7 @@ def generate_terrain_localizado(rng, pontos, resolution=65, cell_size=2.0, raio_
             linha.append(base[j][i] * peso)
         alturas.append(linha)
 
+    # tipo de relevo mais forte entre os locais, pela ordem de `RELEVO_ORDEM`
     mais_forte = max((tipo for _, _, tipo in pontos), key=RELEVO_ORDEM.index, default="plano")
     descricao = (
         "O relevo varia ao redor de cada local, conforme o detalhe dele."
@@ -158,5 +175,6 @@ def achatar_circulo(terreno, x, z, raio, margem=3.0):
             d = math.hypot(px - x, pz - z)
             if d >= raio + margem:
                 continue
+            # 0 dentro do círculo, subindo linearmente até 1 ao fim da margem
             peso = 0.0 if d <= raio else (d - raio) / margem
             terreno["alturas"][j][i] *= peso

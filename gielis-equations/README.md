@@ -76,13 +76,16 @@ pela Superfórmula (Eq. 5.8).
 import random
 from gielis.plants import SPECIES, generate_plant
 
-print(len(SPECIES), SPECIES)  # 23 espécies
+print(len(SPECIES), SPECIES)  # 34 espécies
 path, skeleton = generate_plant(random.Random(42), "arvore")
 ```
 
-São 23 espécies: ramificadas (`arvore`, `arbusto`, `espinheiro`, `bambu`, `videira`),
+São 34 espécies: ramificadas (`arvore`, `arbusto`, `espinheiro`, `bambu`, `videira`),
 de geometria própria (`cogumelo`, `samambaia`, `cacto_coluna`, `cacto_barril`, `agave`,
-`palmeira`, `folha_larga`, `cipreste`, `topiaria`) e nove **flores**
+`palmeira`, `folha_larga`, `cipreste`, `topiaria`), seis **exóticas** ornamentais (`baoba`,
+`samambaia_arborea`, `cica`, `nepentes`, `vitoria_regia` e `flor_cadaver`, em
+`gielis.plants.exoticas`: as três primeiras são árvores e aceitam uma `altura` do tronco, e
+as coloridas levam cor de vértice) e nove **flores**
 (`flor`, `rosa`, `dalia`, `margarida`, `girassol`, `tulipa`, `lavanda`, `nenufar`,
 `orquidea`, em `gielis.plants.flowers`). Cada anel de pétalas vem da Superfórmula
 (Eq. 5.8), com a borda elevada em taça e empilhado em camadas (rosa e dália têm

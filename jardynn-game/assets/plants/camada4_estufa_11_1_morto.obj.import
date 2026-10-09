@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://deuka5gjfadlt"
+path="res://.godot/imported/camada4_estufa_11_1_morto.obj-969dc3d8c276f5bb884f7486763d2113.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada4_estufa_11_1_morto.obj-969dc3d8c276f5bb884f7486763d2113.mesh"]
+
+source_file="res://assets/plants/camada4_estufa_11_1_morto.obj"
+dest_files=["res://.godot/imported/camada4_estufa_11_1_morto.obj-969dc3d8c276f5bb884f7486763d2113.mesh", "res://.godot/imported/camada4_estufa_11_1_morto.obj-969dc3d8c276f5bb884f7486763d2113.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

@@ -46,21 +46,30 @@ def sortear_cor(rng, especie):
 
 
 def _mistura(cor, alvo, t):
+    """Interpolação linear entre duas cores RGB: `t`=0 devolve `cor`, `t`=1
+    devolve `alvo`."""
     return tuple(c + (a - c) * t for c, a in zip(cor, alvo))
 
 
 def mais_claro(cor, t=0.3):
+    """Clareia `cor` (RGB 0..1) misturando-a com branco na proporção `t`."""
     return _mistura(cor, (1.0, 1.0, 1.0), t)
 
 
 def mais_escuro(cor, t=0.3):
+    """Escurece `cor` (RGB 0..1) misturando-a com preto na proporção `t`."""
     return _mistura(cor, (0.0, 0.0, 0.0), t)
 
 
 def _esfera(centro, raio, achatamento=1.0, n_lat=5, n_lon=10):
+    """Esfera (ou elipsoide) de baixa resolução centrada em `centro`, em Z-up:
+    `n_lat` faixas de latitude (do polo +Z ao polo -Z) e `n_lon` meridianos.
+    `achatamento` multiplica só o semieixo Z (< 1 achata, > 1 alonga). Os
+    polos são anéis de vértices coincidentes (não um vértice único), o que
+    gera triângulos degenerados ali. Devolve (vértices, faces)."""
     verts = []
     for i in range(n_lat + 1):
-        theta = math.pi * i / n_lat
+        theta = math.pi * i / n_lat  # colatitude: 0 no polo +Z, pi no polo -Z
         for j in range(n_lon):
             phi = 2 * math.pi * j / n_lon
             verts.append(
@@ -72,6 +81,8 @@ def _esfera(centro, raio, achatamento=1.0, n_lat=5, n_lon=10):
     faces = []
     for i in range(n_lat):
         for j in range(n_lon):
+            # Quadrilátero entre a faixa i e a i+1 (índice = faixa * n_lon + meridiano),
+            # dividido em dois triângulos; `% n_lon` fecha a volta.
             a, b = i * n_lon + j, i * n_lon + (j + 1) % n_lon
             c, d = (i + 1) * n_lon + (j + 1) % n_lon, (i + 1) * n_lon + j
             faces += [[a, c, b], [a, d, c]]
@@ -98,7 +109,11 @@ def anel_de_petalas(raio, n_petalas, n1, n2, n3, elevacao, giro=0.0, n_pontos=No
     topo = max(float(r.max()), 1e-9)
     v[:, 0] *= raio / topo  # `raio` é o raio da ponta das pétalas, qualquer que seja a forma
     v[:, 1] *= raio / topo
+    # Altura proporcional a (r/raio-máximo)^1.5: o centro fica rente ao plano e a
+    # borda sobe de forma suave, dando o perfil de taça.
     v[:, 2] = elevacao * (r / topo) ** 1.5
+    # Gira o anel em torno de Z por `giro` (rotação 2D em XY), para que anéis
+    # empilhados fiquem desencontrados.
     c, s = math.cos(giro), math.sin(giro)
     x, y = v[:, 0].copy(), v[:, 1].copy()
     v[:, 0], v[:, 1] = x * c - y * s, x * s + y * c
@@ -127,12 +142,19 @@ def corola_sem_cor(origem, direcao, camadas):
 
 
 def _haste(a, b, r0, r1, lados=6):
+    """Haste verde: tubo de `a` a `b` (raio r0 na base, r1 no topo), com
+    `lados` lados. Devolve a parte colorida (vértices, faces, cor)."""
     seg = dict(start=np.asarray(a, float), end=np.asarray(b, float), r0=r0, r1=r1, depth=0)
     v, f = tube_mesh(seg, n_sides=lados, cross_section_n=2.0)
     return v, f, VERDE_HASTE
 
 
 def _folha(rng, base, direcao_tangente, comprimento, largura=0.35, forca=2.2, giro=None, queda=None, cor=VERDE_FOLHA):
+    """Folha colorida presa em `base`, saindo de uma haste de direção
+    `direcao_tangente`. `largura` e `forca` são `width_ratio` e `shape_power`
+    de `foliage.leaf_mesh`; `giro` (rad) e `queda` (graus) são os de
+    `foliage.place_leaf` e, se None, são sorteados (giro em 0..2*pi, queda em
+    15..50). Devolve (vértices, faces, cor)."""
     lv, lf = foliage.leaf_mesh(shape_power=forca, length=comprimento, width_ratio=largura)
     giro = rng.uniform(0, 2 * math.pi) if giro is None else giro
     queda = rng.uniform(15, 50) if queda is None else queda
@@ -172,6 +194,7 @@ def gerar_flor(rng):
     partes = [haste] + corola([0, 0, altura], [0, 0, 1], camadas, cor, MIOLO_AMARELO, camadas[0]["raio"] * 0.22)
     for z in (altura * 0.25, altura * 0.5):
         partes.append(_folha(rng, [0, 0, z], [0, 0, 1], rng.uniform(0.08, 0.14), 0.3))
+    # O segundo valor devolvido é o "esqueleto" mínimo: um só segmento para a haste.
     return partes, [dict(start=np.zeros(3), end=np.array([0.0, 0.0, altura]), r0=0.012, r1=0.008, depth=0)]
 
 
@@ -278,6 +301,8 @@ def gerar_lavanda(rng):
         eixo = topo / np.linalg.norm(topo)
         u, v = orthonormal_basis(eixo)
         for k in range(rng.randint(7, 10)):
+            # Anéis de 4 florzinhas ao longo do trecho superior da haste (de 62% a
+            # 100% do comprimento), cada anel girado em relação ao anterior.
             t = 0.62 + 0.38 * k / 9.0
             centro = topo * t
             for j in range(4):
@@ -296,6 +321,8 @@ def gerar_nenufar(rng):
     raio = rng.uniform(0.28, 0.42)
     n = 28
     fenda = rng.uniform(0, 2 * math.pi)
+    # Folha em leque: centro + borda circular com uma fenda (de 0,36 rad) que
+    # começa em `fenda`; a malha é de face única, plana em z = 0.02.
     verts = [[0.0, 0.0, 0.02]] + [[raio * math.cos(a), raio * math.sin(a), 0.02] for a in (fenda + 0.18 + (2 * math.pi - 0.36) * k / (n - 1) for k in range(n))]
     faces = [[0, 1 + k, 2 + k] for k in range(n - 1)]
     partes = [(np.array(verts), np.array(faces, dtype=int), VERDE_FOLHA)]
@@ -313,6 +340,8 @@ def gerar_orquidea(rng):
     altura = rng.uniform(0.35, 0.55)
     rumo = rng.uniform(0, 2 * math.pi)
     lado = np.array([math.cos(rumo), math.sin(rumo), 0.0])
+    # Haste arqueada: sobe em Z e se desloca para `lado` com s^2 (curva parabólica),
+    # amostrada em 6 pontos que viram 5 trechos de tubo.
     pontos = [np.array([0.0, 0.0, altura * s]) + lado * (altura * 0.35 * s**2) for s in np.linspace(0, 1, 6)]
     partes = []
     for a, b in zip(pontos, pontos[1:]):
@@ -336,6 +365,7 @@ def gerar_orquidea(rng):
     return partes, [dict(start=np.zeros(3), end=pontos[-1], r0=0.006, r1=0.005, depth=0)]
 
 
+# Espécie -> função `gerar_*(rng)`, que devolve (partes coloridas, segmentos).
 GERADORES_FLOR = {
     "flor": gerar_flor,
     "margarida": gerar_margarida,

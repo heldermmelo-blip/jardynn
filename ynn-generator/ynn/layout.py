@@ -20,12 +20,15 @@ N_GAZEBOS_RANGE = (1, 2)
 
 
 def _grid_cells(field_width, field_depth, plot_size):
+    """Todas as células `(coluna, linha)` da grade de lotes que cabem no campo (no mínimo 1x1)."""
     cols = max(1, int(field_width // plot_size))
     rows = max(1, int(field_depth // plot_size))
     return [(c, r) for c in range(cols) for r in range(rows)]
 
 
 def _cell_to_world(rng, cell, field_width, field_depth, plot_size):
+    """Centro da célula em coordenadas de mundo (campo centrado na origem), com jitter de até 15% de `plot_size`
+    em cada eixo."""
     col, row = cell
     jitter = plot_size * 0.15
     x = (col + 0.5) * plot_size - field_width / 2 + rng.uniform(-jitter, jitter)
@@ -44,7 +47,12 @@ def generate_layout(
     n_canteiros_range=N_CANTEIROS_RANGE,
     n_gazebos_range=N_GAZEBOS_RANGE,
 ):
+    """Sorteia os lotes de uma camada: quantas torres, estufas, canteiros e gazebos (dentro dos intervalos
+    `n_*_range`, inclusivos) mais `n_areas` áreas numeradas de 1 a `n_areas`, cada um numa célula diferente.
+    Devolve `field_width`, `field_depth`, `plot_size` e `plots` (lista de `{tipo, x, z}`; as áreas levam também
+    `area_index`). Levanta `ValueError` se a grade não tiver lotes suficientes."""
     cells = _grid_cells(field_width, field_depth, plot_size)
+    # embaralha uma vez; cada lote pega a próxima célula, então nunca há dois no mesmo lugar
     rng.shuffle(cells)
 
     n_torres = rng.randint(*n_torres_range)
@@ -63,6 +71,7 @@ def generate_layout(
     idx = 0
 
     def _take(n, tipo, area_index=None):
+        """Consome as próximas `n` células embaralhadas e cria um lote de `tipo` em cada uma; `area_index` só vai nos lotes de área."""
         nonlocal idx
         for _ in range(n):
             x, z = _cell_to_world(rng, cells[idx], field_width, field_depth, plot_size)

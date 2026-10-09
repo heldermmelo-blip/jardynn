@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://blqrqmls3vohh"
+path="res://.godot/imported/camada3_gazebo_7_musgo.obj-8c40fffafb08c4e7d44b5b3d6ebcbfce.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada3_gazebo_7_musgo.obj-8c40fffafb08c4e7d44b5b3d6ebcbfce.mesh"]
+
+source_file="res://assets/plants/camada3_gazebo_7_musgo.obj"
+dest_files=["res://.godot/imported/camada3_gazebo_7_musgo.obj-8c40fffafb08c4e7d44b5b3d6ebcbfce.mesh", "res://.godot/imported/camada3_gazebo_7_musgo.obj-8c40fffafb08c4e7d44b5b3d6ebcbfce.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

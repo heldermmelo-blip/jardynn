@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dgl4sta761jwe"
+path="res://.godot/imported/camada4_estufa_11_1_flora_topiaria_2.obj-882f72abbf63b14c97fc043ea121a0df.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada4_estufa_11_1_flora_topiaria_2.obj-882f72abbf63b14c97fc043ea121a0df.mesh"]
+
+source_file="res://assets/plants/camada4_estufa_11_1_flora_topiaria_2.obj"
+dest_files=["res://.godot/imported/camada4_estufa_11_1_flora_topiaria_2.obj-882f72abbf63b14c97fc043ea121a0df.mesh", "res://.godot/imported/camada4_estufa_11_1_flora_topiaria_2.obj-882f72abbf63b14c97fc043ea121a0df.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

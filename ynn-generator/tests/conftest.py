@@ -4,7 +4,10 @@ Gerar a malha de cada planta (centenas por nível, entre flora de estufa, áreas
 canteiros) é o que mais demora; a geração das malhas em si já é testada em
 `gielis-equations`. Aqui as plantas viram um arquivo .obj mínimo (existe e não
 está vazio), o que deixa os testes de nível dezenas de vezes mais rápidos. Quem
-precisa da malha de verdade usa a marca `@pytest.mark.malha_real`."""
+precisa da malha de verdade usa a marca `@pytest.mark.malha_real`.
+
+Todo teste roda dentro de uma pasta temporária: caminhos relativos (como o "." de
+alguns testes) não deixam arquivos .obj soltos no repositório."""
 
 import os
 
@@ -16,6 +19,8 @@ OBJ_MINIMO = "o mesh\nv 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n"
 
 
 def _planta_leve(rng, especie, out_path=None, altura=None, **kw):
+    """Substitui `_generate_plant_mesh`: grava um .obj mínimo em `out_path` e devolve
+    `(out_path, [])`, a mesma forma de retorno da função de verdade."""
     if out_path is None:
         out_path = os.path.join(generator.PLANT_OUTPUT_DIR, f"{especie}.obj")
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
@@ -25,15 +30,25 @@ def _planta_leve(rng, especie, out_path=None, altura=None, **kw):
 
 
 def _galho_leve(rng, out_path=None):
+    """Substitui `_generate_fallen_branch_mesh` pelo mesmo .obj mínimo."""
     return _planta_leve(rng, "galho_caido", out_path)
 
 
 def pytest_configure(config):
+    """Registra a marca `malha_real`."""
     config.addinivalue_line("markers", "malha_real: usa a geração de malha de plantas de verdade (lenta)")
 
 
 @pytest.fixture(autouse=True)
+def pasta_temporaria(tmp_path_factory, monkeypatch):
+    """Roda cada teste numa pasta temporária (caminhos relativos não sujam o repositório)."""
+    monkeypatch.chdir(tmp_path_factory.mktemp("cwd"))
+
+
+@pytest.fixture(autouse=True)
 def plantas_leves(request, monkeypatch):
+    """Troca a geração de malha de plantas pela versão leve, salvo nos testes marcados
+    com `malha_real`."""
     if request.node.get_closest_marker("malha_real"):
         return
     monkeypatch.setattr(generator, "_generate_plant_mesh", _planta_leve)

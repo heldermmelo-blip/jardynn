@@ -75,5 +75,6 @@ def prepare_spells(rng, class_key):
     available = SPELLS.get(class_key)
     if not available:
         return []
+    # nunca pede mais magias do que a lista da classe tem
     n_slots = min(SPELL_SLOTS_LEVEL_1.get(class_key, 0), len(available))
     return rng.sample(available, n_slots)

@@ -2,6 +2,7 @@
 (tabelas de cada classe e de Pontos de Vida / Bônus de Ataque). Ver NOTES.md.
 """
 
+# chave interna da classe -> estatísticas de nível 1 (a chave indexa também saves e magias)
 CLASSES = {
     "fighter": {
         "nome": "Fighter",

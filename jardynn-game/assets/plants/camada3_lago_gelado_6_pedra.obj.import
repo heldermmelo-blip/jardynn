@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dm0nexjlffh3d"
+path="res://.godot/imported/camada3_lago_gelado_6_pedra.obj-33b93d9f813f15d78ffa6a3af41d2ecd.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada3_lago_gelado_6_pedra.obj-33b93d9f813f15d78ffa6a3af41d2ecd.mesh"]
+
+source_file="res://assets/plants/camada3_lago_gelado_6_pedra.obj"
+dest_files=["res://.godot/imported/camada3_lago_gelado_6_pedra.obj-33b93d9f813f15d78ffa6a3af41d2ecd.mesh", "res://.godot/imported/camada3_lago_gelado_6_pedra.obj-33b93d9f813f15d78ffa6a3af41d2ecd.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

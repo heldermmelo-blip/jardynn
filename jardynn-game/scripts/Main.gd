@@ -1,25 +1,37 @@
 extends Node3D
 
-## Carrega uma camada gerada pelo pipeline Python (`ynn-generator --json`) e
-## instancia na cena o relevo (grade de pontos com altura, ver `terreno` no
-## JSON) e o layout 2D (`layout` — lotes de área/torre/estufa/canteiro
-## espalhados por um campo do tamanho de um campo de futebol, ver
-## `ynn.layout`), além de imprimir no console o texto descritivo e as
-## fichas de NPCs/criaturas de cada área. Estufas têm porte, alas, estado
-## (às vezes em ruínas) e uma malha por material; uma minúscula pode ficar
-## num espelho d'água e a colossal cobre o nível inteiro, com portal de
-## entrada e de saída. Gazebos trazem bibelô, tesouro e a
-## regra de abrigo noturno. A torre é uma mini-masmorra
-## vertical (ver `ynn.generator.generate_torre_conteudo`): o console
-## imprime o conteúdo de cada andar, e a malha vem cercada de hera.
+## Carrega um nível gerado pelo pipeline Python (`ynn-generator --json`) e o
+## monta na cena: o relevo (grade de alturas, `terreno` no JSON), cada lote do
+## `layout` na sua posição (áreas de vegetação, canteiros, estufas e orquidários,
+## torres, gazebos e as estruturas pitorescas) e as trilhas entre os locais. Tudo
+## sai também descrito no console: o texto de cada local, o Detalhe (e o estado,
+## inteiro ou em ruínas), as fichas de NPCs e criaturas, o conteúdo de cada casa de
+## vidro e de cada andar de torre.
+##
+## Mapa do script:
+##   `_ready`            lê o JSON, monta o relevo, os lotes e as trilhas
+##   `_spawn_plot`       despacha cada lote pelo seu `tipo` e acrescenta o clima do
+##                       Detalhe (`_spawn_ambiente`) e a cúpula de vidro
+##   `_spawn_torre`      torre com malhas por material, trepadeiras, topo e objetos
+##                       dos andares (`TorreProps.gd`)
+##   `_spawn_estufa`     conjunto de casas de vidro (um dado jogado cada), com flora
+##   `_spawn_pitoresco`  fonte, estátuas, labirinto, mausoléu, lagos, xadrez, escadaria...
+##   `_spawn_area`       nuvem de plantas da vegetação dominante (e galhos caídos)
+##   `_spawn_estufa_colossal`  o vidro que cobre o nível inteiro, com os portais
+##   `_material*`        materiais: cor fixa, cor de vértice (flores e plantas
+##                       coloridas) e vidro translúcido
+## Os `.obj` não trazem material; cada grupo de malha ganha a sua cor nas tabelas
+## `COR_*` abaixo.
 ##
 ## Para gerar novos dados (a partir da raiz do repositório):
 ##   cd ynn-generator
-##   python -m ynn.cli --layer 1 --areas 5 --seed 42 --json \
+##   python -m ynn.cli --seed 42 --json \
 ##       --output ../jardynn-game/assets/data/camada1.json \
 ##       --plant-output-dir ../jardynn-game/assets/plants
-## Use --terrain-resolution/--terrain-cell-size (relevo) e
-## --field-width/--field-depth/--plot-size (layout) pra ajustar a escala.
+## Use --profundidade/--max-nos (tamanho do mapa), --estufa-colossal sempre (o vidro
+## sobre o nível todo), --terrain-resolution/--terrain-cell-size (relevo) e
+## --field-width/--field-depth (campo) pra ajustar. Depois reimporte o projeto no
+## editor do Godot, pra os `.obj` novos virarem malhas.
 
 @export var layer_json_path: String = "res://assets/data/camada1.json"
 @export var plants_dir: String = "res://assets/plants/"
@@ -48,7 +60,7 @@ const COLOR_MORTO := Color(0.3, 0.22, 0.14)
 const COLOR_PISO_PRETO := Color(0.06, 0.06, 0.07)
 const COLOR_PISO_BRANCO := Color(0.88, 0.87, 0.82)
 const COLOR_PLANTA_MORTA := Color(0.36, 0.27, 0.16)
-const ARVORES_GRANDES := ["carvalho", "salgueiro", "pinheiro", "araucaria", "dracena_dragao"]
+const ARVORES_GRANDES := ["carvalho", "salgueiro", "pinheiro", "araucaria", "dracena_dragao", "baoba", "samambaia_arborea", "cica"]
 const COR_FLORA_ESTUFA := {
 	"cacto_coluna": Color(0.3, 0.55, 0.32),
 	"cacto_barril": Color(0.35, 0.6, 0.3),
@@ -63,6 +75,11 @@ const COR_FLORA_ESTUFA := {
 	"topiaria": Color(0.2, 0.46, 0.2),
 	"cogumelo": Color(0.75, 0.35, 0.3),
 	"dracena_dragao": Color(0.32, 0.5, 0.3),
+	"baoba": Color(0.52, 0.43, 0.34),
+	"carvalho": Color(0.24, 0.46, 0.2),
+	"salgueiro": Color(0.4, 0.55, 0.3),
+	"pinheiro": Color(0.12, 0.34, 0.2),
+	"araucaria": Color(0.2, 0.42, 0.26),
 }
 const COR_PITORESCO := {
 	"pedra": Color(0.66, 0.64, 0.6),
@@ -121,6 +138,9 @@ const COLOR_DESCIDA := Color(0.78, 0.45, 0.35)
 var _terreno_atual = null
 
 
+## Ponto de entrada: carrega o JSON do nível (`layer_json_path`), monta o relevo, instancia
+## cada lote do `layout` (e as áreas, cruzadas por `area_index`), a estufa colossal se houver, e
+## desenha as trilhas entre os locais. Sem `layout` (JSON antigo), enfileira as áreas numa linha.
 func _ready() -> void:
 	var layer_data = _load_json(layer_json_path)
 	if layer_data == null:
@@ -164,6 +184,8 @@ func _ready() -> void:
 			_spawn_area(areas[i], i * area_spacing, 0.0, terreno)
 
 
+## Lê um arquivo JSON do projeto e devolve o conteúdo já convertido (Dictionary), ou null
+## se o arquivo não existe.
 func _load_json(path: String):
 	if not FileAccess.file_exists(path):
 		return null
@@ -172,6 +194,9 @@ func _load_json(path: String):
 	return parsed
 
 
+## Instancia um lote do layout: imprime o local, o Detalhe e o estado, despacha pelo `tipo`
+## (área, torre, estufa/orquidário, estrutura pitoresca, gazebo, canteiro) e por fim aplica o clima do
+## Detalhe (`_spawn_ambiente`) e a cúpula de vidro, se o lote tiver uma.
 func _spawn_plot(plot: Dictionary, areas_by_index: Dictionary, terreno) -> void:
 	var tipo = plot.get("tipo")
 	var x: float = plot.get("x", 0.0)
@@ -489,6 +514,7 @@ func _spawn_malhas_torre(malhas: Dictionary, torre: Node3D, cores: Dictionary = 
 		torre.add_child(mi)
 
 
+## Material do vidro das estufas: translúcido, liso e de dupla face.
 func _material_vidro() -> StandardMaterial3D:
 	var material = StandardMaterial3D.new()
 	material.albedo_color = COLOR_VIDRO
@@ -713,6 +739,8 @@ func _spawn_props_torre(plot: Dictionary, torre: Node3D) -> void:
 		torre.add_child(rotulo)
 
 
+## Instancia uma área: imprime o texto, o NPC e a criatura, espalha as plantas da vegetação
+## dominante (árvores grandes, poucas e bem espaçadas; o resto, em touceira) e os galhos caídos.
 func _spawn_area(area: Dictionary, base_x: float, base_z: float, terreno) -> void:
 	print("--- Área %s (%s) ---" % [_n(area.get("index")), area.get("band")])
 	print(area.get("text", ""))
@@ -730,9 +758,9 @@ func _spawn_area(area: Dictionary, base_x: float, base_z: float, terreno) -> voi
 	var grande = str(area.get("especie_vegetacao")) in ARVORES_GRANDES
 	for plant_path in area.get("plantas_obj", []):
 		if grande:
-			_spawn_plant_cluster(plant_path, base_x, base_z, terreno, scatter_radius * 5.0, COLOR_PLANTA, 0.0, 0.0, null, randi_range(1, 2))
+			_spawn_plant_cluster(plant_path, base_x, base_z, terreno, scatter_radius * 5.0, COR_FLORA_ESTUFA.get(str(area.get("especie_vegetacao")), COLOR_PLANTA), 0.0, 0.0, null, randi_range(1, 2))
 		else:
-			_spawn_plant_cluster(plant_path, base_x, base_z, terreno, scatter_radius, COLOR_PLANTA)
+			_spawn_plant_cluster(plant_path, base_x, base_z, terreno, scatter_radius, COR_FLORA_ESTUFA.get(str(area.get("especie_vegetacao")), COLOR_PLANTA))
 
 	for branch_path in area.get("galhos_caidos_obj", []):
 		_spawn_fallen_branch(branch_path, base_x, base_z, terreno)
@@ -830,6 +858,8 @@ func _spawn_path(a: Vector2, b: Vector2, tipo: String, terreno) -> void:
 	add_child(mesh_instance)
 
 
+## Ponto de uma trilha no mundo: o (x, z) dado, à altura do terreno mais 10 cm (pra fita não
+## afundar no chão).
 func _ponto_trilha(p: Vector2, terreno) -> Vector3:
 	var y = _height_at(terreno, p.x, p.y) if terreno != null else 0.0
 	return Vector3(p.x, y + 0.1, p.y)
@@ -840,6 +870,8 @@ func _ponto_trilha(p: Vector2, terreno) -> Vector3:
 ## a cor fixa `cor`.
 var _malhas_coloridas := {}
 
+## Material de uma planta: usa a cor de vértice da malha, se ela tiver, ou a `cor` fixa. O
+## resultado da checagem fica em cache por malha.
 func _material_planta(mesh, cor: Color, double_sided: bool = false) -> StandardMaterial3D:
 	var colorida: bool = _malhas_coloridas.get(mesh, null) if _malhas_coloridas.has(mesh) else _tem_cor_de_vertice(mesh)
 	_malhas_coloridas[mesh] = colorida
@@ -852,6 +884,7 @@ func _material_planta(mesh, cor: Color, double_sided: bool = false) -> StandardM
 	return material
 
 
+## Diz se a malha foi importada com cor de vértice (flores, nepentes, vitória-régia...).
 func _tem_cor_de_vertice(mesh) -> bool:
 	if mesh == null or mesh.get_surface_count() == 0:
 		return false

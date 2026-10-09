@@ -42,6 +42,11 @@ Tudo aqui é pra **forma e ambientação**; textos de tabela continuam originais
 
 ## Proposta de lotes
 
+> **Andamento:** o lote 1 está feito. Araucária e dracena-dragão saíram como árvores por L-system
+> (`gielis.plants.lsystem`); baobá, samambaia arbórea, cica, nepentes, vitória-régia e flor-cadáver
+> estão em `gielis.plants.exoticas` e já entram na vegetação (`tables.VEGETATION`), nos temas de
+> flora das estufas e nos lagos. O lote 2 segue pendente.
+
 1. **Lote 1 (barato, alto impacto):** `araucaria`, `dracena_dragao`, `baoba`, `samambaia_arborea`, `nepentes`, `vitoria_regia`, `flor_cadaver`, `cica`.
 2. **Lote 2:** `welwitschia`, `lithops`, `tacca`, `bromelia`, `platycerium`, `ginkgo`, `paulownia`, `rafflesia`.
 3. **Onde entram:** novos temas de flora de estufa (`aquatico`, `carnivoras`, `desertico-raro`), os topos brotados das torres, canteiros "bizarros" nos níveis mais fundos (por banda: as estranhas só no núcleo selvagem) e um tema para o orquidário.

@@ -28,9 +28,9 @@ import numpy as np
 from . import foliage
 from .mesh_utils import tube_mesh
 
-ANGULO_DOURADO = 137.5
-MAX_CADEIA = 1800
-MAX_PONTAS = 240  # no máximo este tanto de cachos de folhas por árvore  # a cadeia para de crescer aqui: a árvore não vira um arquivo de megabytes
+ANGULO_DOURADO = 137.5  # graus: ângulo áureo entre ramos sucessivos (filotaxia)
+MAX_CADEIA = 1800  # a cadeia para de crescer aqui: a árvore não vira um arquivo de megabytes
+MAX_PONTAS = 240  # no máximo este tanto de cachos de folhas por árvore
 
 # Cada gramática: axioma, regras (símbolo -> lista de (peso, cadeia)), o que
 # cada broto vira no fim, e os parâmetros da tartaruga e da folhagem.
@@ -138,7 +138,12 @@ ESPECIES_L = tuple(GRAMATICAS)
 
 def reescrever(rng, gramatica, iteracoes):
     """Aplica as regras estocásticas `iteracoes` vezes ao axioma e troca os
-    brotos que sobraram pelo que `fim` manda. Devolve a cadeia final."""
+    brotos que sobraram pelo que `fim` manda. Devolve a cadeia final.
+
+    Em cada passada todos os símbolos são reescritos ao mesmo tempo (os que
+    não têm regra passam inalterados); entre as opções de uma regra, a
+    escolha é sorteada com os pesos dados. Para antes de `iteracoes` se a
+    cadeia já passou de `MAX_CADEIA`."""
     cadeia = gramatica["axioma"]
     regras = gramatica["regras"]
     for _ in range(iteracoes):
@@ -156,6 +161,9 @@ def reescrever(rng, gramatica, iteracoes):
 
 
 def _rotacionar(eixo, vetor, angulo):
+    """Gira `vetor` em torno de `eixo` (unitário) por `angulo` radianos
+    (fórmula de Rodrigues; mesma de `mesh_utils.rotate_around_axis`, mas sem
+    normalizar o eixo)."""
     c, s = math.cos(angulo), math.sin(angulo)
     return vetor * c + np.cross(eixo, vetor) * s + eixo * np.dot(eixo, vetor) * (1 - c)
 
@@ -163,7 +171,14 @@ def _rotacionar(eixo, vetor, angulo):
 def interpretar(rng, cadeia, gramatica):
     """Tartaruga 3D. Devolve `(segmentos, pontas)`: os galhos (dicts com
     `start`, `end`, `r0`, `r1`, `depth`, como o resto do esqueleto) e as pontas
-    de folhagem `(posição, direção, tipo)`, com tipo "L" ou "R"."""
+    de folhagem `(posição, direção, tipo)`, com tipo "L" ou "R".
+
+    O ângulo de ramificação é sorteado uma vez por árvore, dentro da faixa
+    `angulo` da gramática. O estado da tartaruga é o trio de eixos (H, L, U)
+    — avanço, esquerda e cima — mais posição, raio e comprimento atuais; os
+    colchetes guardam e restauram esse estado numa pilha. Coordenadas Z-up:
+    a tartaruga começa na origem apontando para +Z. As profundidades
+    (`depth`) contam quantos `[` estão abertos."""
     angulo = math.radians(rng.uniform(*gramatica["angulo"]))
     giro = math.radians(gramatica["giro"])
     comprimento = gramatica["comprimento"]
@@ -191,9 +206,12 @@ def interpretar(rng, cadeia, gramatica):
                 eixo = np.cross(H, tropismo)
                 n = np.linalg.norm(eixo)
                 if n > 1e-9:
+                    # Quanto mais H é perpendicular ao vetor de tropismo, maior a
+                    # curvatura (|H x T| = sen do ângulo); `forca` < 0 afasta.
                     ang = forca * n
                     H = _rotacionar(eixo / n, H, ang)
                     L = _rotacionar(eixo / n, L, ang)
+                    # Reortonormaliza H, L, U para o erro numérico não se acumular.
                     H = H / np.linalg.norm(H)
                     U = np.cross(H, L)
                     L = np.cross(U, H)
@@ -227,7 +245,14 @@ def interpretar(rng, cadeia, gramatica):
 def montar_malha(rng, gramatica, segmentos, pontas, escala_folha=1.0):
     """Transforma esqueleto e pontas em partes (vértices, faces). As folhas
     crescem com `escala_folha` (menos que a árvore: folha de carvalho velho
-    não é do tamanho de uma porta)."""
+    não é do tamanho de uma porta).
+
+    Cada segmento vira um tubo (`tube_mesh`, seção circular; 8 lados, ou 5 nos
+    galhos finos). Cada ponta "R" vira uma roseta de folhas rígidas em leque;
+    cada ponta "L" vira um cacho de folhas voltado para a direção do ramo.
+    Se há mais pontas que `MAX_PONTAS`, sorteia-se esse tanto delas. Devolve
+    uma lista de pares (vértices, faces) em coordenadas mundiais Z-up, sem
+    cor."""
     if len(pontas) > MAX_PONTAS:
         pontas = rng.sample(pontas, MAX_PONTAS)
     partes = []
@@ -238,6 +263,8 @@ def montar_malha(rng, gramatica, segmentos, pontas, escala_folha=1.0):
     cfg = gramatica["folha"]
     for pos, direcao, tipo in pontas:
         if tipo == "R":  # roseta: folhas rígidas saindo em leque pra cima
+            # A tangente -Z com queda grande faz as folhas saírem inclinadas pra cima;
+            # o giro divide a volta igualmente entre as `n` folhas.
             n = rng.randint(*cfg["por_cacho"])
             for k in range(n):
                 lv, lf = foliage.leaf_mesh(
@@ -277,6 +304,7 @@ def gerar_arvore_l(rng, nome, altura=None):
     cadeia = reescrever(rng, gramatica, rng.randint(*gramatica["iteracoes"]))
     segmentos, pontas = interpretar(rng, cadeia, gramatica)
     altura = altura if altura is not None else sortear_altura(rng, nome)
+    # Fator de escala único: leva o ponto mais alto do esqueleto à altura pedida.
     natural = max(max(s["end"][2], s["start"][2]) for s in segmentos)
     k = altura / max(natural, 1e-6)
     for seg in segmentos:

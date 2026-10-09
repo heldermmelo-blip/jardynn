@@ -19,6 +19,7 @@ def area(rho_func, m):
     """
 
     def integrand(theta):
+        """Integrando da área polar: rho^2 / 2."""
         return 0.5 * rho_func(theta) ** 2
 
     period_integral, _ = integrate.quad(integrand, 0.0, 2 * np.pi / m)
@@ -32,6 +33,7 @@ def polar_moment_of_inertia(rho_func, m):
     """
 
     def integrand(theta):
+        """Integrando do momento de inércia polar: rho^4 / 4."""
         return 0.25 * rho_func(theta) ** 4
 
     period_integral, _ = integrate.quad(integrand, 0.0, 2 * np.pi / m)
@@ -43,13 +45,19 @@ def circumference(rho_func, m, d_theta=1e-6):
 
     s = m * integral_0^(2*pi/m) sqrt( rho(theta)^2 + rho'(theta)^2 ) dtheta
 
-    A derivada rho'(theta) é aproximada por diferenças finitas centradas.
+    A derivada rho'(theta) é aproximada por diferenças finitas centradas,
+    com passo `d_theta`. Vale a mesma ideia de `area`: integra-se um só
+    período (0 a 2*pi/m) e multiplica-se por `m`.
     """
 
     def rho_prime(theta):
+        """Derivada de rho em `theta`, por diferença centrada."""
+        # Diferença centrada: erro O(d_theta^2), melhor que a unilateral.
         return (rho_func(theta + d_theta) - rho_func(theta - d_theta)) / (2 * d_theta)
 
     def integrand(theta):
+        """Elemento de arco polar: sqrt(rho^2 + rho'^2)."""
+        # Elemento de arco em coordenadas polares: ds = sqrt(rho^2 + rho'^2) dtheta.
         return np.sqrt(rho_func(theta) ** 2 + rho_prime(theta) ** 2)
 
     period_integral, _ = integrate.quad(integrand, 0.0, 2 * np.pi / m, limit=200)

@@ -22,4 +22,5 @@ def slot_limit(strength_score):
 
 
 def total_slots(equipment):
+    """Soma os slots ocupados por uma lista de `(item, slots)`."""
     return sum(slots for _, slots in equipment)

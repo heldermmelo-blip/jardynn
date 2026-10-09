@@ -45,9 +45,11 @@ def prepare_spells(rng, class_key):
     respeitando o número de vagas em `SPELL_SLOTS_LEVEL_1`. Cleric tem 0
     vagas no nível 1 — sempre retorna lista vazia. Elf usa a lista de
     Magic-User. Retorna lista vazia para classes não-conjuradoras."""
+    # Elf conjura da lista de Magic-User
     spell_list_key = "magic_user" if class_key == "elf" else class_key
     available = SPELLS.get(spell_list_key)
     if not available:
         return []
+    # nunca pede mais magias do que a lista tem
     n_slots = min(SPELL_SLOTS_LEVEL_1.get(class_key, 0), len(available))
     return rng.sample(available, n_slots)

@@ -14,6 +14,8 @@ def orthonormal_basis(tangent):
     """Dois vetores unitários perpendiculares a `tangent`, formando uma base
     local (tangent, u, v)."""
     tangent = tangent / np.linalg.norm(tangent)
+    # Escolhe um "cima" de referência que não seja quase paralelo à tangente,
+    # senão o produto vetorial degenera (Z, salvo quando a tangente é quase vertical).
     up = np.array([0.0, 0.0, 1.0]) if abs(tangent[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
     u = np.cross(up, tangent)
     u = u / np.linalg.norm(u)
@@ -51,13 +53,16 @@ def tube_mesh(segment, n_sides=10, cross_section_n=2.0):
     shape = lame.lame_polar_radius(phi, A=1.0, B=1.0, n=cross_section_n)
     cx, cy = shape * np.cos(phi), shape * np.sin(phi)
 
+    # Dois anéis de n_sides vértices no plano (u, v) perpendicular ao eixo do
+    # segmento: o primeiro em `start` (raio r0), o segundo em `end` (raio r1).
     ring_start = start + r0 * (np.outer(cx, u) + np.outer(cy, v))
     ring_end = end + r1 * (np.outer(cx, u) + np.outer(cy, v))
     vertices = np.vstack([ring_start, ring_end])
 
     faces = []
     for i in range(n_sides):
-        j = (i + 1) % n_sides
+        j = (i + 1) % n_sides  # fecha o anel: o último lado volta ao vértice 0
+        # Cada lado do tubo é um quadrilátero (a, b, c, d) dividido em 2 triângulos.
         a, b, c, d = i, j, n_sides + j, n_sides + i
         faces.append([a, b, c])
         faces.append([a, c, d])

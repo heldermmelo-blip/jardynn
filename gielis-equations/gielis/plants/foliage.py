@@ -47,15 +47,20 @@ def place_leaf(local_vertices, attach_point, branch_tangent, twist=0.0, droop_de
     leve queda `droop_deg` (efeito da gravidade).
     """
     tangent_vec = branch_tangent / np.linalg.norm(branch_tangent)
+    # Base (u, v) perpendicular ao galho (mesma construção de `orthonormal_basis`).
     up = np.array([0.0, 0.0, 1.0]) if abs(tangent_vec[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
     u = np.cross(up, tangent_vec)
     u = u / np.linalg.norm(u)
     v = np.cross(tangent_vec, u)
 
+    # Direção radial (para fora do galho) escolhida pelo ângulo de giro `twist`.
     out_dir = np.cos(twist) * u + np.sin(twist) * v
     droop = np.radians(droop_deg)
+    # A ponta da folha (eixo local y) cai um pouco contra o sentido do galho,
+    # imitando o peso da folha.
     leaf_y = out_dir * np.cos(droop) - tangent_vec * np.sin(droop)
     leaf_y = leaf_y / np.linalg.norm(leaf_y)
+    # leaf_x: eixo da largura da folha, perpendicular a leaf_y e ao galho.
     leaf_x = np.cross(leaf_y, tangent_vec)
     leaf_x = leaf_x / np.linalg.norm(leaf_x)
 
@@ -73,11 +78,13 @@ def flower_bloom_mesh(n_petals=6, radius=0.12, n1=0.3, n2=1.7, n3=1.7, n_points=
     x, y = superformula.to_cartesian(theta, rho)
     outline = np.column_stack([x, y, np.zeros_like(x)])
 
-    center_idx = n_points
+    center_idx = n_points  # o centro é o último vértice, depois do contorno
     vertices = np.vstack([outline, [[0.0, 0.0, 0.0]]])
     faces = []
     for i in range(n_points):
         j = (i + 1) % n_points
+        # Leque do centro até cada aresta do contorno, nas duas orientações
+        # (dupla face), como em `leaf_mesh`.
         faces.append([center_idx, i, j])
         faces.append([center_idx, j, i])
     return vertices, np.array(faces, dtype=int)
@@ -93,10 +100,12 @@ def cap_mesh(radius=0.06, height=0.03, n_sides=16, cross_section_n=2.5):
     rim = np.column_stack(
         [radius * rim_shape * np.cos(phi), radius * rim_shape * np.sin(phi), np.zeros(n_sides)]
     )
-    top_idx = n_sides
+    top_idx = n_sides  # topo da cúpula: último vértice, no eixo Z a `height`
     vertices = np.vstack([rim, [[0.0, 0.0, height]]])
     faces = []
     for i in range(n_sides):
         j = (i + 1) % n_sides
+        # Um triângulo por aresta da borda, todos convergindo no topo (face única,
+        # voltada para cima; a parte de baixo não é fechada).
         faces.append([i, j, top_idx])
     return vertices, np.array(faces, dtype=int)

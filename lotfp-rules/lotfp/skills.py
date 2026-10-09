@@ -32,6 +32,7 @@ def allocate_skill_points(rng, points, base_ratings=None):
     ratings = dict(base_ratings or {skill: SPECIALIST_BASE_RATING for skill in SPECIALIST_SKILLS})
     remaining = points
     while remaining > 0:
+        # perícia já no teto é sorteada de novo, sem gastar o ponto
         skill = rng.choice(list(ratings.keys()))
         if skill == SNEAK_ATTACK or ratings[skill] < MAX_RATING:
             ratings[skill] += 1

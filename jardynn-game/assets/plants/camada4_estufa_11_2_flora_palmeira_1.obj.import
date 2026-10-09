@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dijj6pl2j6sc7"
+path="res://.godot/imported/camada4_estufa_11_2_flora_palmeira_1.obj-cbf30735df7324fa676d2642f370179f.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada4_estufa_11_2_flora_palmeira_1.obj-cbf30735df7324fa676d2642f370179f.mesh"]
+
+source_file="res://assets/plants/camada4_estufa_11_2_flora_palmeira_1.obj"
+dest_files=["res://.godot/imported/camada4_estufa_11_2_flora_palmeira_1.obj-cbf30735df7324fa676d2642f370179f.mesh", "res://.godot/imported/camada4_estufa_11_2_flora_palmeira_1.obj-cbf30735df7324fa676d2642f370179f.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

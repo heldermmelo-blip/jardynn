@@ -38,15 +38,20 @@ def group_path(base_path, group):
 
 
 def _v(xy, z):
+    """Ponto 3D (Z-up) a partir de um ponto XY e uma altura `z`."""
     return np.array([xy[0], xy[1], z], dtype=float)
 
 
 def _convex_overlap(p, q):
-    """Teste de eixos separadores entre dois polígonos convexos (listas de XY)."""
+    """Teste de eixos separadores entre dois polígonos convexos (listas de XY).
+    Devolve True se se sobrepõem; polígonos que só se tocam na borda (dentro de
+    uma tolerância de 1e-9) contam como separados."""
     for poly in (p, q):
         n = len(poly)
         for i in range(n):
             a, b = np.asarray(poly[i], float), np.asarray(poly[(i + 1) % n], float)
+            # eixo = normal da aresta; se as projeções dos dois polígonos nele
+            # não se cruzam, existe um eixo separador e eles não se sobrepõem
             axis = np.array([-(b - a)[1], (b - a)[0]])
             norm = np.linalg.norm(axis)
             if norm < 1e-9:
@@ -73,6 +78,15 @@ def _inside(point, poly):
 
 
 class _Builder:
+    """Acumula a geometria da estufa em grupos de material (`GROUPS`).
+
+    `parts[grupo]` é a lista de partes (vértices, faces) já em coordenadas
+    mundiais Z-up. `pane_loss` e `rib_loss` são as probabilidades (0 a 1) de
+    cada painel de vidro / cada viga "descartável" ser omitido (estufa em
+    ruínas). `bay` é a largura-alvo de um vão de parede; `door_h` a altura
+    da porta (no mínimo `DOOR_HEIGHT`, e proporcional ao vão). `hang_points`
+    junta pontos de onde as trepadeiras mortas podem pender."""
+
     def __init__(self, rng, pane_loss=0.0, rib_loss=0.0, bay=BAY):
         self.rng = rng
         self.bay = bay
@@ -83,6 +97,9 @@ class _Builder:
         self.hang_points = []
 
     def beam(self, a, b, radius=0.04, group="moldura", droppable=True, sides=4):
+        """Viga (tubo reto de `a` a `b`, seção de `sides` lados) no `group`.
+        Se `droppable`, pode ser omitida com probabilidade `rib_loss`; vigas
+        estruturais passam `droppable=False`. Vigas de comprimento ~0 são ignoradas."""
         a, b = np.asarray(a, float), np.asarray(b, float)
         if np.linalg.norm(b - a) < 1e-6:
             return
@@ -92,6 +109,10 @@ class _Builder:
         self.parts[group].append(tube_mesh(segment, n_sides=sides, cross_section_n=2.0))
 
     def panel(self, v0, v1, v2, v3, group="vidro", droppable=True):
+        """Painel quadrilátero (v0..v3 em ordem em volta do contorno) no `group`.
+        Se v2 e v3 (ou v0 e v1) coincidem (o painel vira triângulo, como no
+        ápice da cúpula), emite só um triângulo.
+        Só o vidro "descartável" pode ser omitido, com probabilidade `pane_loss`."""
         if group == "vidro" and droppable and self.pane_loss and self.rng.random() < self.pane_loss:
             return
         verts = np.array([v0, v1, v2, v3], float)
@@ -104,15 +125,20 @@ class _Builder:
         self.parts[group].append((verts, faces))
 
     def triangle(self, a, b, c, group="vidro"):
+        """Painel triangular (empena, leque do arco etc.); no vidro, sujeito a `pane_loss`."""
         if group == "vidro" and self.pane_loss and self.rng.random() < self.pane_loss:
             return
         self.parts[group].append((np.array([a, b, c], float), np.array([[0, 1, 2]])))
 
     # --- entrada em arco --------------------------------------------------
     def arch(self, left, right, steps=8):
+        """Arco de meia-circunferência (viga + vidro) entre os pontos `left` e
+        `right` (3D, à mesma altura), subindo em Z a partir da linha que os une;
+        o vão sob a linha fica livre para a passagem. `steps` é o número de trechos."""
         center = (left + right) / 2.0
         half = (left - right) / 2.0
         w = float(np.linalg.norm(left - right)) / 2.0
+        # t vai de 0 (em `left`) a pi (em `right`); sen(t) dá a altura do arco
         pts = [center + half * math.cos(t) + UP * w * math.sin(t) for t in np.linspace(0, math.pi, steps + 1)]
         for p, q in zip(pts, pts[1:]):
             self.beam(p, q, 0.035, droppable=False)
@@ -129,11 +155,15 @@ class _Builder:
         z_top = floors * STORY
 
         def pt(t, z):
+            """Ponto da parede na posição t (0 em `a`, 1 em `b`) e altura z."""
             return _v(a + (b - a) * t, z)
 
         def opened(t_mid):
+            """True se a posição t cai numa abertura (onde não há painéis)."""
             return any(lo <= t_mid <= hi for lo, hi in openings)
 
+        # A parede é dividida em `nb` vãos de ~`bay`; cada vão tem soco embaixo
+        # (exceto na porta) e, por pavimento, um painel de vidro com travessa.
         door_bay = None if door_t is None else min(nb - 1, int(door_t * nb))
         for i in range(nb):
             t0, t1 = i / nb, (i + 1) / nb
@@ -146,6 +176,8 @@ class _Builder:
                 z0 = PLINTH if f == 0 else f * STORY
                 z1 = (f + 1) * STORY
                 if is_door and f == 0:
+                    # acima da porta: vidro de `top` até o fim do pavimento, com o arco
+                    # por baixo (`top` fica meio vão acima de `door_h`, a altura do arco)
                     top = self.door_h + length / nb / 2
                     self.panel(pt(t0, top), pt(t1, top), pt(t1, z1), pt(t0, z1))
                     self.arch(pt(t0, self.door_h), pt(t1, self.door_h))
@@ -154,6 +186,8 @@ class _Builder:
                     zm = (z0 + z1) / 2
                     self.beam(pt(t0, zm), pt(t1, zm), 0.02)
 
+        # montantes verticais em cada divisa de vão (os dos cantos, mais grossos,
+        # nunca caem na ruína), vigas de pavimento e a viga do soco
         for i in range(nb + 1):
             t = i / nb
             corner = i in (0, nb)
@@ -167,7 +201,9 @@ class _Builder:
 
     # --- galeria (balcão externo) ----------------------------------------
     def gallery(self, corners, floors):
-        """Balcão externo em cada pavimento acima do térreo, com guarda-corpo."""
+        """Balcão externo em cada pavimento acima do térreo, com guarda-corpo.
+        `corners` é o polígono da base do núcleo; o balcão avança 0,55 m para
+        fora de cada canto, radialmente a partir do centroide."""
         n = len(corners)
         centroid = np.mean(corners, axis=0)
         for f in range(1, floors):
@@ -185,8 +221,15 @@ class _Builder:
 
     # --- telhados -----------------------------------------------------------
     def gable_roof(self, o, d, n, w, length, wall_h, rise, close_start, close_end):
+        """Telhado de duas águas sobre um salão. Parâmetros de salão (como em
+        `_hall_geometry`): `o` = centro da parede inicial (XY), `d` = direção do
+        comprimento, `n` = normal à esquerda, `w` = largura, `length` = comprimento.
+        `wall_h` é a altura do beiral e `rise` quanto a cumeeira sobe acima dele.
+        `close_start`/`close_end` fecham a empena (triângulo de vidro) de cada ponta."""
         nb = max(1, int(round(length / self.bay)))
         up_h = wall_h + rise
+        # três fileiras de pontos ao longo do comprimento: beiral esquerdo,
+        # beiral direito e cumeeira (a meia largura, mais alta)
         left = [_v(o + n * w / 2 + d * length * i / nb, wall_h) for i in range(nb + 1)]
         right = [_v(o - n * w / 2 + d * length * i / nb, wall_h) for i in range(nb + 1)]
         ridge = [_v(o + d * length * i / nb, up_h) for i in range(nb + 1)]
@@ -204,12 +247,17 @@ class _Builder:
         self.hang_points.extend(ridge)
 
     def vault_roof(self, o, d, n, w, length, wall_h, close_start, close_end):
+        """Abóbada de berço (meio cilindro achatado) sobre um salão: mesmos
+        parâmetros de salão que `gable_roof`, com altura de arco igual a 38% da
+        largura. A seção é um semicírculo de `k` = 8 trechos, repetido a cada vão;
+        `close_start`/`close_end` fecham as pontas com um leque de vidro."""
         nb = max(1, int(round(length / self.bay)))
         k = 8
         arch_h = w * 0.38
         thetas = np.linspace(0, math.pi, k + 1)
 
         def ring(i):
+            """Arco (k+1 pontos) da seção transversal na posição `i` ao longo do comprimento."""
             base = o + d * length * i / nb
             return [_v(base + n * (math.cos(t) * w / 2), wall_h + math.sin(t) * arch_h) for t in thetas]
 
@@ -231,8 +279,14 @@ class _Builder:
         self.hang_points.extend(rings[nb // 2])
 
     def dome(self, corners, z_eave, radius, tiered, ndiv):
+        """Cúpula poligonal sobre o núcleo, com a base em `z_eave`. `corners` é o
+        polígono do núcleo (centrado na origem) e `ndiv` quantas divisões cada
+        lado recebe. Se `tiered`, ganha tambor e cúpula superior (em camadas);
+        senão, uma calota simples. Sempre termina num pináculo vertical."""
         n = len(corners)
         rise = max(0.9, 0.55 * radius)
+        # Cada anel = (escala do polígono em relação à base, altura acima do beiral):
+        # o polígono encolhe rumo ao centro conforme sobe. Escala 0 é o ápice.
         rings = [(1.0, 0.0), (0.93, 0.38 * rise), (0.78, 0.72 * rise), (0.58, rise)]
         if tiered:
             drum = 0.22 * rise + 0.2
@@ -242,6 +296,8 @@ class _Builder:
             rings += [(0.30, rise * 1.12), (0.0, rise * 1.2)]
 
         def ring_points(s, z):
+            """Pontos do anel de escala `s` e altura `z` (acima do beiral): os lados
+            do polígono subdivididos em `ndiv` pontos e reduzidos por `s`."""
             pts = []
             for i in range(n):
                 c0, c1 = np.asarray(corners[i], float), np.asarray(corners[(i + 1) % n], float)
@@ -251,6 +307,8 @@ class _Builder:
 
         rp = [ring_points(s, z) for s, z in rings]
         total = len(rp[0])
+        # nervuras horizontais em cada anel (menos no ápice, que é um ponto),
+        # depois nervuras e painéis entre anéis consecutivos
         for r in rp[:-1]:
             for m in range(total):
                 self.beam(r[m], r[(m + 1) % total], 0.04)
@@ -265,6 +323,9 @@ class _Builder:
 
     # --- trepadeiras mortas (estufa em ruínas) -------------------------------
     def dead_vines(self, count):
+        """Pendura `count` trepadeiras mortas (grupo `morto`): cada uma parte de
+        um ponto de `hang_points` e desce em passos irregulares, com galhinhos
+        ocasionais, até o comprimento sorteado ou até quase tocar o chão."""
         rng = self.rng
         if not self.hang_points:
             return
@@ -285,6 +346,11 @@ class _Builder:
 
     # --- piso em xadrez -------------------------------------------------------
     def checker_floor(self, footprints):
+        """Piso em xadrez (grupos `piso_preto` e `piso_branco`) em z = 0,04.
+        `footprints` é a lista de polígonos XY dos blocos; uma grade de ladrilhos
+        quadrados cobre a caixa que os contém, e só ficam os ladrilhos cujo centro
+        está dentro de algum polígono. O lado do ladrilho cresce com o tamanho do
+        conjunto (de 0,8 a 3 m), para o número de ladrilhos não explodir."""
         xs = [p[0] for poly in footprints for p in poly]
         ys = [p[1] for poly in footprints for p in poly]
         extent = max(max(xs) - min(xs), max(ys) - min(ys))
@@ -309,12 +375,17 @@ class _Builder:
 
 
 def _hall_geometry(o, d, w, length):
+    """Geometria de um salão retangular no plano XY. `o` é o centro da parede
+    inicial, `d` a direção unitária do comprimento, `w` a largura e `length`
+    o comprimento. Devolve um dict com `n` (normal à esquerda de `d`) e os
+    quatro cantos: `s_l`/`s_r` (início, esquerda/direita) e `e_l`/`e_r` (fim)."""
     n = np.array([-d[1], d[0]])
     s_l, s_r = o + n * w / 2, o - n * w / 2
     return dict(o=o, d=d, n=n, w=w, length=length, s_l=s_l, s_r=s_r, e_l=s_l + d * length, e_r=s_r + d * length)
 
 
 def _hall_polygon(g):
+    """Contorno do salão `g` (de `_hall_geometry`) como lista de 4 tuplas XY, em ordem."""
     return [tuple(g["s_l"]), tuple(g["s_r"]), tuple(g["e_r"]), tuple(g["e_l"])]
 
 
@@ -330,6 +401,9 @@ def _wall_ends(g, name):
 
 
 def _attach_point(g, wall, t):
+    """Ponto na parede `wall` ("esq", "dir", "fim" ou "ini") do salão `g`, na
+    posição `t` (0 a 1, no sentido de `_wall_ends`), e a normal horizontal que
+    aponta para fora do salão nessa parede. Serve para ancorar uma ala."""
     a, b = _wall_ends(g, wall)
     point = a + (b - a) * t
     outward = {"esq": g["n"], "dir": -g["n"], "fim": g["d"], "ini": -g["d"]}[wall]
@@ -368,6 +442,8 @@ def plan_blocks(rng, sides, radius, n_floors, n_wings, padrao="livre", fase=None
     blocks = [core]
 
     def core_slot(face):
+        """Ponto médio, normal para fora e comprimento do lado `face` do núcleo
+        (onde uma ala pode se prender)."""
         if core["kind"] == "cupula":
             a, b = core["corners"][face], core["corners"][(face + 1) % sides]
             mid = (a + b) / 2
@@ -394,6 +470,10 @@ def plan_blocks(rng, sides, radius, n_floors, n_wings, padrao="livre", fase=None
         primary = primary[: max(0, n_wings)]
 
     def try_add(origin, direction, parent, wall, t, wing_w, wing_l):
+        """Tenta criar uma ala saindo de `origin` na `direction`, presa à parede
+        `wall` (posição `t`) do bloco `parent`. Se o contorno se sobrepõe a algum
+        outro bloco (exceto o pai), desiste e devolve None; senão registra a ala
+        em `blocks` e em `parent["children"]` e a devolve."""
         d = np.asarray(direction, float)
         d = d / np.linalg.norm(d)
         g = _hall_geometry(np.asarray(origin, float), d, wing_w, wing_l)
@@ -408,6 +488,7 @@ def plan_blocks(rng, sides, radius, n_floors, n_wings, padrao="livre", fase=None
         blocks.append(child)
         return child
 
+    # Primeiro as alas "do padrão", saindo do meio das faces escolhidas do núcleo.
     placed = 0
     for face in primary:
         if placed >= n_wings:
@@ -418,6 +499,8 @@ def plan_blocks(rng, sides, radius, n_floors, n_wings, padrao="livre", fase=None
         if try_add(mid, outward, core, face, 0.5, wing_w, wing_l) is not None:
             placed += 1
 
+    # Alas extras: sorteia uma ala existente e tenta prender outra na ponta ou num
+    # dos lados dela; as colisões fazem `try_add` falhar, por isso o limite de tentativas.
     attempts = 0
     while placed < n_wings and attempts < 60:
         attempts += 1
@@ -459,6 +542,9 @@ def plan_blocks(rng, sides, radius, n_floors, n_wings, padrao="livre", fase=None
 
 
 def _opening_ranges(block, wall, wall_len):
+    """Faixas (t0, t1) da parede `wall` do `block` ocupadas por alas filhas
+    (onde não se põem painéis). `wall_len` é o comprimento da parede, usado
+    para converter a largura da ala em fração de t."""
     ranges = []
     for child in block["children"]:
         if child["wall"] == wall:
@@ -481,6 +567,8 @@ def build_greenhouse(rng, sides, n_floors, radius, n_wings=0, ruined=False, chec
     enterable = radius >= 2.2
     portas = core["portas"]
 
+    # Cada bloco vira paredes (com aberturas onde há alas e a porta, se for o caso)
+    # e cobertura: cúpula no núcleo poligonal, duas águas ou abóbada nos salões.
     door_angles = []
     for block in blocks:
         if block["kind"] == "cupula":
@@ -509,7 +597,7 @@ def build_greenhouse(rng, sides, n_floors, radius, n_wings=0, ruined=False, chec
                 wall_len = float(np.linalg.norm(c - a))
                 openings = _opening_ranges(block, name, wall_len)
                 if block["kind"] == "ala" and name == "ini":
-                    openings = [(0.0, 1.0)]
+                    openings = [(0.0, 1.0)]  # a parede inicial da ala é toda aberta, ligada ao pai
                 door = None
                 if enterable and any(block is pb and name == pw for pb, pw in portas):
                     door = 0.5

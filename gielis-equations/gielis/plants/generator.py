@@ -12,6 +12,7 @@ import os
 import numpy as np
 
 from . import foliage
+from .exoticas import ARVORES_EXOTICAS, EXOTICAS
 from .flowers import ESPECIES_FLORES, GERADORES_FLOR
 from .lsystem import ESPECIES_L, gerar_arvore_l
 from .mesh_utils import orthonormal_basis, rotate_around_axis, tube_mesh, write_obj
@@ -96,6 +97,9 @@ BRANCHING_SPECIES = {
 
 
 def _generate_branching_plant(rng, params):
+    """Monta uma planta ramificada: gera o esqueleto (`generate_skeleton`), faz
+    um tubo de seção de Lamé em cada galho e põe de 2 a 5 folhas nas pontas
+    (galhos com `depth >= max_depth - 1`). Devolve `(partes, esqueleto)`."""
     skeleton = generate_skeleton(rng, **params["skeleton"])
     max_depth = params["skeleton"].get("max_depth", 4)
 
@@ -120,6 +124,8 @@ def _generate_branching_plant(rng, params):
 
 
 def _generate_mushroom(rng):
+    """Cogumelo: um pé curto e fino coroado por um chapéu raso de borda
+    de Lamé (`foliage.cap_mesh`). Devolve `(partes, esqueleto)`."""
     stem_length = rng.uniform(0.08, 0.16)
     stem_radius = rng.uniform(0.012, 0.022)
     stem = dict(
@@ -142,6 +148,8 @@ def _generate_mushroom(rng):
 
 
 def _generate_fern(rng):
+    """Samambaia: um toco curto e de 5 a 8 frondes longas e finas, caídas em
+    leque pra todos os lados. Devolve `(partes, esqueleto)`."""
     stub = dict(start=np.array([0.0, 0.0, 0.0]), end=np.array([0.0, 0.0, 0.04]), r0=0.015, r1=0.012, depth=0)
     parts = [tube_mesh(stub, n_sides=8, cross_section_n=2.0)]
 
@@ -187,6 +195,8 @@ def _uv_sphere(center, radius, squash=1.0, n_lat=8, n_lon=14):
 
 
 def _stem(start, end, r0, r1, n_sides=8, n=2.0):
+    """Um caule de `start` a `end` (raios `r0` e `r1`): devolve o segmento do
+    esqueleto e a malha do tubo (`n` é o expoente da seção de Lamé)."""
     seg = dict(start=np.asarray(start, float), end=np.asarray(end, float), r0=r0, r1=r1, depth=0)
     return seg, tube_mesh(seg, n_sides=n_sides, cross_section_n=n)
 
@@ -311,6 +321,7 @@ def _generate_topiary(rng):
 
 SPECIAL_SPECIES = {
     **GERADORES_FLOR,
+    **{nome: (lambda rng, nome=nome: EXOTICAS[nome](rng)) for nome in EXOTICAS},
     **{nome: (lambda rng, nome=nome: gerar_arvore_l(rng, nome)) for nome in ESPECIES_L},
     "cogumelo": _generate_mushroom,
     "samambaia": _generate_fern,
@@ -391,6 +402,8 @@ def generate_plant(rng, species, out_path=None, altura=None, **skeleton_override
             params = dict(params)
             params["skeleton"] = {**params["skeleton"], **skeleton_overrides}
         parts, skeleton = _generate_branching_plant(rng, params)
+    elif species in ARVORES_EXOTICAS and altura is not None:
+        parts, skeleton = EXOTICAS[species](rng, altura)  # árvore exótica com a altura pedida
     elif species in ESPECIES_L:
         parts, skeleton = gerar_arvore_l(rng, species, altura)  # altura em metros; sem ela, sorteia de muda a veterana
     elif species in SPECIAL_SPECIES:

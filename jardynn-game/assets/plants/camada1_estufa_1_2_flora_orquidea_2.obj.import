@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://xcnqwwjt448d"
+path="res://.godot/imported/camada1_estufa_1_2_flora_orquidea_2.obj-f5cf57601931a66abaa074bf6b9044ab.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada1_estufa_1_2_flora_orquidea_2.obj-f5cf57601931a66abaa074bf6b9044ab.mesh"]
+
+source_file="res://assets/plants/camada1_estufa_1_2_flora_orquidea_2.obj"
+dest_files=["res://.godot/imported/camada1_estufa_1_2_flora_orquidea_2.obj-f5cf57601931a66abaa074bf6b9044ab.mesh", "res://.godot/imported/camada1_estufa_1_2_flora_orquidea_2.obj-f5cf57601931a66abaa074bf6b9044ab.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

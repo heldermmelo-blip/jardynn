@@ -18,7 +18,9 @@ for _sibling in ("lotfp-rules", "gielis-equations"):
 from lotfp.character import create_character  # noqa: E402
 from lotfp import spells as _lotfp_spells  # noqa: E402
 from gielis.plants import generate_fallen_branch as _generate_fallen_branch_mesh  # noqa: E402
-from gielis.plants import ESPECIES_L as _ARVORES_L  # noqa: E402
+from gielis.plants import ARVORES_EXOTICAS, ESPECIES_L  # noqa: E402
+
+_ARVORES_COM_ALTURA = tuple(ESPECIES_L) + tuple(ARVORES_EXOTICAS)  # espécies que aceitam uma altura-alvo
 from gielis.plants import generate_plant as _generate_plant_mesh  # noqa: E402
 from gielis import ferragens as _ferragens  # noqa: E402
 from gielis import pitoresco as _pitoresco  # noqa: E402
@@ -112,14 +114,14 @@ ESTUFA_PISO_XADREZ_COM = (6, 10)  # o salão de chá e as gaiolas de ouro: pisos
 # desde vazia até uma selva fechada; as em ruína têm menos plantas e boa
 # parte delas morta. Espécies são de `gielis.plants`.
 ESTUFA_TEMAS = {
-    "deserto": ("cacto_coluna", "cacto_barril", "agave", "dracena_dragao"),
-    "tropical": ("palmeira", "folha_larga", "samambaia", "videira", "orquidea"),
+    "deserto": ("cacto_coluna", "cacto_barril", "agave", "dracena_dragao", "baoba", "cica"),
+    "tropical": ("palmeira", "folha_larga", "samambaia", "videira", "orquidea", "samambaia_arborea", "cica", "nepentes", "flor_cadaver"),
     "formal": ("topiaria", "cipreste", "rosa", "dalia", "tulipa", "arbusto"),
     "orquidario": ("orquidea", "samambaia", "folha_larga"),
-    "sombra": ("samambaia", "cogumelo", "videira", "arbusto"),
+    "sombra": ("samambaia", "cogumelo", "videira", "arbusto", "nepentes"),
 }
 ESTUFA_TEMA_MISTO_CHANCE = 0.3  # só vale quando o tema não vem do conteúdo
-ESTUFA_ESPECIES_ALTAS = ("palmeira", "cipreste", "dracena_dragao")  # não cabem nas pequenas
+ESTUFA_ESPECIES_ALTAS = ("palmeira", "cipreste", "dracena_dragao", "baoba", "samambaia_arborea", "flor_cadaver")  # não cabem nas pequenas
 ESTUFA_ARVORE_ALTURA = (2.5, 4.5)  # as árvores de L-system dentro de uma estufa são mudas, não veteranas
 ESTUFA_FLORA_ALTURA_MIN_RAIO = 3.2
 # densidade -> (plantas por m², peso se conservada, peso se em ruína)
@@ -149,6 +151,9 @@ REFUGIO_GAZEBO = (
 
 
 def band_for_layer(layer):
+    """Banda de conteúdo de uma camada (profundidade + 1): até a 2 é o
+    "jardim_externo", até a 4 o "jardim_profundo", dali em diante o
+    "nucleo_selvagem". As tabelas com filtro de banda usam isso."""
     if layer <= 2:
         return "jardim_externo"
     if layer <= 4:
@@ -157,14 +162,19 @@ def band_for_layer(layer):
 
 
 def _entries_for_band(entries, band):
+    """Textos de `entries` (pares `(texto, bandas)`) válidos na `band`: os de
+    bandas "all" e os que listam essa banda."""
     return [text for text, bands in entries if bands == "all" or band in bands]
 
 
 def _pick(rng, entries, band):
+    """Sorteia um texto de `entries` entre os válidos na `band`."""
     return rng.choice(_entries_for_band(entries, band))
 
 
 def _denizens_for_band(band):
+    """Denizens de `tables.DENIZENS` válidos na `band`, como tuplas `(texto,
+    classe, criatura)` (classe de personagem LotFP ou chave de criatura)."""
     return [
         (text, class_key, creature_key)
         for text, bands, class_key, creature_key in tables.DENIZENS
@@ -173,6 +183,7 @@ def _denizens_for_band(band):
 
 
 def _pick_denizen(rng, band):
+    """Sorteia um denizen (`_denizens_for_band`) da `band`."""
     return rng.choice(_denizens_for_band(band))
 
 
@@ -219,10 +230,13 @@ def _montar_andar(rng, entrada, layer, numero, n_andares, topo):
 
 
 def _vegetation_for_band(band):
+    """Vegetação de `tables.VEGETATION` válida na `band`, como `(texto,
+    espécie)`; a espécie é None na vegetação de cobertura (gramado, musgo)."""
     return [(text, species) for text, bands, species in tables.VEGETATION if bands == "all" or band in bands]
 
 
 def _pick_vegetation(rng, band):
+    """Sorteia a vegetação dominante de uma área na `band`."""
     return rng.choice(_vegetation_for_band(band))
 
 
@@ -299,10 +313,14 @@ def generate_area(rng, layer, index, plant_output_dir=None, local=None, sem_habi
 
 
 def generate_layer(rng, layer, n_areas, plant_output_dir=None):
+    """Gera `n_areas` áreas (`generate_area`) da camada `layer`, numeradas a
+    partir de 1 (modo "grade", sem mapa de pontos)."""
     return [generate_area(rng, layer, i + 1, plant_output_dir=plant_output_dir) for i in range(n_areas)]
 
 
 def generate_terreno(rng, layer, resolution=65, cell_size=2.0):
+    """Relevo da camada inteira (modo "grade"): sorteia o descritor de
+    localidade da banda da camada e gera o heightmap (`ynn.terrain`)."""
     band = band_for_layer(layer)
     return terrain.generate_terrain(rng, band, resolution=resolution, cell_size=cell_size)
 
@@ -405,6 +423,7 @@ def _dentro_do_poligono(px, pz, poligono, margem):
 
 
 def _area_poligono(poligono):
+    """Área de um polígono (lista de `(x, z)`) pela fórmula do cadarço."""
     n = len(poligono)
     return abs(sum(poligono[k][0] * poligono[(k + 1) % n][1] - poligono[(k + 1) % n][0] * poligono[k][1] for k in range(n))) / 2.0
 
@@ -453,7 +472,7 @@ def sortear_flora_interna(
             caminhos[especie] = []
             for v in range(1, rng.randint(*ESTUFA_FLORA_VARIANTES) + 1):
                 path = os.path.join(out_dir, f"{prefixo}_flora_{especie}_{v}.obj")
-                altura = rng.uniform(*ESTUFA_ARVORE_ALTURA) if especie in _ARVORES_L else None
+                altura = rng.uniform(*ESTUFA_ARVORE_ALTURA) if especie in _ARVORES_COM_ALTURA else None
                 caminhos[especie].append(_generate_plant_mesh(rng, especie, out_path=path, altura=altura)[0])
         tentativas = 0
         while len(plantas) < quantidade and tentativas < quantidade * 40:
@@ -895,6 +914,8 @@ def generate_nivel(
     posicao = {p["no_id"]: p for p in plots}
 
     def direcao_do_pai(plot):
+        """Ângulo (plano x, z do Godot) da direção que vai do lote ao do nó-pai, ou
+        pi/2 se for a entrada; é pra onde as portas das estruturas se viram."""
         pai = grafo["nos"][plot["no_id"]]["pai"]
         alvo = posicao[pai] if pai is not None else None
         return math.atan2(alvo["z"] - plot["z"], alvo["x"] - plot["x"]) if alvo else math.pi / 2

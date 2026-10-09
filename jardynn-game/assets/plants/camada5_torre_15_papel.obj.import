@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://ps3ynv5l4vw4"
+path="res://.godot/imported/camada5_torre_15_papel.obj-43070c44f150c51060e3af65073bc18b.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada5_torre_15_papel.obj-43070c44f150c51060e3af65073bc18b.mesh"]
+
+source_file="res://assets/plants/camada5_torre_15_papel.obj"
+dest_files=["res://.godot/imported/camada5_torre_15_papel.obj-43070c44f150c51060e3af65073bc18b.mesh", "res://.godot/imported/camada5_torre_15_papel.obj-43070c44f150c51060e3af65073bc18b.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

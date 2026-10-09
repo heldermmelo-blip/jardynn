@@ -109,6 +109,8 @@ def lame_half_length(n=2.0, A=1.0, B=1.0, num_points=2000):
     """
 
     def integrand(theta):
+        """Elemento de arco polar da curva em `theta`."""
+        # Elemento de arco polar sqrt(rho^2 + rho'^2), com rho' por diferença centrada.
         rho = lame_polar_radius(theta, A, B, n)
         d_theta = 1e-6
         d_rho = (

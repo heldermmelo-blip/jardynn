@@ -7,8 +7,9 @@ Lamé (Eq. 4.1/5.1), e a flor usa a Superfórmula (Eq. 5.8). Generalização de
 árvores) para várias espécies — ver `SPECIES` em `gielis.plants.generator`.
 """
 
+from .exoticas import ARVORES_EXOTICAS, ESPECIES_EXOTICAS
 from .flowers import ESPECIES_FLORES, PALETAS
 from .lsystem import ESPECIES_L, GRAMATICAS
 from .generator import SPECIES, generate_fallen_branch, generate_plant
 
-__all__ = ["SPECIES", "ESPECIES_FLORES", "PALETAS", "ESPECIES_L", "GRAMATICAS", "generate_plant", "generate_fallen_branch"]
+__all__ = ["SPECIES", "ESPECIES_FLORES", "PALETAS", "ESPECIES_L", "GRAMATICAS", "ESPECIES_EXOTICAS", "ARVORES_EXOTICAS", "generate_plant", "generate_fallen_branch"]

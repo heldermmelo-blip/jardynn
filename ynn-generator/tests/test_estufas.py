@@ -323,3 +323,40 @@ def test_places_are_whole_only_with_the_well_kept_or_ivy_details(tmp_path):
             inteiros += inteiro
             ruinas += not inteiro
     assert ruinas > inteiros * 4  # a maioria jaz em ruínas, como no livro
+
+
+# --- espécies exóticas na flora das estufas -----------------------------------------------
+
+
+def test_exotic_species_join_the_vegetation_and_the_greenhouse_themes():
+    from gielis.plants import SPECIES
+
+    especies = {e for _, _, e in tables.VEGETATION if e}
+    assert {"baoba", "samambaia_arborea", "cica", "carvalho", "salgueiro", "pinheiro", "araucaria"} <= especies
+    todas = {e for lista in generator.ESTUFA_TEMAS.values() for e in lista}
+    assert {"baoba", "cica", "samambaia_arborea", "nepentes", "flor_cadaver", "dracena_dragao"} <= todas <= set(SPECIES)
+    assert {"baoba", "samambaia_arborea", "flor_cadaver"} <= set(generator.ESTUFA_ESPECIES_ALTAS)
+
+
+def test_small_greenhouses_skip_the_tall_exotics_and_trees_inside_are_saplings(monkeypatch):
+    alturas = {}
+
+    def captura(rng, especie, out_path=None, altura=None, **kw):
+        alturas.setdefault(especie, set()).add(altura)
+        return out_path, []
+
+    monkeypatch.setattr(generator, "_generate_plant_mesh", captura)
+    quadrado = [(-5.0, -5.0), (5.0, -5.0), (5.0, 5.0), (-5.0, 5.0)]
+    for seed in range(40):
+        generator.sortear_flora_interna(random.Random(seed), [quadrado], 5.0, False, ".", "t", tema="deserto", densidade="media")
+        generator.sortear_flora_interna(random.Random(seed), [quadrado], 5.0, False, ".", "t", tema="tropical", densidade="media")
+    for especie in ("baoba", "cica", "samambaia_arborea", "carvalho"):
+        if especie in alturas:
+            lo, hi = generator.ESTUFA_ARVORE_ALTURA
+            assert all(a is not None and lo <= a <= hi for a in alturas[especie])  # muda, não veterana
+    assert any(e in alturas for e in ("baoba", "cica", "samambaia_arborea"))
+    pequena = [(-1.2, -1.2), (1.2, -1.2), (1.2, 1.2), (-1.2, 1.2)]
+    alturas.clear()
+    for seed in range(40):
+        generator.sortear_flora_interna(random.Random(seed), [pequena], 1.6, False, ".", "t", tema="tropical", densidade="selva")
+    assert not set(alturas) & set(generator.ESTUFA_ESPECIES_ALTAS)

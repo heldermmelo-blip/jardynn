@@ -9,6 +9,7 @@ originais, pensados para o tom de *The Gardens of Ynn*.
 
 import re
 
+# "NdM" com bônus opcional (+k ou -k); ex.: 1d6, 2d6+1
 _DICE_RE = re.compile(r"(\d+)d(\d+)([+-]\d+)?")
 
 
@@ -22,6 +23,7 @@ def roll_dice(rng, notation):
     return total + (int(bonus) if bonus else 0)
 
 
+# chave -> ficha: ca (classe de armadura), dv (dado dos PV, lido por `roll_dice`), ataques [(nome, dano)], resistencia (alvo de 1d20) e moral
 CREATURES = {
     "passaros_brancos": {
         "nome": "Bando de Pássaros Brancos",
@@ -179,6 +181,7 @@ def instantiate_creature(rng, creature_key):
     """Retorna uma cópia da ficha de `creature_key` com os pontos de vida
     já rolados a partir de `dv`."""
     template = CREATURES[creature_key]
+    # cópia rasa: os PV rolados são do indivíduo; `ataques` continua compartilhado com o modelo
     creature = dict(template)
     creature["pontos_de_vida"] = max(1, roll_dice(rng, template["dv"]))
     return creature

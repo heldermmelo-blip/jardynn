@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dvqrftgmtwtfs"
+path="res://.godot/imported/camada4_xadrez_13_obsidiana.obj-ce45ff219f3f0400fa6128eef19d5edb.mesh"
+
+[deps]
+
+files=["res://.godot/imported/camada4_xadrez_13_obsidiana.obj-ce45ff219f3f0400fa6128eef19d5edb.mesh"]
+
+source_file="res://assets/plants/camada4_xadrez_13_obsidiana.obj"
+dest_files=["res://.godot/imported/camada4_xadrez_13_obsidiana.obj-ce45ff219f3f0400fa6128eef19d5edb.mesh", "res://.godot/imported/camada4_xadrez_13_obsidiana.obj-ce45ff219f3f0400fa6128eef19d5edb.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

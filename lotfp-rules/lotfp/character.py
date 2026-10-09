@@ -4,9 +4,14 @@ from . import abilities, classes, equipment, saves, skills, spells
 
 
 def create_character(rng, class_key):
+    """Gera um personagem de nível 1 da classe `class_key` (chave de `classes.CLASSES`).
+    Rola os atributos em ordem, os PV (dado de vida + mod. de Constituição, com o mínimo da classe como piso),
+    a prata inicial e a carga. Specialist recebe perícias; Magic-User e Cleric recebem magias preparadas
+    (só o Magic-User também ganha grimório). Devolve um dict serializável em JSON, com chaves em português."""
     class_data = classes.CLASSES[class_key]
     ability_scores = abilities.roll_abilities(rng)
     con_mod = abilities.modifier(ability_scores["Constituição"])
+    # PV = dado de vida + mod. de Constituição, com o mínimo da classe como piso
     hp = max(class_data["pontos_de_vida_minimos"], rng.randint(1, class_data["dado_de_vida"]) + con_mod)
 
     character = {
@@ -27,6 +32,7 @@ def create_character(rng, class_key):
     prepared = spells.prepare_spells(rng, class_key)
     if prepared:
         character["magias_preparadas"] = prepared
+        # só o Magic-User começa com grimório (cópia das magias preparadas)
         if class_key == "magic_user":
             character["grimorio"] = list(prepared)
 

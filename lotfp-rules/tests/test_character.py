@@ -5,6 +5,7 @@ from lotfp.classes import CLASSES
 
 
 def test_all_classes_generate_without_error():
+    """Todas as classes geram personagem com PV acima do mínimo e 6 atributos."""
     for class_key in CLASSES:
         rng = random.Random(1)
         character = create_character(rng, class_key)
@@ -13,12 +14,14 @@ def test_all_classes_generate_without_error():
 
 
 def test_same_seed_is_deterministic():
+    """A mesma seed produz exatamente o mesmo personagem."""
     char_a = create_character(random.Random(42), "fighter")
     char_b = create_character(random.Random(42), "fighter")
     assert char_a == char_b
 
 
 def test_specialist_has_skills_others_dont():
+    """Só o Specialist recebe perícias."""
     specialist = create_character(random.Random(1), "specialist")
     fighter = create_character(random.Random(1), "fighter")
     assert "pericias" in specialist
@@ -26,6 +29,7 @@ def test_specialist_has_skills_others_dont():
 
 
 def test_specialist_skill_points_are_spent():
+    """Todos os pontos de perícia do nível 1 são distribuídos."""
     from lotfp.skills import SPECIALIST_BASE_RATING
 
     specialist = create_character(random.Random(3), "specialist")
@@ -34,6 +38,7 @@ def test_specialist_skill_points_are_spent():
 
 
 def test_casters_have_spells_others_dont():
+    """Magic-User e Cleric recebem as vagas de magia; Fighter e Specialist, nenhuma."""
     from lotfp.spells import SPELL_SLOTS_LEVEL_1
 
     for class_key in ("magic_user", "cleric"):
@@ -46,16 +51,19 @@ def test_casters_have_spells_others_dont():
 
 
 def test_magic_user_grimoire_matches_prepared_spells():
+    """O grimório do Magic-User começa igual às magias preparadas."""
     magic_user = create_character(random.Random(9), "magic_user")
     assert magic_user["grimorio"] == magic_user["magias_preparadas"]
 
 
 def test_cleric_has_no_grimoire():
+    """O Cleric não tem grimório."""
     cleric = create_character(random.Random(9), "cleric")
     assert "grimorio" not in cleric
 
 
 def test_all_classes_have_all_save_categories():
+    """Cada classe traz todas as categorias de Teste de Resistência."""
     from lotfp.saves import SAVE_CATEGORIES
 
     for class_key in CLASSES:
@@ -64,6 +72,7 @@ def test_all_classes_have_all_save_categories():
 
 
 def test_roll_save_respects_target():
+    """`roll_save` devolve rolagem, alvo e um sucesso coerente com `rolagem >= alvo`."""
     from lotfp.saves import roll_save
 
     class FixedRng:
@@ -76,6 +85,7 @@ def test_roll_save_respects_target():
 
 
 def test_level_1_numbers_match_the_rulebook():
+    """Bônus de ataque, dados de vida, PV mínimos e saves de nível 1 batem com a tabela conferida."""
     from lotfp.saves import SAVES_LEVEL_1
 
     assert CLASSES["fighter"]["bonus_ataque_nivel_1"] == 2
@@ -91,6 +101,7 @@ def test_level_1_numbers_match_the_rulebook():
 
 
 def test_sneak_attack_is_a_multiplier_without_the_six_cap():
+    """Perícias comuns têm teto 6-em-6; Ataque Furtivo, sendo multiplicador, não tem."""
     from lotfp.skills import SNEAK_ATTACK, allocate_skill_points
 
     ratings = allocate_skill_points(random.Random(1), 4)
@@ -99,6 +110,7 @@ def test_sneak_attack_is_a_multiplier_without_the_six_cap():
 
 
 def test_encumbrance_points_follow_the_table():
+    """Pontos de carga e movimento seguem a tabela de carga."""
     from lotfp.equipment import encumbrance_points, movement
 
     assert [encumbrance_points(n) for n in (5, 6, 11, 16, 21)] == [0, 1, 2, 3, 4]

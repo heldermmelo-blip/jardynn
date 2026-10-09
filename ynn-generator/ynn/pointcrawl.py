@@ -14,6 +14,7 @@ from . import tables
 
 RELEVO_ORDEM = ["plano", "leve", "acentuado", "irregular"]
 
+# tipos de aresta: trilha (pai→filho), atalho (para um nó mais raso), descida (para um nó bem mais fundo)
 ARESTA_TRILHA = "trilha"
 ARESTA_ATALHO = "atalho"
 ARESTA_DESCIDA = "descida"
@@ -40,6 +41,7 @@ def roll_detalhe(rng, profundidade):
 
 
 def _novo_no(nos, profundidade, pai):
+    """Cria um nó (`id` = posição na lista, `profundidade`, `pai`), acrescenta-o a `nos` e o devolve."""
     no = {"id": len(nos), "profundidade": profundidade, "pai": pai}
     nos.append(no)
     return no
@@ -59,6 +61,7 @@ def generate_pointcrawl(rng, profundidade_max=4, max_nos=14, max_por_camada=6, c
         pais = camadas[-1]
         nova = []
         for pai in pais:
+            # 0 a 3 filhos por pai (1 e 2 são mais prováveis), respeitando os tetos de nós totais e por camada
             n_filhos = rng.choice([0, 1, 1, 2, 2, 3])
             for _ in range(n_filhos):
                 if len(nos) >= max_nos or len(nova) >= max_por_camada:
@@ -66,6 +69,7 @@ def generate_pointcrawl(rng, profundidade_max=4, max_nos=14, max_por_camada=6, c
                 filho = _novo_no(nos, profundidade, pai)
                 arestas.append({"de": pai, "para": filho["id"], "tipo": ARESTA_TRILHA})
                 nova.append(filho["id"])
+        # garante pelo menos um nó por camada, para o mapa sempre chegar à profundidade máxima
         if not nova:
             pai = rng.choice(pais)
             filho = _novo_no(nos, profundidade, pai)
@@ -73,9 +77,11 @@ def generate_pointcrawl(rng, profundidade_max=4, max_nos=14, max_por_camada=6, c
             nova.append(filho["id"])
         camadas.append(nova)
 
+    # pares já ligados (sem direção), para não duplicar arestas
     ligados = {frozenset((a["de"], a["para"])) for a in arestas}
 
     def _tentar_ligar(origem, candidatos, tipo):
+        """Liga `origem` a um candidato sorteado, se sobrar algum ainda não ligado a ela, com uma aresta do `tipo` dado."""
         candidatos = [c for c in candidatos if frozenset((origem["id"], c["id"])) not in ligados]
         if not candidatos:
             return
@@ -83,6 +89,7 @@ def generate_pointcrawl(rng, profundidade_max=4, max_nos=14, max_por_camada=6, c
         ligados.add(frozenset((origem["id"], alvo["id"])))
         arestas.append({"de": origem["id"], "para": alvo["id"], "tipo": tipo})
 
+    # atalho: aponta para um nó mais raso; descida: para um nó pelo menos 2 camadas abaixo
     for no in list(nos):
         if no["profundidade"] >= 2 and rng.random() < chance_atalho:
             _tentar_ligar(no, [n for n in nos if n["profundidade"] < no["profundidade"]], ARESTA_ATALHO)
@@ -90,6 +97,7 @@ def generate_pointcrawl(rng, profundidade_max=4, max_nos=14, max_por_camada=6, c
             _tentar_ligar(no, [n for n in nos if n["profundidade"] >= no["profundidade"] + 2], ARESTA_DESCIDA)
 
     for no in nos:
+        # local e detalhe só são sorteados com o grafo pronto, na profundidade de cada nó
         (nome, tipo), _ = roll_tabela(rng, tables.LOCAIS, no["profundidade"])
         no["local"] = nome
         no["tipo"] = tipo
@@ -113,16 +121,19 @@ def layout_grafo(rng, grafo, field_width=105.0, field_depth=68.0, margem=9.0, fo
     for no in grafo["nos"]:
         por_camada.setdefault(no["profundidade"], []).append(no)
 
+    # x de cada nó, camada a camada; a entrada fica no centro
     x_de = {0: 0.0}
     for profundidade in sorted(por_camada):
         if profundidade == 0:
             continue
         camada = sorted(por_camada[profundidade], key=lambda n: (x_de[n["pai"]], n["id"]))
+        # alvo: x do pai, com os irmãos abertos em leque (`folga` entre eles)
         alvos = []
         for no in camada:
             irmaos = [m for m in camada if m["pai"] == no["pai"]]
             alvos.append(x_de[no["pai"]] + (irmaos.index(no) - (len(irmaos) - 1) / 2) * folga)
         xs = []
+        # da esquerda para a direita, empurra cada nó para respeitar o espaço do vizinho (raios + 3 m)
         for alvo, no in zip(alvos, camada):
             if not xs:
                 xs.append(alvo)
@@ -132,6 +143,7 @@ def layout_grafo(rng, grafo, field_width=105.0, field_depth=68.0, margem=9.0, fo
                 if grupos.get(anterior["id"]) is not None and grupos.get(anterior["id"]) == grupos.get(no["id"]):
                     gap = max(gap, DISTANCIA_MESMO_GRUPO)
                 xs.append(max(alvo, xs[-1] + gap))
+        # fileira mais larga que o campo: comprime tudo; senão só desliza para dentro dos limites
         if xs[-1] - xs[0] > 2 * limite_x:
             largura = xs[-1] - xs[0]
             xs = [-limite_x + (x - xs[0]) * 2 * limite_x / largura for x in xs]
@@ -145,6 +157,7 @@ def layout_grafo(rng, grafo, field_width=105.0, field_depth=68.0, margem=9.0, fo
 
     plots = []
     for no in grafo["nos"]:
+        # z fixo por camada; o jitter de ±1,5 m evita um alinhamento perfeito demais
         z = -field_depth / 2 + margem + no["profundidade"] * passo_z
         plots.append(
             {
@@ -157,10 +170,12 @@ def layout_grafo(rng, grafo, field_width=105.0, field_depth=68.0, margem=9.0, fo
                 "detalhe": no["detalhe"],
             }
         )
+    # relaxamento final: resolve sobreposições que sobraram, inclusive entre fileiras
     _separar(plots, raios, grupos, field_width, field_depth)
     return plots
 
 
+# distância mínima (m) entre nós do mesmo grupo; usada por `layout_grafo` e `_separar`
 DISTANCIA_MESMO_GRUPO = 24.0
 
 
@@ -183,8 +198,10 @@ def _separar(plots, raios, grupos, field_width, field_depth, passos=160):
                     minimo = max(minimo, DISTANCIA_MESMO_GRUPO)
                 if dist < minimo:
                     moveu = True
+                    # centros coincidentes: escolhe uma direção arbitrária para poder separar
                     if dist < 1e-6:
                         dx, dz, dist = 1.0, 0.0, 1.0
+                    # cada lote do par anda metade da sobreposição, em sentidos opostos
                     empurra = (minimo - dist) / 2.0
                     ux, uz = dx / dist, dz / dist
                     plots[i]["x"] -= ux * empurra

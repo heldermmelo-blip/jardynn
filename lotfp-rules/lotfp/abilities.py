@@ -8,10 +8,12 @@ ABILITY_NAMES = ["Força", "Destreza", "Constituição", "Inteligência", "Sabed
 
 
 def roll_3d6(rng):
+    """Rola 3d6 e devolve a soma (3 a 18)."""
     return sum(rng.randint(1, 6) for _ in range(3))
 
 
 def modifier(score):
+    """Converte um valor de atributo (3 a 18) no modificador da escala clássica."""
     if score <= 3:
         return -3
     if score <= 5:
@@ -28,4 +30,5 @@ def modifier(score):
 
 
 def roll_abilities(rng):
+    """Rola 3d6 em ordem para cada atributo de `ABILITY_NAMES`; devolve `{nome: valor}`."""
     return {name: roll_3d6(rng) for name in ABILITY_NAMES}

@@ -17,6 +17,8 @@ OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file
 
 
 def _resolve_out_path(out_path, default_name):
+    """Caminho de saída de um .obj: `out_path` se dado (criando a pasta, se
+    preciso); senão `default_name` dentro de `OUTPUT_DIR` (`examples/output`)."""
     if out_path is None:
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         return os.path.join(OUTPUT_DIR, default_name)
@@ -26,12 +28,17 @@ def _resolve_out_path(out_path, default_name):
 
 
 def _add_beam(parts, skeleton, start, end, radius, depth, n_sides=6):
+    """Viga/poste cilíndrico de `start` a `end`: soma a malha a `parts` e o
+    segmento correspondente (mesma convenção do esqueleto das plantas) a
+    `skeleton`. `depth` só rotula o tipo de peça no esqueleto."""
     segment = dict(start=start, end=end, r0=radius, r1=radius, depth=depth)
     parts.append(tube_mesh(segment, n_sides=n_sides, cross_section_n=2.0))
     skeleton.append(segment)
 
 
 def _polygon_corners(radius, sides, phase):
+    """Vértices (z = 0) de um polígono regular de `sides` lados e raio
+    `radius`, centrado na origem; `phase` (rad) gira o primeiro vértice."""
     angles = phase + 2 * np.pi * np.arange(sides) / sides
     return [np.array([radius * np.cos(a), radius * np.sin(a), 0.0]) for a in angles]
 
@@ -41,10 +48,11 @@ def _polygon_fan(radius, sides, z):
     angles = 2 * np.pi * np.arange(sides) / sides
     ring = np.column_stack([radius * np.cos(angles), radius * np.sin(angles), np.full(sides, z)])
     vertices = np.vstack([ring, [[0.0, 0.0, z]]])
-    center = sides
+    center = sides  # o centro é o último vértice, depois do anel
     faces = []
     for i in range(sides):
         j = (i + 1) % sides
+        # leque do centro a cada aresta, nas duas orientações (dupla face)
         faces.append([center, i, j])
         faces.append([center, j, i])
     return vertices, np.array(faces, dtype=int)
@@ -68,6 +76,8 @@ def _annulus(radius_out, radius_in, sides, z):
     faces = []
     for i in range(sides):
         j = (i + 1) % sides
+        # faixa entre o anel externo (índices 0..sides-1) e o interno (sides..2*sides-1):
+        # um quadrilátero por lado, em dois triângulos, cada um nas duas orientações
         for tri in ([i, j, sides + j], [i, sides + j, sides + i]):
             faces.append(tri)
             faces.append(tri[::-1])
@@ -99,12 +109,16 @@ def _grade_para(rng, estilo, origem, direcao, largura, altura, ruina):
 
 
 def _quad(v0, v1, v2, v3):
+    """Quadrilátero de uma face só, dos vértices v0..v3 em ordem em volta do
+    contorno, dividido em dois triângulos. Devolve (vértices, faces)."""
     return np.array([v0, v1, v2, v3], float), np.array([[0, 1, 2], [0, 2, 3]])
 
 
 def _leaf_panel(hinge, along, outward, width, z0, z1, angle):
     """Folha de porta ou de veneziana: presa em `hinge` (XY), cobrindo `width`
-    na direção `along` quando fechada, girada `angle` (rad) pra fora."""
+    na direção `along` quando fechada, girada `angle` (rad) pra fora.
+    `outward` é a normal horizontal da parede; `z0` e `z1` são a base e o topo
+    da folha. Com `angle`=0 a folha fica rente à parede."""
     direction = along * np.cos(angle) + outward * np.sin(angle)
     far = hinge + direction * width
     return _quad(
@@ -113,6 +127,8 @@ def _leaf_panel(hinge, along, outward, width, z0, z1, angle):
 
 
 def _disc(center, radius, z, sides=12):
+    """Disco plano (face única) de `sides` lados em `z`, centrado no ponto XY
+    `center` — usado nas poças d'água. Devolve (vértices, faces)."""
     ring = [[center[0] + radius * np.cos(t), center[1] + radius * np.sin(t), z] for t in np.linspace(0, 2 * np.pi, sides, endpoint=False)]
     vertices = np.vstack([ring, [[center[0], center[1], z]]])
     faces = [[sides, i, (i + 1) % sides] for i in range(sides)]
@@ -145,9 +161,11 @@ def _generate_tower(rng, n_floors, roof=True, estilo=None, ruina=False):
     stair_phase = rng.uniform(0.0, 2 * np.pi)
 
     def radius_at(z):
+        """Raio do polígono da torre na altura `z`: afina linearmente (`taper` por andar)."""
         return radius0 * (1.0 - taper * z / floor_h)
 
     def ring_point(i, z):
+        """Vértice `i` (módulo `sides`) do polígono da parede na altura `z`, em Z-up."""
         angle = 2 * np.pi * (i % sides) / sides
         return [radius_at(z) * np.cos(angle), radius_at(z) * np.sin(angle), z]
 
@@ -156,6 +174,7 @@ def _generate_tower(rng, n_floors, roof=True, estilo=None, ruina=False):
     janelas = []
 
     def wall_panel(i, z_lo, z_hi):
+        """Painel de parede (face única, espessura zero) do setor `i`, de `z_lo` a `z_hi`."""
         vertices = np.array([ring_point(i, z_lo), ring_point(i + 1, z_lo), ring_point(i + 1, z_hi), ring_point(i, z_hi)])
         grupos["tijolo"].append((vertices, np.array([[0, 1, 2], [0, 2, 3]])))
 
@@ -168,6 +187,9 @@ def _generate_tower(rng, n_floors, roof=True, estilo=None, ruina=False):
         outward = mid / np.linalg.norm(mid)
         return a, b, along, outward
 
+    # Cada andar: um anel de `sides` painéis de parede (o do térreo em `door` vira
+    # a porta; nos andares de cima, de 4 em 4 setores, uma janela), piso, tapete
+    # e tiras de papel de parede.
     for floor in range(n_floors):
         z0 = floor * floor_h
         z1 = z0 + floor_h
@@ -186,6 +208,8 @@ def _generate_tower(rng, n_floors, roof=True, estilo=None, ruina=False):
                 origem = np.array([a[0], a[1], TOWER_DOOR_HEIGHT * 0.36]) + direcao * largura * 0.12
                 ferragens.somar(grupos, _grade_para(rng, estilo, origem, direcao, largura * 0.76, TOWER_DOOR_HEIGHT * 0.52, ruina))
             elif floor >= 1 and (i - floor) % 4 == 0:
+                # a janela é deslocada em 1 setor por andar (`- floor`), então elas
+                # não ficam todas empilhadas na mesma vertical
                 z_lo, z_hi = z0 + TOWER_WINDOW_SILL, z0 + TOWER_WINDOW_TOP
                 wall_panel(i, z0, z_lo)
                 wall_panel(i, z_hi, z1)
@@ -247,10 +271,14 @@ def _generate_tower(rng, n_floors, roof=True, estilo=None, ruina=False):
             dict(start=np.array([0.0, 0.0, z0]), end=np.array([0.0, 0.0, z1]), r0=radius_at(z0), r1=radius_at(z1), depth=0)
         )
 
+    # Mastro central de madeira, que sobe um pouco acima do último piso; os degraus
+    # da escada são vigas curtas e radiais presas a ele.
     pole_top = (n_floors - 1) * floor_h + 1.0
     pole = dict(start=np.array([0.0, 0.0, 0.0]), end=np.array([0.0, 0.0, pole_top]), r0=0.12, r1=0.12, depth=1)
     grupos["madeira"].append(tube_mesh(pole, n_sides=8, cross_section_n=2.0))
 
+    # Uma volta completa (TOWER_STAIR_STEPS_PER_TURN degraus) sobe exatamente um
+    # andar: o ângulo avança 2*pi/N e a altura floor_h/N por degrau.
     steps = (n_floors - 1) * TOWER_STAIR_STEPS_PER_TURN
     for k in range(1, steps + 1):
         angle = stair_phase + 2 * np.pi * k / TOWER_STAIR_STEPS_PER_TURN
@@ -342,6 +370,8 @@ def _generate_gazebo(rng, estilo=None, ruina=False):
     corners = _polygon_corners(radius, n_posts, phase=rng.uniform(0.0, 2 * np.pi))
     postes_altos = []
 
+    # Postes verticais nos vértices do polígono; na ruína, alguns quebram e ficam
+    # mais baixos (e então a viga do topo não é posta entre eles).
     for corner in corners:
         base = corner + up * platform_height
         altura = post_height * (rng.uniform(0.45, 0.8) if ruina and rng.random() < 0.25 else 1.0)
@@ -350,6 +380,8 @@ def _generate_gazebo(rng, estilo=None, ruina=False):
         _add_beam(parts, skeleton, base, base + up * altura, post_radius, depth=0)
         grupos["madeira"] += parts
 
+    # Para cada lado do polígono: viga no topo (se os dois postes estão inteiros)
+    # e parapeito baixo, exceto no lado `entrance`, que fica aberto como entrada.
     entrance = rng.randrange(n_posts)
     for i, corner in enumerate(corners):
         nxt = corners[(i + 1) % n_posts]
@@ -422,6 +454,8 @@ def generate_tower_vines(rng, skeleton, out_path=None):
     total_h = zs[-1]
 
     def point(angle, z):
+        """Ponto 3D a 10 cm da parede externa, no ângulo `angle` e na altura `z`;
+        o raio é interpolado do esqueleto (a torre afina com a altura)."""
         r = float(np.interp(z, zs, rs)) + 0.1
         return np.array([r * np.cos(angle), r * np.sin(angle), z])
 
@@ -450,6 +484,9 @@ def generate_tower_vines(rng, skeleton, out_path=None):
                 parts.append((world_v, local_f))
         return trail
 
+    # Hastes principais: cada uma sobe de z = 0,1 até uma fração sorteada da
+    # altura total, em passos de ~0,4 m; depois, ramos laterais curtos e
+    # mais tortuosos brotam de pontos da haste (30% de chance por ponto).
     for _ in range(rng.randint(3, 6)):
         target = rng.uniform(0.35, 1.0) * total_h
         steps = max(2, int(target / 0.4))

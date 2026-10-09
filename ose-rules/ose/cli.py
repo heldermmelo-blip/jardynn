@@ -13,6 +13,8 @@ from .classes import CLASSES
 
 
 def render_character(character):
+    """Renderiza o personagem (dict de `create_character`) em Markdown: atributos, PV, CA descendente, bônus
+    de ataque, testes de resistência, perícias do Thief e magias (se houver) e equipamento em slots."""
     lines = [f"## {character['classe']} (nível 1)", ""]
     lines.append("**Atributos**")
     for name, score in character["atributos"].items():
@@ -48,6 +50,8 @@ def render_character(character):
 
 
 def main(argv=None):
+    """Ponto de entrada: lê `--classe`, `--seed`, `--json` e `--output`, gera o personagem e o imprime
+    (Markdown ou JSON) ou grava em arquivo. `argv` permite chamar a partir de testes; None usa `sys.argv`."""
     parser = argparse.ArgumentParser(description="Gerador de personagem de nível 1 (OSE)")
     parser.add_argument("--classe", choices=list(CLASSES.keys()), default="fighter")
     parser.add_argument("--seed", type=int, default=None)

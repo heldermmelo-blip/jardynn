@@ -162,3 +162,12 @@ def test_leaning_house_is_tilted_with_windows_roof_and_a_sunken_corner(tmp_path)
     topo = v[v[:, 1] > v[:, 1].max() - 0.8]
     deslocamento = np.hypot(*(topo[:, [0, 2]].mean(axis=0) - base[:, [0, 2]].mean(axis=0)))
     assert deslocamento > 0.4
+
+
+def test_ponds_get_one_to_three_giant_water_lily_pads_with_a_raised_rim(tmp_path):
+    for seed in range(15):
+        _, info = pitoresco.generate_pond(random.Random(seed), os.path.join(tmp_path, "l.obj"))
+        v = _verts(info["malhas"]["folha"])
+        bordas = np.isclose(v[:, 1], 0.17 + 0.14, atol=1e-3)  # a borda da vitória-régia sobe 14 cm
+        assert bordas.sum() >= 36  # ao menos uma folha gigante (uma borda de 36 pontos)
+        assert np.hypot(v[:, 0], v[:, 2]).max() <= info["raio_agua"] + 1e-6  # todas dentro da água

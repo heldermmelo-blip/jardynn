@@ -14,6 +14,8 @@ from .equipment import movement
 
 
 def render_character(character):
+    """Renderiza o personagem (dict de `create_character`) em Markdown: atributos, PV, bônus de ataque,
+    testes de resistência, perícias e magias (se houver), prata, equipamento e carga."""
     lines = [f"## {character['classe']} (nível 1)", ""]
     lines.append("**Atributos**")
     for name, score in character["atributos"].items():
@@ -31,6 +33,7 @@ def render_character(character):
         lines.append("")
         lines.append("**Perícias**")
         for skill, rating in character["pericias"].items():
+            # Ataque Furtivo é multiplicador de dano; as demais perícias são x-em-6
             lines.append(f"- {skill}: ×{rating} no dano" if skill == "Sneak Attack" else f"- {skill}: {rating}-em-6")
     if "magias_preparadas" in character:
         lines.append("")
@@ -51,6 +54,8 @@ def render_character(character):
 
 
 def main(argv=None):
+    """Ponto de entrada: lê `--classe`, `--seed`, `--json` e `--output`, gera o personagem e o imprime
+    (Markdown ou JSON) ou grava em arquivo. `argv` permite chamar a partir de testes; None usa `sys.argv`."""
     parser = argparse.ArgumentParser(description="Gerador de personagem de nível 1 (LotFP)")
     parser.add_argument("--classe", choices=list(CLASSES.keys()), default="fighter")
     parser.add_argument("--seed", type=int, default=None)

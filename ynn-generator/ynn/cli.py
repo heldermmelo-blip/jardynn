@@ -24,6 +24,8 @@ from lotfp.cli import render_character
 
 
 def render_creature(creature):
+    """Ficha de criatura em Markdown: CA, DV, PV, moral, movimento, ataques `(nome, dano)`, resistência e especial.
+    Espera uma criatura já instanciada (com `pontos_de_vida`)."""
     lines = [f"**{creature['nome']}**"]
     lines.append(
         f"CA {creature['ca']} · DV {creature['dv']} · PV {creature['pontos_de_vida']} · Moral {creature['moral']}"
@@ -40,6 +42,7 @@ def _render_estrutura(plot):
     lista vazia para os demais tipos."""
     lines = []
     pos = f"({plot['x']:.1f}, {plot['z']:.1f})"
+    # torre: cabeçalho, escalada (se houver) e um bloco por andar
     if plot["tipo"] == "torre":
         conteudo = plot["conteudo"]
         estado = " (em ruína)" if plot.get("estado") == "ruina" else ""
@@ -51,6 +54,7 @@ def _render_estrutura(plot):
         for andar in conteudo["andares"]:
             marca = " (topo)" if andar["numero"] == conteudo["n_andares"] else ""
             lines.append(f"  - andar {andar['numero']}{marca}: {andar['texto']}")
+            # aceita a lista 'tesouros' ou o único 'tesouro' do formato simples
             for achado in andar.get("tesouros") or ([andar["tesouro"]] if andar.get("tesouro") is not None else []):
                 lines.append(f"    - tesouro: {achado}")
             if andar.get("livro_de_magias"):
@@ -66,6 +70,7 @@ def _render_estrutura(plot):
                 )
             if andar.get("denizen") is not None:
                 lines.append(f"    - encontro: {andar['denizen']}")
+    # estufa/orquidário/ala de vidro: uma linha por casa de vidro, com planta, flora e conteúdo
     elif plot["tipo"] in ("estufa", "orquidario"):
         rotulo = "orquidário" if plot["tipo"] == "orquidario" else "estufas"
         if plot.get("ala"):
@@ -95,6 +100,7 @@ def _render_estrutura(plot):
             if conteudo.get("criatura") is not None:
                 quantidade = f" (x{conteudo['quantidade']})" if conteudo.get("quantidade") else ""
                 lines.append(f"      - criatura: {conteudo['criatura']['nome']}{quantidade}")
+    # estruturas pitorescas: tipo, posição, raio e um detalhe específico de cada tipo
     elif plot["tipo"] in PITORESCOS:
         extra = plot.get("pitoresco", {})
         detalhes = []
@@ -107,6 +113,7 @@ def _render_estrutura(plot):
         elif plot["tipo"] == "xadrez":
             detalhes.append(f"{len(extra.get('pecas', []))} peças gigantes")
         lines.append(f"- {plot['tipo']} em {pos}, raio {plot['raio_ocupado']:.1f} m" + (f" ({', '.join(detalhes)})" if detalhes else ""))
+    # gazebo: texto, bibelô, tesouro e refúgio
     elif plot["tipo"] == "gazebo":
         conteudo = plot["conteudo"]
         estado = " (em ruína)" if plot.get("estado") == "ruina" else ""
@@ -118,6 +125,8 @@ def _render_estrutura(plot):
 
 
 def _render_area(area):
+    """Linhas Markdown de uma área narrativa: o texto, resumos das plantas e galhos gerados (se houver) e as
+    fichas do NPC e da criatura (se houver)."""
     lines = [area["text"]]
     if area["plantas_obj"]:
         lines.append(f"*(plantas geradas: {len(area['plantas_obj'])}x `{area['plantas_obj'][0]}` e variantes)*")
@@ -133,6 +142,9 @@ def _render_area(area):
 
 
 def render_layer_markdown(layer, areas, terreno=None, layout=None):
+    """Markdown de uma camada do modo grade: relevo e layout (se dados) e cada área numerada. No layout, os lotes
+    de estrutura saem detalhados e os demais numa linha com tipo e posição; os lotes de área ficam de fora,
+    pois aparecem nas seções de Área."""
     band_label = BAND_LABELS[areas[0]["band"]] if areas else ""
     lines = [f"## Camada {layer} — {band_label}", ""]
     if terreno is not None:
@@ -155,6 +167,8 @@ def render_layer_markdown(layer, areas, terreno=None, layout=None):
 
 
 def render_nivel_markdown(nivel):
+    """Markdown de um nível do modo livro (resultado de `generate_nivel`): um bloco por local, ordenado por
+    profundidade e nó, com detalhe, tesouros, estado e conteúdo; depois a estufa colossal (se houver) e as ligações."""
     layout = nivel["layout"]
     terreno = nivel["terreno"]
     areas = {a["index"]: a for a in nivel["areas"]}
@@ -198,6 +212,8 @@ def render_nivel_markdown(nivel):
 
 
 def main(argv=None):
+    """Ponto de entrada: interpreta os argumentos, gera um nível (`--modo livro`) ou uma camada (`--modo grade`)
+    e imprime ou grava (`--output`) em Markdown ou JSON (`--json`). `argv` permite chamar a partir de testes."""
     parser = argparse.ArgumentParser(
         description="Gerador de níveis de jardim (inspirado na estrutura de The Gardens of Ynn)"
     )
@@ -262,6 +278,7 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
+    # toda a aleatoriedade vem deste rng: mesma seed, mesma saída
     rng = random.Random(args.seed)
 
     if args.modo == "livro":
@@ -278,6 +295,7 @@ def main(argv=None):
         )
         output = json.dumps(nivel, ensure_ascii=False, indent=2) if args.json else render_nivel_markdown(nivel)
     else:
+        # modo grade: uma camada só; terreno, layout e áreas consomem o mesmo rng, nessa ordem
         terreno = generate_terreno(rng, args.layer, resolution=args.terrain_resolution, cell_size=args.terrain_cell_size)
         camada_layout = generate_layout_camada(
             rng,

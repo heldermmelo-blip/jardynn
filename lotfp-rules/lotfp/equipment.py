@@ -35,6 +35,9 @@ def starting_money(rng):
 
 
 def encumbrance_points(n_distinct_items, chain_armor=False, plate_armor=False, oversized_items=0):
+    """Pontos de carga: 1 para cada limiar de itens diferentes atingido (6, 11, 16 e 21), +1 com cota de malha,
+    +2 com armadura de placas e +1 por item de tamanho exagerado (`oversized_items`)."""
+    # cada limiar de itens diferentes atingido soma 1 ponto
     points = sum(1 for limite in (6, 11, 16, 21) if n_distinct_items >= limite)
     points += 1 if chain_armor else 0
     points += 2 if plate_armor else 0

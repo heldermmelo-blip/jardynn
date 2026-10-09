@@ -19,7 +19,7 @@ import os
 import numpy as np
 
 from . import ferragens
-from .plants import flowers
+from .plants import exoticas, flowers
 from .plants.generator import _uv_sphere
 from .plants.mesh_utils import tube_mesh, write_obj
 
@@ -36,13 +36,18 @@ def group_path(base_path, group, principal):
 
 
 class _Peças:
-    """Acumula malhas por grupo (material) e escreve um .obj por grupo."""
+    """Acumula malhas por grupo (material) e escreve um .obj por grupo.
+
+    `principal` é o grupo cujo .obj leva o próprio caminho de saída (ver
+    `group_path`). Todos os métodos de construção recebem o nome do `grupo`
+    como primeiro argumento e usam coordenadas mundiais Z-up."""
 
     def __init__(self, principal):
         self.principal = principal
         self.grupos = {principal: []}
 
     def add(self, grupo, verts, faces):
+        """Acrescenta uma malha (vértices Nx3, faces Mx3) ao `grupo`, criando-o se preciso."""
         self.grupos.setdefault(grupo, []).append((np.asarray(verts, float), np.asarray(faces, int)))
 
     def box(self, grupo, cx, cy, z0, sx, sy, sz, giro=0.0):
@@ -50,10 +55,11 @@ class _Peças:
         girada `giro` radianos em Z."""
         c, s = math.cos(giro), math.sin(giro)
         verts = []
+        # vértices 0-3: quadrado da base; 4-7: o mesmo quadrado no topo (rotação 2D em XY)
         for dz in (0.0, sz):
             for dx, dy in ((-sx / 2, -sy / 2), (sx / 2, -sy / 2), (sx / 2, sy / 2), (-sx / 2, sy / 2)):
                 verts.append([cx + dx * c - dy * s, cy + dx * s + dy * c, z0 + dz])
-        faces = [[0, 2, 1], [0, 3, 2], [4, 5, 6], [4, 6, 7]]
+        faces = [[0, 2, 1], [0, 3, 2], [4, 5, 6], [4, 6, 7]]  # base e tampa
         for i in range(4):
             j = (i + 1) % 4
             faces += [[i, j, 4 + j], [i, 4 + j, 4 + i]]
@@ -63,6 +69,7 @@ class _Peças:
         """Tronco de cone (ou cilindro) entre as alturas z0 e z1, com raios
         r0 embaixo e r1 em cima; `tampa` fecha o topo."""
         verts = []
+        # dois anéis de `lados` vértices: o de baixo (0..lados-1) e o de cima (lados..2*lados-1)
         for z, r in ((z0, r0), (z1, r1)):
             for k in range(lados):
                 a = 2 * math.pi * k / lados
@@ -70,7 +77,7 @@ class _Peças:
         faces = []
         for k in range(lados):
             j = (k + 1) % lados
-            faces += [[k, j, lados + j], [k, lados + j, lados + k]]
+            faces += [[k, j, lados + j], [k, lados + j, lados + k]]  # faixa lateral
         if tampa:
             verts.append([cx, cy, z1])
             topo = len(verts) - 1
@@ -79,6 +86,8 @@ class _Peças:
         self.add(grupo, verts, faces)
 
     def disc(self, grupo, cx, cy, z, r, lados=28):
+        """Disco plano de raio `r` em `z`, centrado em (cx, cy), de face única
+        (leque a partir do centro, vértice 0)."""
         verts = [[cx, cy, z]] + [
             [cx + r * math.cos(2 * math.pi * k / lados), cy + r * math.sin(2 * math.pi * k / lados), z] for k in range(lados)
         ]
@@ -86,10 +95,14 @@ class _Peças:
         self.add(grupo, verts, faces)
 
     def ball(self, grupo, cx, cy, cz, r, achatamento=1.0, n_lat=6, n_lon=12):
+        """Esfera de raio `r` centrada em (cx, cy, cz); `achatamento` escala só o
+        eixo Z (< 1 achata, > 1 alonga). Usa `generator._uv_sphere`."""
         v, f = _uv_sphere(np.array([cx, cy, cz], float), r, squash=achatamento, n_lat=n_lat, n_lon=n_lon)
         self.add(grupo, v, f)
 
     def tube(self, grupo, a, b, r0, r1=None, lados=6):
+        """Tubo reto de `a` a `b`, com raio r0 em `a` e r1 em `b` (igual a r0
+        se omitido) e seção circular de `lados` lados."""
         seg = dict(start=np.asarray(a, float), end=np.asarray(b, float), r0=r0, r1=r0 if r1 is None else r1, depth=0)
         v, f = tube_mesh(seg, n_sides=lados, cross_section_n=2.0)
         if len(v):
@@ -108,6 +121,8 @@ class _Peças:
         self.add(grupo, verts, faces)
 
     def escrever(self, out_path):
+        """Grava um .obj por grupo não vazio (o principal em `out_path`, os
+        outros ao lado) e devolve o dict grupo -> caminho gravado."""
         os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
         malhas = {}
         for grupo, partes in self.grupos.items():
@@ -120,6 +135,7 @@ class _Peças:
 
 
 def _caminho_padrao(nome, out_path):
+    """`out_path` se dado; senão `examples/output/<nome>.obj` do projeto."""
     if out_path is not None:
         return out_path
     base = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "examples", "output")
@@ -129,7 +145,10 @@ def _caminho_padrao(nome, out_path):
 # --------------------------------------------------------------------- fonte
 def generate_fountain(rng, out_path=None, seca=None, ruina=False, estilo=None):
     """Fonte de três bacias empilhadas, num pedestal. `seca`: sem água
-    (padrão: 30% das vezes)."""
+    (padrão: 30% das vezes). Com `ruina`, a fonte fica seca, a bacia de cima
+    pode ter caído (50%) e o musgo cobre o fundo e a borda. `estilo` é aceito
+    só por uniformidade com os outros geradores (não tem efeito aqui).
+    Grupos: `pedra`, `agua`, `musgo`. A info traz `seca` e `quebrada`."""
     seca = (rng.random() < 0.3) if seca is None else seca
     seca = seca or ruina  # fonte em ruína está seca
     p = _Peças("pedra")
@@ -137,6 +156,8 @@ def generate_fountain(rng, out_path=None, seca=None, ruina=False, estilo=None):
     alturas = [0.0, 0.85, 1.65]
     quebrada = ruina and rng.random() < 0.5  # a bacia de cima caiu
     p.frustum("pedra", 0, 0, 0.0, 0.18, raios[0] * 1.12, raios[0] * 1.12, lados=24)  # soco redondo
+    # Cada bacia é: cuba (tronco de cone aberto), borda, fundo, água e uma haste
+    # até a bacia de cima. A primeira (z == 0) sobe 0,18 m pelo soco redondo.
     for r, z in zip(raios, alturas):
         if quebrada and z == alturas[-1]:
             continue
@@ -163,6 +184,11 @@ def generate_fountain(rng, out_path=None, seca=None, ruina=False, estilo=None):
 
 # ------------------------------------------------------------------ estátuas
 def _estatua(p, x, y, giro, rng, altura, derrubada=False, sem_cabeca=False):
+    """Estátua de mármore (grupo `marmore`) em (x, y) sobre um pedestal
+    quadrado de altura `altura`; `giro` (rad, em Z) é a direção para onde ela
+    olha. Tem corpo em túnica, cabeça, braços (às vezes um erguido) e um
+    nariz. `derrubada`: o corpo jaz no chão ao lado do pedestal (que continua
+    de pé), com a cabeça rolada para o lado; `sem_cabeca`: omite a cabeça."""
     p.box("marmore", x, y, 0.0, 0.8, 0.8, altura, giro)
     if derrubada:  # caiu do pedestal e jaz no chão, com a cabeça rolada pro lado
         dx, dy = math.cos(giro + 1.0), math.sin(giro + 1.0)
@@ -187,7 +213,10 @@ def _estatua(p, x, y, giro, rng, altura, derrubada=False, sem_cabeca=False):
 
 def generate_statuary(rng, out_path=None, de_costas=None, ruina=False, estilo=None):
     """Terraço quadrado de pedra com estátuas de mármore sobre pedestais, em
-    anel. `de_costas`: viradas pra fora (padrão: 35% das vezes)."""
+    anel. `de_costas`: viradas pra fora (padrão: 35% das vezes). O terraço
+    tem um parapeito em três dos quatro lados (o de y negativo, a entrada,
+    fica livre), no `estilo` dado (sorteado se None); `ruina` derruba e
+    decapita algumas estátuas e espalha musgo."""
     de_costas = (rng.random() < 0.35) if de_costas is None else de_costas
     estilo = estilo or ferragens.sortear_estilo(rng)
     p = _Peças("pedra")
@@ -260,12 +289,17 @@ def generate_hedge_maze(rng, out_path=None, n=None, ruina=False, estilo=None):
     p.box("piso", 0, 0, 0.0, n * cel + 1.0, n * cel + 1.0, 0.05)
 
     def parede(x0, y0, x1, y1):
+        """Sebe (caixa) de (x0, y0) a (x1, y1); `esp` a mais no comprimento fecha as quinas."""
         if ruina and rng.random() < 0.13:
             return  # a sebe secou e caiu: um atalho no labirinto
         comprimento = math.hypot(x1 - x0, y1 - y0) + esp
         giro = math.atan2(y1 - y0, x1 - x0)
         p.box("sebe", (x0 + x1) / 2, (y0 + y1) / 2, 0.05, comprimento, esp, alt, giro)
 
+    # Paredes entre células: as horizontais (ao longo de X) em n+1 linhas de grade,
+    # depois as verticais (ao longo de Y). Uma parede interna só existe se a
+    # passagem entre as duas células vizinhas NÃO está em `abertas`; no contorno,
+    # só o vão de entrada (j == 0, coluna `entrada`) fica aberto.
     for i in range(n):
         for j in range(n + 1):
             gx, gy = -meia + i * cel, -meia + j * cel
@@ -285,6 +319,7 @@ def generate_hedge_maze(rng, out_path=None, n=None, ruina=False, estilo=None):
                 aberta = tuple(sorted(((i - 1, j), (i, j)))) in abertas
             if not aberta:
                 parede(gx, gy, gx, gy + cel)
+    # pedestal com esfera na célula central (ou a logo depois do meio, se n é par)
     cx = -meia + (n // 2 + 0.5) * cel
     cy = -meia + (n // 2 + 0.5) * cel
     p.frustum("pedra", cx, cy, 0.05, 0.9, 0.4, 0.3, lados=8)
@@ -303,7 +338,9 @@ def generate_hedge_maze(rng, out_path=None, n=None, ruina=False, estilo=None):
 # ------------------------------------------------------------------ mausoléu
 def generate_mausoleum(rng, out_path=None, ruina=False, estilo=None):
     """Mausoléu de mármore: degraus, bloco com porta escura em arco, quatro
-    colunas e frontão, com trepadeiras subindo pelas paredes."""
+    colunas e frontão, com trepadeiras subindo pelas paredes. A frente é o lado
+    de y negativo. Na ruína, o frontão e colunas podem ter caído (as colunas
+    ficam deitadas diante da porta). Grupos: `marmore`, `porta`, `hera`."""
     p = _Peças("marmore")
     larg, prof = rng.uniform(4.2, 5.0), rng.uniform(3.2, 3.8)
     alt = rng.uniform(2.8, 3.3)
@@ -321,13 +358,15 @@ def generate_mausoleum(rng, out_path=None, ruina=False, estilo=None):
             continue
         p.frustum("marmore", cx, frente - 0.5, base, base + alt, 0.2, 0.17, lados=10)
     p.box("marmore", 0, frente - 0.5, base + alt, larg + 0.3, 0.45, 0.18)
-    # porta escura em arco no centro da frente
+    # porta escura em arco no centro da frente: retângulo + semicírculo em leque,
+    # colados 1 cm à frente da parede para não brigar com ela (z-fighting)
     pw, ph = 1.3, 2.2
     p.add("porta", [[-pw / 2, frente - 0.01, base], [pw / 2, frente - 0.01, base], [pw / 2, frente - 0.01, base + ph], [-pw / 2, frente - 0.01, base + ph]], [[0, 1, 2], [0, 2, 3]])
     pts = [[(pw / 2) * math.cos(t), frente - 0.01, base + ph + (pw / 2) * math.sin(t)] for t in np.linspace(0, math.pi, 9)]
     for a, b in zip(pts, pts[1:]):
         p.add("porta", [[0, frente - 0.01, base + ph], a, b], [[0, 1, 2]])
-    # trepadeiras nas paredes laterais e no fundo
+    # trepadeiras nas paredes laterais e no fundo: cada uma é uma cadeia de
+    # tubos que sobe com leve desvio lateral, com folhas (esferas achatadas)
     for _ in range(rng.randint(10, 16)):
         lado = rng.choice(["esq", "dir", "fundo"])
         t0 = rng.uniform(-0.8, 0.8)
@@ -354,7 +393,9 @@ def generate_mausoleum(rng, out_path=None, ruina=False, estilo=None):
 # ---------------------------------------------------------------------- lago
 def generate_pond(rng, out_path=None, gelado=False, ruina=False, estilo=None):
     """Lago circular com pedras na margem e nenúfares (ou uma capa de gelo,
-    com `gelado`)."""
+    com `gelado`). O disco de água/gelo fica em z = 0,14, acima das trilhas
+    do jardim. Grupos: `agua` ou `gelo`, `pedra`, `folha` (folhas de nenúfar
+    e juncos), `flor`."""
     p = _Peças("gelo" if gelado else "agua")
     raio = rng.uniform(4.0, 6.5)
     p.disc("gelo" if gelado else "agua", 0, 0, 0.14, raio, lados=36)  # acima das trilhas, que passam rente ao chão
@@ -365,8 +406,15 @@ def generate_pond(rng, out_path=None, gelado=False, ruina=False, estilo=None):
         p.ball("pedra", r * math.cos(a), r * math.sin(a), 0.1, rng.uniform(0.28, 0.5), achatamento=0.6, n_lat=4, n_lon=8)
     if not gelado:
         for _ in range(rng.randint(8, 18)):
+            # sqrt no sorteio do raio: distribui os pontos uniformemente na área do disco
             a, d = rng.uniform(0, 2 * math.pi), math.sqrt(rng.uniform(0, 1)) * (raio - 0.6)
             p.disc("folha", d * math.cos(a), d * math.sin(a), 0.16, rng.uniform(0.22, 0.42), lados=10)
+        # de 1 a 3 vitórias-régias, as folhas gigantes de borda erguida, encostadas na água
+        for _ in range(rng.randint(1, 3)):
+            r_folha = rng.uniform(0.7, 1.1)
+            a, d = rng.uniform(0, 2 * math.pi), rng.uniform(0.0, max(0.0, raio - r_folha - 0.5))
+            for v, f in exoticas.almofada_vitoria(rng, (d * math.cos(a), d * math.sin(a)), r_folha, z=0.17):
+                p.add("folha", v, f)
         for _ in range(rng.randint(2, 6)):  # flores de nenúfar sobre a água
             a, d = rng.uniform(0, 2 * math.pi), math.sqrt(rng.uniform(0, 1)) * (raio - 1.0)
             camadas = flowers._camadas(3, rng.uniform(0.14, 0.2), rng.choice([8, 10]), 0.22, 1.4, 1.4, 0.07, passo=0.72, fecha=0.4)
@@ -387,6 +435,10 @@ def generate_pond(rng, out_path=None, gelado=False, ruina=False, estilo=None):
 
 # --------------------------------------------------------------------- xadrez
 def _peca(p, grupo, tipo, x, y, rng, escala=1.0):
+    """Peça de xadrez estilizada (`tipo`: peao, torre, bispo, cavalo, rainha;
+    qualquer outro valor vira o rei) em (x, y), no `grupo` de material, com a
+    base no chão (z = 0). Todas as medidas multiplicam `escala`. É montada de
+    troncos de cone, esferas e caixas; `rng` não é usado."""
     s = escala
     p.frustum(grupo, x, y, 0.0, 0.25 * s, 0.6 * s, 0.55 * s, lados=14)
     if tipo == "peao":
@@ -471,6 +523,9 @@ def generate_stair_terrace(rng, out_path=None, ruina=False, estilo=None):
     seg = 20
     p.disc("gramado", 0, 0, 0.03, r0, lados=24)
     afundado = lambda: ruina and rng.random() < 0.25
+    # Cada degrau é um anel (de raio interno `ri` a externo `ro`) cortado em
+    # `seg` fatias angulares, cada uma com o piso (quad) e o espelho (riser);
+    # o k-ésimo degrau sobe `alt` a mais que o anterior.
     for k in range(n):
         z_topo = alt * (k + 1) - (alt * rng.uniform(0.3, 0.8) if afundado() else 0.0)
         ri, ro = r0 + larg * k, r0 + larg * (k + 1)
@@ -526,16 +581,20 @@ def _parede_com_abertura(p, grupo, a, b, z0, z1, abertura=None):
     a, b = np.asarray(a, float), np.asarray(b, float)
 
     def pt(t, z):
+        """Ponto da parede à fração `t` da largura e à altura `z`."""
         q = a + (b - a) * t
         return [q[0], q[1], z]
 
     def quad(t0, t1, za, zb):
+        """Retalho de parede entre as frações t0..t1 da largura e as alturas
+        za..zb; ignora retalhos de tamanho ~0."""
         if t1 - t0 > 1e-6 and zb - za > 1e-6:
             p.add(grupo, [pt(t0, za), pt(t1, za), pt(t1, zb), pt(t0, zb)], [[0, 1, 2], [0, 2, 3]])
 
     if abertura is None:
         quad(0.0, 1.0, z0, z1)
         return
+    # a parede vira 4 retalhos em volta do buraco: esquerda, direita, abaixo e acima dele
     t0, t1, zlo, zhi = abertura
     quad(0.0, t0, z0, z1)
     quad(t1, 1.0, z0, z1)
@@ -571,7 +630,9 @@ def generate_leaning_house(rng, out_path=None, ruina=True, estilo=None):
                 for t in (t0, t1):
                     q = np.array(a) + ab * t
                     p.tube("pedra", [q[0], q[1], z0 + 1.0], [q[0], q[1], z0 + 2.1], 0.05, lados=4)
-    # telhado de quatro águas, com rombo
+    # telhado de quatro águas, com rombo: a cumeeira corre ao longo de X (de topo_a
+    # a topo_b, ocupando o meio de 40% da largura); as águas dos lados em X têm v2 == v3 e viram
+    # triângulos (empenas). Cada água some com 30% de chance na ruína.
     z_beiral = n_and * andar
     cume = z_beiral + rng.uniform(1.8, 2.4)
     beiral = 0.5
@@ -595,7 +656,9 @@ def generate_leaning_house(rng, out_path=None, ruina=True, estilo=None):
         for _ in range(8):
             a = rng.uniform(0, 2 * math.pi)
             p.disc("musgo", (w / 2) * 1.02 * math.cos(a), (d / 2) * 1.02 * math.sin(a), 0.02, rng.uniform(0.25, 0.6), lados=8)
-    # inclina a casa toda em torno de um eixo horizontal e afunda o canto mais baixo
+    # inclina a casa toda em torno de um eixo horizontal (rotação de Rodrigues, via
+    # `ferragens._rotacao`) e desce tudo até o ponto mais baixo ficar 0,5 m abaixo
+    # do chão (z = 0), o que "afunda" o canto mais baixo na terra
     graus = rng.uniform(5.0, 12.0)
     az = rng.uniform(0, 2 * math.pi)
     eixo = np.array([-math.sin(az), math.cos(az), 0.0])
@@ -619,6 +682,8 @@ def generate_leaning_house(rng, out_path=None, ruina=True, estilo=None):
     }
 
 
+# Nome da estrutura -> gerador `generate_*(rng, out_path=None, ...)`, todos
+# devolvendo `(out_path, info)`.
 GERADORES = {
     "fonte": generate_fountain,
     "estatuas": generate_statuary,

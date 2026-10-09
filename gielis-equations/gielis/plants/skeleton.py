@@ -27,7 +27,18 @@ def generate_skeleton(
 ):
     """Gera recursivamente uma lista de segmentos (galhos), cada um um dict
     com start, end, r0, r1, depth. `rng` é um `random.Random` (para
-    reprodutibilidade via seed)."""
+    reprodutibilidade via seed).
+
+    Coordenadas Z-up: o tronco cresce em `direction` (padrão +Z) a partir de
+    `start`. Cada galho tem comprimento `length` e raio r0=`radius` na base,
+    r1=`radius*radius_falloff` na ponta; os filhos nascem na ponta, com
+    comprimento multiplicado por `length_falloff` (com sorteio de 0.85 a
+    1.05) e raio de base igual ao r1 do pai. `branch_angle_deg` é a abertura
+    em relação ao pai (sorteada entre 70% e 130%); `phototropism` soma um
+    empurrão em +Z à direção do filho. `branches_per_node` vale para
+    profundidade > 0; no tronco (depth 0) o número é sorteado de
+    `root_branches`. A recursão para em `max_depth` ou quando r1 < 0.004.
+    Devolve a lista plana de todos os segmentos, pai antes dos filhos."""
     start = np.asarray(start, dtype=float)
     direction = np.asarray(direction, dtype=float)
     direction = direction / np.linalg.norm(direction)
@@ -42,6 +53,8 @@ def generate_skeleton(
     n_branches = branches_per_node if depth > 0 else rng.choice(list(root_branches))
     branch_angle = np.radians(branch_angle_deg)
     for i in range(n_branches):
+        # Filhos espalhados em volta do pai (espaçamento uniforme + jitter);
+        # cada um inclina a direção do pai em torno de um eixo perpendicular a ela.
         twist = 2 * np.pi * i / n_branches + rng.uniform(-0.3, 0.3)
         u, v = orthonormal_basis(direction)
         tilt_axis = np.cos(twist) * u + np.sin(twist) * v
